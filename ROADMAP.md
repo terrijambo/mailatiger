@@ -50,7 +50,7 @@ Animals hate the Post Office door bell. On the last few steps to the counter, th
 - [x] Place file (`MailATiger.rbxl`) and folder structure (`ReplicatedStorage/Shared`, `ServerScriptService/Server`, `StarterPlayerScripts/Client`)
 - [x] Config modules for data-driven content (`Animals`, `Boxes`, `Stamps`, `Routes`)
 - [x] Git repo in this folder
-- [ ] **You:** open the place in Studio, connect Rojo, press Play, and see both startup lines in Output (see LEARN.md §7)
+- [x] Studio playtest verified: Rojo connects, and both startup lines print in Output
 
 ## Phase 1 — Graybox Prototype (prove it's fun)
 Goal: one animal, one box, one route, one post office. Is carrying a fragile box fun for 5 minutes?
