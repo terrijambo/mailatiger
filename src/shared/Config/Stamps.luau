@@ -1,3 +1,4 @@
+--!strict
 -- Stamps are one-use modifiers slapped on a box before a delivery.
 --   PayoutMult  : multiplies the delivery payout
 --   DamageMult  : multiplies damage the box takes

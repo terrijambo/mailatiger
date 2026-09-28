@@ -1,3 +1,4 @@
+--!strict
 -- Every animal you can mail. Numbers are first-pass guesses; tune them in playtests.
 --   Tier       : unlock group (1 Backyard ... 6 Silly)
 --   Price      : coins to buy at the Animal Pen

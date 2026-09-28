@@ -36,10 +36,27 @@ src/
   client/   → StarterPlayerScripts.Client   UI, camera, input, effects
 ```
 
+## Phase 1 playtest checklist
+Press Play and try each one. Every number mentioned lives in `src/shared/Config/Carry.luau`.
+- [ ] Gruff greets you. Walk to the **Animal Pen** counter and hold **E** to box a hamster.
+- [ ] The box floats in front of you and sways when you turn. Does the wobble feel good, too floppy, or too stiff? (`PositionResponsiveness`, `RotationResponsiveness`)
+- [ ] Walk over the speed bumps, jump a few times and bump a wall. Does the box HP drop a fair amount? (`ImpactThreshold`, `DamagePerSpeed`)
+- [ ] Rage rises. Past 70 the box rattles and the camera shakes.
+- [ ] Get past the potholes, the plank bridge, the two spinning sweepers and the hill.
+- [ ] The bell dings at the Post Office door and rage jumps.
+- [ ] Drop off inside the green zone. You get a stamp rating from Gruff and coins.
+- [ ] Break a box on purpose (the sweepers are good for this). The hamster escapes, hops around, and you can hold **E** to catch it for half pay.
+
 ## Handy commands
 ```
 rojo serve                     # live-sync to Studio
 rojo build -o MailATiger.rbxl  # build a fresh place file
 selene src                     # lint
 stylua src                     # format everything
+```
+
+Type-check (catches misspelled Roblox API names). The VS Code Luau extension does this live, and every file starts with `--!strict`:
+```
+rojo sourcemap -o sourcemap.json
+luau-lsp analyze --platform=roblox --definitions=<path to globalTypes.d.luau> --sourcemap=sourcemap.json src
 ```

@@ -54,13 +54,14 @@ Animals hate the Post Office door bell. On the last few steps to the counter, th
 
 ## Phase 1 — Graybox Prototype (prove it's fun)
 Goal: one animal, one box, one route, one post office. Is carrying a fragile box fun for 5 minutes?
-- [ ] Pick up / carry a box (held in front of character, affects walk speed)
-- [ ] Box HP + impact damage (fall height, collision velocity)
-- [ ] Delivery zone at Post Office → coin payout
-- [ ] Rage meter + box rattle
-- [ ] Box break → animal escapes → re-catch
-- [ ] Basic HUD: coins, box HP bar, rage bar
-- **Playtest checkpoint** before moving on
+- [x] Graybox map built in code (`src/server/MapBuilder.luau`): hub + Animal Pen, Town Streets route (speed bumps, potholes, plank bridge, 2 spinning sweepers, hill), Post Office with Gruff
+- [x] Pick up / carry a box: a wobbly AlignPosition carry, where weight slows you and lowers your jump
+- [x] Box HP + impact damage (velocity change over 0.1s, so falls, walls and sweepers all count)
+- [x] Delivery zone at Post Office → coin payout + 1–5 stamp rating from Gruff
+- [x] Rage meter + box rattle (from 70 rage), plus the door bell spike, the first piece of "Doorstep Breakout"
+- [x] Box break (or dropped / you die) → animal escapes and hops around → re-catch for half pay
+- [x] Basic HUD: coins, box HP bar, rage bar, hints, Gruff popups
+- [ ] **Playtest checkpoint** before moving on (checklist in the Phase 1 section of README)
 
 ## Phase 2 — Animal System
 - [ ] Animal config: rarity, base value, weight, rage rate, special behavior

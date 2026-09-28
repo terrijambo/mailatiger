@@ -1,3 +1,4 @@
+--!strict
 -- Boxes you can put an animal in.
 --   MaxHP      : damage the box can take before it breaks
 --   Weight     : added to the animal's weight (tougher = heavier = slower)

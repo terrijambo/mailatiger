@@ -1,3 +1,4 @@
+--!strict
 -- Routes from the hub to the Post Office.
 --   UnlockTier   : the animal tier needed to enter
 --   PayoutMult   : multiplies payouts earned on this route
