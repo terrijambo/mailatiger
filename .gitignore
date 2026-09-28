@@ -1,0 +1,21 @@
+# Built place files (rebuild with `rojo build`)
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+!assets/**/*.rbxm
+
+# Studio lock/backup files
+*.rbxl.lock
+*.rbxlx.lock
+
+# Blender backups
+*.blend1
+
+# Packages / tooling
+Packages/
+sourcemap.json
+
+# OS
+.DS_Store
+Thumbs.db
