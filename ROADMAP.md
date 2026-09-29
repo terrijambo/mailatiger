@@ -66,7 +66,7 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works and feels good")
 - *Stuff and Tape were replaced on 2026-09-29 by the **Pet & Tape BOX stage**, see "Box Rework" below.*
 
-## Box Rework — Pet & Tape (2026-09-29)
+## Box Rework — Pet & Tape (2026-09-29) ✅
 One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it calm while you tape the box, and if you fail you get launched.
 - [x] BOX screen (`client/BoxingScreen.luau`): the animal on the left with drifting ♥ sweet spots and ✖ angry spots, the box on the right with dashed seams, and an ANGER meter on top. Floating hearts show while you rub
 - [x] Rub detection needs actual rubbing (movement), not just holding. The server caps calming at 30/sec no matter how many messages arrive
@@ -77,7 +77,7 @@ One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it ca
 - [x] Boxes, stamps and the Tape Gun now use anger: better boxes start calmer and anger slower, FRAGILE angers 30% faster, PRIORITY starts at 50 anger, and the Tape Gun makes each strip annoy it 10% less per level
 - [x] Rating: −1 stamp each for anger ≥75, touching angry spots 3+ times, going over par, and each escape
 - [ ] **Vine boom sound id:** paste one into `Config/Sounds.luau` (see README → Vine boom)
-- [ ] **Playtest checkpoint**
+- [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works great", after the seam-layer fix)
 
 ## Phase 2 — Animal System ✅
 - [x] Animal config: tier (also sets difficulty), price, value, carriers, placeholder color (`Config/Animals.luau`)
