@@ -1,6 +1,6 @@
 # Mail a Tiger
 
-Box up increasingly wild animals and carry them to the Post Office before the box breaks. Postmaster Gruff is watching.
+Catch increasingly wild animals, stuff them in a box, and tape it shut before they burst out. Postmaster Gruff is watching.
 
 - Plan and decisions: [ROADMAP.md](ROADMAP.md)
 - New to Roblox scripting? Start with [docs/LEARN.md](docs/LEARN.md)
@@ -31,39 +31,35 @@ On a new computer: install Rokit, then run `rokit install` in this folder.
 ```
 src/
   shared/   → ReplicatedStorage.Shared      code both server and client can use
-    Config/     all tunable numbers: animals, boxes, stamps, routes
-  server/   → ServerScriptService.Server    trusted game logic (coins, damage, saving)
+    Config/     all tunable numbers: animals, boxing difficulty, boxes, stamps, Gruff's lines
+  server/   → ServerScriptService.Server    trusted game logic (the boxing stages, coins)
   client/   → StarterPlayerScripts.Client   UI, camera, input, effects
 ```
 
-## Phase 1 playtest checklist
-Press Play and try each one. Every number mentioned lives in `src/shared/Config/Carry.luau`.
-- [ ] Gruff greets you. Walk to the **Animal Pen** counter and hold **E** to box a hamster.
-- [ ] The box floats in front of you and sways when you turn. Does the wobble feel good, too floppy, or too stiff? (`PositionResponsiveness`, `RotationResponsiveness`)
-- [ ] Walk over the speed bumps, jump a few times and bump a wall. Does the box HP drop a fair amount? (`ImpactThreshold`, `DamagePerSpeed`)
-- [ ] Rage rises. Past 70 the box rattles and the camera shakes.
-- [ ] Get past the potholes, the plank bridge, the two spinning sweepers and the hill.
-- [ ] The bell dings at the Post Office door and rage jumps.
-- [ ] Drop off inside the green zone. You get a stamp rating from Gruff and coins.
-- [ ] Break a box on purpose (the sweepers are good for this). The hamster escapes, hops around, and you can hold **E** to catch it for half pay.
+## How to play
+1. Hold **E** at the **Animal Pen** counter and pick an animal. (In Studio they're all free, set in `Config/init.luau` under `Dev`.)
+2. **CATCH:** chase it around the fenced arena, corner it, and hold **E** to grab it. Hold **C** to sneak.
+3. **STUFF:** press **SPACE** (or tap the big button) when the white marker is inside the green zone.
+4. **TAPE:** mash **E / SPACE** to keep the red LID bar down until the TAPE bar is full.
+5. The box flies into the mail chute and Gruff rates you from 1 to 5 stamps.
+- Changed your mind? Use the Pen counter twice within 5 seconds to give up on the current animal.
 
-## Phase 2 playtest checklist
-In Studio every animal is free (set in `Config/init.luau`, under `Dev`). Walk to the Animal Pen, hold **E**, and pick an animal. Behavior numbers live in `src/shared/Config/Behaviors.luau`.
-- [ ] The Pen menu opens, shows all 26 animals, and the co-op ones are greyed out.
-- [ ] **Goldfish:** spin in circles and the water sloshes (rage and damage).
-- [ ] **Chicken:** stay calm for 10s and it lays an egg (+bonus shown on the receipt).
-- [ ] **Skunk:** let rage pass 60 and your screen goes green and blurry.
-- [ ] **Kangaroo / Goat / Crocodile:** the box hops, lurches forward, or lunges sideways by itself.
-- [ ] **Bear:** walk gently for 15s and it falls asleep (you get slower). Bump something and it wakes up angry.
-- [ ] **Giraffe:** tall box. Hold **C** to duck under the LOW CLEARANCE signs.
-- [ ] **Tiger:** reach the door at 100 rage, and about half the time you get RETURN TO SENDER and Gruff's hat flies off.
-- [ ] **Dragon / Alien / Yeti / Unicorn:** burning box / floating box / ice trail / rainbow trail.
-- [ ] Two-player test (**Test → Clients and Servers → 2 players**): the tiger's roar stuns the other player, yeti ice freezes them, and unicorn rainbows speed them up.
+## Playtest checklist
+All the difficulty numbers live in `src/shared/Config/Boxing.luau`.
+- [ ] **Hamster:** easy start to finish. Does it feel fun? Is corner-and-grab satisfying?
+- [ ] **Stuff:** miss on purpose 3 times, and the animal escapes back into the arena.
+- [ ] **Tape:** stop mashing, and the lid bursts and the animal escapes.
+- [ ] **Bear:** it starts asleep. Walk up normally and it wakes and bolts. Sneak with **C** and you can grab it.
+- [ ] **Goldfish / Pig / Penguin:** grabs sometimes slip. **Parrot / Monkey** fly out of reach. **Octopus** vanishes. **Alien / Unicorn** teleport.
+- [ ] **Goat / Crocodile / Gorilla** charge and knock you back. **Skunk** sprays your screen. **Yeti** freezes you.
+- [ ] **Chicken:** picking up its eggs adds bonus coins.
+- [ ] **Tiger:** hard! Its roar stuns you, and if the lid bursts during Tape you get **RETURN TO SENDER** and Gruff's hat flies off.
+- [ ] Two players (**Test → Clients and Servers → 2 players**): each player's animal ignores the other player, and you can't grab someone else's.
 
 ## Adding your Blender models
 1. Import your model in Studio (**Home → Import 3D**) and name the Model after the animal's Id, e.g. `Hamster`.
 2. In Explorer, create a Folder named `AnimalModels` inside **ReplicatedStorage**, and put the model in it.
-3. Escaped animals now use your model instead of a colored ball. (Rojo leaves this folder alone.)
+3. The animal in the arena now uses your model instead of a colored ball. (Rojo leaves this folder alone.)
 
 ## Handy commands
 ```

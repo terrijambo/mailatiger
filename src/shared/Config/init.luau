@@ -5,11 +5,9 @@
 
 return {
 	Animals = require(script.Animals),
+	Boxing = require(script.Boxing),
 	Boxes = require(script.Boxes),
 	Stamps = require(script.Stamps),
-	Routes = require(script.Routes),
-	Carry = require(script.Carry),
-	Behaviors = require(script.Behaviors),
 	Gruff = require(script.Gruff),
 
 	Dev = {

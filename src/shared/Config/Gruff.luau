@@ -2,23 +2,19 @@
 -- Everything Postmaster Gruff says. Add lines freely; one is picked at random.
 
 return {
-	FirstBox = "You. New hire. Box the hamster at the pen and bring it here in one piece. Don't mess it up.",
-	AlreadyCarrying = "One animal at a time. I'm not paying you double.",
+	FirstBox = "You. New hire. Pick an animal at the Pen, catch it, box it, tape it. Don't mess it up.",
+	AlreadyBoxing = "Finish the one you've got. Use the Pen again within 5 seconds to give up on it.",
+	GaveUp = "Quitter. Fine. It's going back in the pen.",
 	NotYours = "That's not YOUR animal. Hands off.",
-	TooPoor = "You can't afford that. Deliver more hamsters.",
-	NeedsCoop = "That one takes a whole crew to carry. Not yet.",
-	TooFar = "Come back to the pen counter if you want an animal.",
-
-	Breakout = {
-		"MY HAT! RETURN TO SENDER! RETURN TO SENDER!",
-		"Not in MY lobby! GET. IT. OUT.",
-	},
+	TooPoor = "You can't afford that. Box more hamsters.",
+	NeedsCoop = "That one takes a whole crew to box. Not yet.",
+	TooFar = "Come back to the Pen counter if you want an animal.",
 
 	Ratings = {
 		[1] = {
 			"Is that a box or a pancake?",
 			"The customer is going to write a letter. To ME.",
-			"I've seen avalanches handle packages better.",
+			"I've seen raccoons pack better.",
 		},
 		[2] = {
 			"Dented. Scuffed. Smells weird. Typical.",
@@ -26,7 +22,7 @@ return {
 		},
 		[3] = {
 			"Mediocre. Like my lunch.",
-			"It arrived. That's all I'll say.",
+			"It's in a box. That's all I'll say.",
 		},
 		[4] = {
 			"Hmph. Not terrible.",
@@ -39,17 +35,13 @@ return {
 	},
 
 	Escape = {
-		"You LOST it?! Go catch it before it eats a letter!",
-		"That box was company property! Get that animal back!",
+		"You LOST it?! Go catch it again!",
+		"It got out! Company tape isn't free, you know!",
 		"I KNEW I shouldn't have hired you.",
 	},
 
-	Recatch = {
-		"Caught it? Half pay for the trouble.",
-		"Back in the box. And you're docked half.",
-	},
-
-	Fainted = {
-		"You fell over? Your animal's loose. Go get it.",
+	Breakout = {
+		"MY HAT! RETURN TO SENDER! RETURN TO SENDER!",
+		"Not in MY post office! GET. IT. OUT.",
 	},
 }

@@ -150,7 +150,7 @@ function PenMenu.Start()
 			TextSize = 14,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextColor3 = Color3.fromRGB(90, 80, 70),
-			Text = `Pays up to {animal.BaseValue} · weight {animal.Weight}`,
+			Text = `Pays {animal.BaseValue} · Difficulty {string.rep("★", animal.Tier)}`,
 		}, button)
 		local status = make("TextLabel", {
 			Position = UDim2.new(0, 10, 1, -40),
@@ -204,9 +204,9 @@ function PenMenu.Start()
 		gui.Enabled = false
 	end)
 
-	-- Close the menu once you're holding a box
-	player:GetAttributeChangedSignal("Carrying"):Connect(function()
-		if player:GetAttribute("Carrying") then
+	-- Close the menu once you've started boxing an animal
+	player:GetAttributeChangedSignal("Stage"):Connect(function()
+		if player:GetAttribute("Stage") ~= "" then
 			gui.Enabled = false
 		end
 	end)

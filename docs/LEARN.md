@@ -82,14 +82,16 @@ task.wait(1)                            -- pause this code for 1 second
 print(`You have {coins} coins`)         -- string interpolation (backticks)
 ```
 
-## 6. Physics you'll need for the wobbly box
-- **Anchored = false** means gravity and collisions apply.
-- **Constraints** connect parts. We'll use a spring-like connection (`AlignPosition` + `AlignOrientation`) so the box follows your hands but lags and sways. That lag is the wobble.
-- **AssemblyLinearVelocity** is how fast a part is moving. A sudden big change means an impact, and impacts mean box damage.
+## 6. How the boxing game uses these ideas
+- **The arena animal** is an *anchored* part. The server moves it a little every frame (`Heartbeat`) by setting its `CFrame`, so it goes exactly where the AI says: flee, dodge, hop. See `src/server/CatchAI.luau`.
+- **Grabbing** uses a **ProximityPrompt** (the "hold E" popup). Its `HoldDuration` is longer for harder animals.
+- **Stuff and Tape** are screens on the client (`src/client/Minigames.luau`), but the client only *sends button presses* through a RemoteEvent. The server decides hit or miss (golden rule from §2!).
+- **Synced clock:** `Workspace:GetServerTimeNow()` gives the same time on the server and every client. The Stuff bar is drawn from it, and the server judges your press with it, so what you see is what's judged.
+- **State machine:** each player's job is in one stage at a time (`"Catch"` → `"Stuff"` → `"Tape"`), stored on the player as the `Stage` attribute so the UI knows what to show.
 
 ## 7. Testing
 - **Play** (F5): you in the game, with server and client in one window.
-- **Test → Clients and Servers → 2 players**: opens a real server plus two player windows. Use this for co-op and sabotage.
+- **Test → Clients and Servers → 2 players**: opens a real server plus two player windows. Use this for co-op and to check players don't interfere with each other.
 - **Output window** (View → Output): shows `print` messages and errors. When you connect Rojo and press Play, you should see:
   ```
   [Mail a Tiger] Server started. 26 animals loaded.

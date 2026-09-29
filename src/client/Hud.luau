@@ -1,6 +1,6 @@
 --!strict
--- The on-screen HUD: coins, box HP and rage bars, a hint line, and Gruff's speech/receipt popup.
--- It only READS what the server tells it (Player attributes + the Notify remote).
+-- The on-screen HUD: coins, a tip banner for the current stage, Gruff's popups and receipts, and the big
+-- RETURN TO SENDER stamp. It only READS what the server tells it (Player attributes + the Notify remote).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,9 +13,6 @@ local Hud = {}
 local FONT = Enum.Font.FredokaOne
 local WHITE = Color3.new(1, 1, 1)
 local PANEL = Color3.fromRGB(30, 30, 36)
-local HP_FULL = Color3.fromRGB(90, 200, 90)
-local HP_EMPTY = Color3.fromRGB(230, 70, 60)
-local RAGE = Color3.fromRGB(255, 140, 40)
 
 local function make(className: string, props: { [string]: any }, parent: Instance?): any
 	local instance = Instance.new(className)
@@ -30,29 +27,6 @@ end
 
 local function round(parent: Instance, radius: number?)
 	make("UICorner", { CornerRadius = UDim.new(0, radius or 10) }, parent)
-end
-
--- A labelled progress bar. Returns the fill frame and the text label.
-local function bar(parent: Instance, y: number, color: Color3): (Frame, TextLabel)
-	local back = make("Frame", {
-		Size = UDim2.new(1, -20, 0, 20),
-		Position = UDim2.fromOffset(10, y),
-		BackgroundColor3 = Color3.fromRGB(55, 55, 60),
-	}, parent)
-	round(back, 10)
-	local fill = make("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = color }, back)
-	round(fill, 10)
-	local label = make("TextLabel", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		Font = FONT,
-		TextSize = 15,
-		TextColor3 = WHITE,
-		TextStrokeTransparency = 0.4,
-		ZIndex = 2,
-		Text = "",
-	}, back)
-	return fill, label
 end
 
 function Hud.Start()
@@ -80,69 +54,30 @@ function Hud.Start()
 		update()
 	end)
 
-	-- Carry panel (bottom center, only while carrying)
-	local panel = make("Frame", {
-		AnchorPoint = Vector2.new(0.5, 1),
-		Position = UDim2.new(0.5, 0, 1, -20),
-		Size = UDim2.fromOffset(340, 88),
-		BackgroundColor3 = PANEL,
-		BackgroundTransparency = 0.2,
-	}, gui)
-	round(panel)
-	local title = make("TextLabel", {
-		Size = UDim2.new(1, 0, 0, 30),
-		BackgroundTransparency = 1,
-		Font = FONT,
-		TextSize = 20,
-		TextColor3 = WHITE,
-		Text = "",
-	}, panel)
-	local hpFill, hpText = bar(panel, 32, HP_FULL)
-	local rageFill, rageText = bar(panel, 58, RAGE)
-
-	-- Hint (bottom center, when not carrying)
-	local hint = make("TextLabel", {
+	-- Tip banner (bottom center): what to do right now
+	local tip = make("TextLabel", {
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, -30),
-		Size = UDim2.fromOffset(460, 36),
+		Size = UDim2.fromOffset(620, 40),
 		BackgroundColor3 = PANEL,
-		BackgroundTransparency = 0.3,
+		BackgroundTransparency = 0.25,
 		Font = FONT,
 		TextSize = 20,
+		TextWrapped = true,
 		TextColor3 = WHITE,
 		Text = "",
 	}, gui)
-	round(hint)
-
-	local function refresh()
-		local carrying = player:GetAttribute("Carrying") == true
-		panel.Visible = carrying
-		hint.Visible = not carrying
-
-		if carrying then
-			local hp = player:GetAttribute("HP") or 0
-			local maxHp = player:GetAttribute("MaxHP") or 1
-			local rage = player:GetAttribute("Rage") or 0
-			local hpFraction = math.clamp(hp / maxHp, 0, 1)
-
-			local sleeping = if player:GetAttribute("Asleep") then "  (asleep - don't bump it!)" else ""
-			title.Text =
-				`{player:GetAttribute("AnimalName") or "?"} in a {player:GetAttribute("BoxName") or "box"}{sleeping}`
-			hpFill.Size = UDim2.fromScale(hpFraction, 1)
-			hpFill.BackgroundColor3 = HP_EMPTY:Lerp(HP_FULL, hpFraction)
-			hpText.Text = `BOX  {hp} / {maxHp}`
-			rageFill.Size = UDim2.fromScale(math.clamp(rage / 100, 0, 1), 1)
-			rageText.Text = if rage >= 70 then `RAGE  {rage}  - IT'S RATTLING!` else `RAGE  {rage}`
-		elseif player:GetAttribute("Loose") == true then
-			hint.Text = "Your animal escaped! Find it and hold E to catch it."
+	round(tip)
+	local function refreshTip()
+		local text = player:GetAttribute("Tip")
+		if typeof(text) == "string" and text ~= "" then
+			tip.Text = text
 		else
-			hint.Text = "Go to the Animal Pen and choose an animal!"
+			tip.Text = "Go to the Animal Pen and choose an animal!"
 		end
 	end
-	for _, name in { "Carrying", "HP", "MaxHP", "Rage", "AnimalName", "BoxName", "Loose", "Asleep" } do
-		player:GetAttributeChangedSignal(name):Connect(refresh)
-	end
-	refresh()
+	player:GetAttributeChangedSignal("Tip"):Connect(refreshTip)
+	refreshTip()
 
 	-- Gruff popup (top center, below coins)
 	local toast = make("Frame", {
@@ -202,7 +137,7 @@ function Hud.Start()
 		end)
 	end
 
-	-- A giant red stamp that slams onto the screen (the "Doorstep Breakout" moment)
+	-- A giant red stamp that slams onto the screen (the "RETURN TO SENDER" moment)
 	local function slamStamp(text: string)
 		local stamp = make("TextLabel", {
 			AnchorPoint = Vector2.new(0.5, 0.5),
@@ -234,12 +169,18 @@ function Hud.Start()
 			showToast(data.Speaker, data.Text)
 		elseif kind == "Receipt" then
 			local stars = string.rep("★", data.Stars) .. string.rep("☆", 5 - data.Stars)
-			local time = string.format("%.1f", data.Seconds)
-			showToast("Postmaster Gruff", `"{data.Line}"`, `{stars}   +{data.Coins} coins   ({time}s)`)
-		elseif kind == "Bell" then
-			showToast("*DING DONG*", "The door bell spooked your animal!")
+			local time = string.format("%.0f", data.Seconds)
+			showToast(
+				`Postmaster Gruff  ·  {data.Animal} mailed!`,
+				`"{data.Line}"`,
+				`{stars}   +{data.Coins} coins   ({time}s)`
+			)
 		elseif kind == "Roar" then
-			showToast("ROOOOAR!", "The tiger roared! Anyone close by is stunned.")
+			showToast("ROOOOAR!", "It roared at you! You're frozen in fear for a second.")
+		elseif kind == "Freeze" then
+			showToast("Brrr!", "It froze you solid for a moment!")
+		elseif kind == "Spray" then
+			showToast("Pssssht!", "You got sprayed. Oh no. OH NO.")
 		elseif kind == "Breakout" then
 			slamStamp("RETURN TO SENDER")
 		end

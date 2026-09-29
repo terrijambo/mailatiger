@@ -1,14 +1,10 @@
 --!strict
 -- Every animal you can mail. Numbers are first-pass guesses; tune them in playtests.
---   Tier       : unlock group (1 Backyard ... 6 Silly)
+--   Tier       : unlock group AND boxing difficulty (1 Backyard ... 6 Silly), see Boxing.luau
 --   Price      : coins to buy at the Animal Pen
---   BaseValue  : coins paid on a perfect delivery
---   Weight     : slows the carrier (1 = light)
---   RageRate   : rage gained per second while carried
---   Carriers   : players needed to lift the box
---   Behavior   : special ability id (tuned in Behaviors.luau, coded in src/server/Behaviors.luau)
+--   BaseValue  : coins paid for a perfect (4-stamp) boxing job
+--   Carriers   : players needed to box it (co-op animals arrive in Phase 5)
 --   Color      : placeholder color until the Blender model exists (set below)
---   BoxSize    : optional custom box size (set below)
 
 export type Animal = {
 	Id: string,
@@ -16,12 +12,8 @@ export type Animal = {
 	Tier: number,
 	Price: number,
 	BaseValue: number,
-	Weight: number,
-	RageRate: number,
 	Carriers: number,
-	Behavior: string?,
 	Color: Color3?,
-	BoxSize: Vector3?,
 }
 
 local List: { Animal } = {
@@ -32,8 +24,6 @@ local List: { Animal } = {
 		Tier = 1,
 		Price = 0,
 		BaseValue = 5,
-		Weight = 1,
-		RageRate = 1,
 		Carriers = 1,
 	},
 	{
@@ -42,8 +32,6 @@ local List: { Animal } = {
 		Tier = 1,
 		Price = 50,
 		BaseValue = 10,
-		Weight = 1,
-		RageRate = 1.5,
 		Carriers = 1,
 	},
 	{
@@ -52,10 +40,7 @@ local List: { Animal } = {
 		Tier = 1,
 		Price = 120,
 		BaseValue = 18,
-		Weight = 1.2,
-		RageRate = 1,
 		Carriers = 1,
-		Behavior = "Slosh",
 	},
 	{
 		Id = "Hedgehog",
@@ -63,10 +48,7 @@ local List: { Animal } = {
 		Tier = 1,
 		Price = 250,
 		BaseValue = 30,
-		Weight = 1,
-		RageRate = 2,
 		Carriers = 1,
-		Behavior = "Poke",
 	},
 	{
 		Id = "Parrot",
@@ -74,10 +56,7 @@ local List: { Animal } = {
 		Tier = 1,
 		Price = 400,
 		BaseValue = 45,
-		Weight = 1,
-		RageRate = 2.5,
 		Carriers = 1,
-		Behavior = "Squawk",
 	},
 
 	-- Tier 2: Farm
@@ -87,10 +66,7 @@ local List: { Animal } = {
 		Tier = 2,
 		Price = 800,
 		BaseValue = 80,
-		Weight = 1.2,
-		RageRate = 2,
 		Carriers = 1,
-		Behavior = "LayEgg",
 	},
 	{
 		Id = "Goat",
@@ -98,10 +74,7 @@ local List: { Animal } = {
 		Tier = 2,
 		Price = 1500,
 		BaseValue = 140,
-		Weight = 1.8,
-		RageRate = 3,
 		Carriers = 1,
-		Behavior = "Headbutt",
 	},
 	{
 		Id = "Pig",
@@ -109,8 +82,6 @@ local List: { Animal } = {
 		Tier = 2,
 		Price = 2500,
 		BaseValue = 220,
-		Weight = 2.2,
-		RageRate = 2,
 		Carriers = 1,
 	},
 	{
@@ -119,10 +90,7 @@ local List: { Animal } = {
 		Tier = 2,
 		Price = 4000,
 		BaseValue = 350,
-		Weight = 1.3,
-		RageRate = 3.5,
 		Carriers = 1,
-		Behavior = "Spray",
 	},
 
 	-- Tier 3: Wild
@@ -132,10 +100,7 @@ local List: { Animal } = {
 		Tier = 3,
 		Price = 7000,
 		BaseValue = 600,
-		Weight = 1.5,
-		RageRate = 4,
 		Carriers = 1,
-		Behavior = "StealStamp",
 	},
 	{
 		Id = "Kangaroo",
@@ -143,10 +108,7 @@ local List: { Animal } = {
 		Tier = 3,
 		Price = 11000,
 		BaseValue = 900,
-		Weight = 2.5,
-		RageRate = 3.5,
 		Carriers = 1,
-		Behavior = "Hop",
 	},
 	{
 		Id = "Porcupine",
@@ -154,10 +116,7 @@ local List: { Animal } = {
 		Tier = 3,
 		Price = 16000,
 		BaseValue = 1300,
-		Weight = 1.5,
-		RageRate = 4,
 		Carriers = 1,
-		Behavior = "InnerDamage",
 	},
 	{
 		Id = "Penguin",
@@ -165,10 +124,7 @@ local List: { Animal } = {
 		Tier = 3,
 		Price = 23000,
 		BaseValue = 1800,
-		Weight = 1.8,
-		RageRate = 3,
 		Carriers = 1,
-		Behavior = "Slide",
 	},
 	{
 		Id = "Octopus",
@@ -176,10 +132,7 @@ local List: { Animal } = {
 		Tier = 3,
 		Price = 32000,
 		BaseValue = 2500,
-		Weight = 2,
-		RageRate = 4.5,
 		Carriers = 1,
-		Behavior = "Squeeze",
 	},
 
 	-- Tier 4: Apex
@@ -189,10 +142,7 @@ local List: { Animal } = {
 		Tier = 4,
 		Price = 50000,
 		BaseValue = 3800,
-		Weight = 3.5,
-		RageRate = 5,
 		Carriers = 1,
-		Behavior = "Snap",
 	},
 	{
 		Id = "Gorilla",
@@ -200,10 +150,7 @@ local List: { Animal } = {
 		Tier = 4,
 		Price = 75000,
 		BaseValue = 5500,
-		Weight = 4,
-		RageRate = 5.5,
 		Carriers = 1,
-		Behavior = "Pound",
 	},
 	{
 		Id = "Bear",
@@ -211,10 +158,7 @@ local List: { Animal } = {
 		Tier = 4,
 		Price = 110000,
 		BaseValue = 8000,
-		Weight = 4.5,
-		RageRate = 4,
 		Carriers = 1,
-		Behavior = "Sleep",
 	},
 	{
 		Id = "Tiger",
@@ -222,10 +166,7 @@ local List: { Animal } = {
 		Tier = 4,
 		Price = 160000,
 		BaseValue = 12000,
-		Weight = 4,
-		RageRate = 6.5,
 		Carriers = 1,
-		Behavior = "Roar",
 	},
 
 	-- Tier 5: Giants (co-op)
@@ -235,10 +176,7 @@ local List: { Animal } = {
 		Tier = 5,
 		Price = 250000,
 		BaseValue = 20000,
-		Weight = 5,
-		RageRate = 4,
 		Carriers = 1,
-		Behavior = "TooTall",
 	},
 	{
 		Id = "Elephant",
@@ -246,8 +184,6 @@ local List: { Animal } = {
 		Tier = 5,
 		Price = 400000,
 		BaseValue = 35000,
-		Weight = 8,
-		RageRate = 4.5,
 		Carriers = 2,
 	},
 	{
@@ -256,10 +192,7 @@ local List: { Animal } = {
 		Tier = 5,
 		Price = 700000,
 		BaseValue = 65000,
-		Weight = 12,
-		RageRate = 5,
 		Carriers = 4,
-		Behavior = "WaterTank",
 	},
 
 	-- Tier 6: Silly
@@ -269,10 +202,7 @@ local List: { Animal } = {
 		Tier = 6,
 		Price = 1200000,
 		BaseValue = 100000,
-		Weight = 6,
-		RageRate = 6,
 		Carriers = 1,
-		Behavior = "Freeze",
 	},
 	{
 		Id = "Dragon",
@@ -280,10 +210,7 @@ local List: { Animal } = {
 		Tier = 6,
 		Price = 2000000,
 		BaseValue = 170000,
-		Weight = 7,
-		RageRate = 7,
 		Carriers = 1,
-		Behavior = "BurnBox",
 	},
 	{
 		Id = "Alien",
@@ -291,10 +218,7 @@ local List: { Animal } = {
 		Tier = 6,
 		Price = 3200000,
 		BaseValue = 260000,
-		Weight = 3,
-		RageRate = 6,
 		Carriers = 1,
-		Behavior = "Float",
 	},
 	{
 		Id = "Unicorn",
@@ -302,10 +226,7 @@ local List: { Animal } = {
 		Tier = 6,
 		Price = 5000000,
 		BaseValue = 400000,
-		Weight = 5,
-		RageRate = 5,
 		Carriers = 1,
-		Behavior = "RainbowTrail",
 	},
 	{
 		Id = "Gruff",
@@ -313,10 +234,7 @@ local List: { Animal } = {
 		Tier = 6,
 		Price = 10000000,
 		BaseValue = 1000000,
-		Weight = 10,
-		RageRate = 8,
 		Carriers = 4,
-		Behavior = "Complain",
 	},
 }
 
@@ -355,9 +273,6 @@ for _, animal in List do
 	animal.Color = Colors[animal.Id]
 	ById[animal.Id] = animal
 end
-
--- The giraffe needs a tall box. Duck (hold C) under low signs!
-ById.Giraffe.BoxSize = Vector3.new(3, 6, 3)
 
 return {
 	List = List,

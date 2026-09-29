@@ -1,34 +1,46 @@
 --!strict
 -- Types shared between server modules.
 
--- One animal being carried to the Post Office.
-export type Delivery = {
+-- The Stuff stage's moving bar. Everything is computed from these numbers and the synced server clock,
+-- so the client can draw it and the server can judge presses without sending updates every frame.
+export type StuffState = {
+	Start: number, -- server time when the marker started sweeping
+	Speed: number, -- sweeps per second
+	ZoneCenter: number, -- 0..1 along the bar
+	ZoneWidth: number, -- 0..1
+	Amplitude: number, -- how far the zone wiggles (0 = still)
+	Frequency: number, -- wiggles per second
+	Hits: number,
+	HitsNeeded: number,
+	Misses: number,
+	MissesAllowed: number,
+	LastPress: number,
+}
+
+export type TapeState = {
+	Lid: number, -- 0 = shut, 100 = bursts open
+	Tape: number, -- 0..100, done at 100
+	Start: number,
+	Presses: { number }, -- times of recent presses (for the auto-clicker limit)
+	NextPound: number, -- for animals with the Pound twist
+}
+
+-- One player's current boxing job, from catching to mailing.
+export type Session = {
 	Player: Player,
-	Box: Part,
-	Hold: Attachment, -- the point on the character the box is pulled toward
 	AnimalId: string,
-	BoxId: string,
-
-	HP: number,
-	MaxHP: number,
-	Rage: number,
-	RageLocked: boolean, -- true = rage doesn't build (e.g. a sleeping bear)
-
-	PayoutMult: number,
-	Bonus: number, -- extra coins added on delivery (e.g. chicken eggs)
-	WeightMult: number,
-	SpeedMult: number,
-	RattleDamageMult: number,
-	RattleImpulseMult: number,
-
-	BellRung: boolean,
+	Stage: string, -- "Catch", "Stuff" or "Tape"
 	StartTime: number,
-	History: { { T: number, V: Vector3 } },
-	LastImpact: number,
-	ImpactGraceUntil: number, -- impacts before this time don't hurt (e.g. a kangaroo's own hop)
-	NextRattle: number,
+	Escapes: number,
+	StuffMisses: number,
+	MaxLid: number,
+	Bonus: number,
 
-	State: { [string]: any }, -- scratch space for the animal's behavior
+	Critter: Part?, -- the running animal during Catch
+	CatchState: { [string]: any }, -- scratch space for the catch AI
+	BoxModel: Model?, -- the box on the ground during Stuff and Tape
+	Stuff: StuffState?,
+	Tape: TapeState?,
 }
 
 return {}
