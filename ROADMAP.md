@@ -54,7 +54,7 @@ The tiger fights the tape. The lid creeps up, you're mashing, and the tape is al
 - [x] Place file, folder structure, config modules, Git repo
 - [x] Studio playtest verified: Rojo connects, and both startup lines print in Output
 
-## Phase 1 — Boxing Prototype (prove it's fun)
+## Phase 1 — Boxing Prototype (prove it's fun) ✅
 Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The original "carry it down an obstacle course" design was replaced by this on 2026-09-29.)*
 - [x] Graybox map (`src/server/MapBuilder.luau`): spawn, Animal Pen counter, fenced catching arena with a gate, and the Post Office with Gruff, his hat and the mail chute
 - [x] **CATCH** (`src/server/CatchAI.luau`): the animal wanders, flees, avoids walls (smarter at higher tiers), and jukes past you when cornered. Hold E to grab
@@ -64,16 +64,16 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [x] **MAIL**: the box flies into the chute, then a 1–5 stamp rating and payout
 - [x] UI: coins, tip banner, minigame panels, a big tap button for mobile, Gruff popups and receipts
 - [x] "Use the Pen twice within 5s" gives up on the current animal
-- [ ] **Playtest checkpoint** (checklist in README)
+- [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works and feels good")
 
-## Phase 2 — Animal System
+## Phase 2 — Animal System ✅
 - [x] Animal config: tier (also sets difficulty), price, value, carriers, placeholder color (`Config/Animals.luau`)
 - [x] Animal Pen menu: pick any animal, pay its price once to unlock it (free in Studio for testing, via `Config.Dev`)
 - [x] 17 twists across the three stages (see the roster table), tuned in `Config/Boxing.luau → TwistTuning`
 - [x] **RETURN TO SENDER** breakout for the tiger and Gruff
 - [x] Placeholder visuals: colored balls with name labels, plus a **model hook**. Put a Model named after the animal's Id (e.g. `Tiger`) in `ReplicatedStorage > AnimalModels`, and the arena animal uses it automatically
-- [ ] Final models/animations: this is the Art Track (your Blender work)
-- [ ] **Playtest checkpoint** (checklist in README)
+- [ ] Final models/animations: moved to the Art Track below (your Blender work, not blocking)
+- [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works and feels good")
 
 ## Phase 3 — Progression & Economy
 - [ ] Box tiers (cardboard → wood → steel → vault): the lid starts lower and gets pushed up more slowly
