@@ -101,9 +101,17 @@ Progress saves automatically: every 60 seconds, when you leave, and when a serve
 - Economy sheet: `python tools/economy_sheet.py` writes `docs/economy.csv` from the real config numbers. Re-run it whenever you change prices or payouts.
 
 ## Adding your Blender models
-1. Import your model in Studio (**Home → Import 3D**) and name the Model after the animal's Id, e.g. `Hamster`.
-2. In Explorer, create a Folder named `AnimalModels` inside **ReplicatedStorage**, and put the model in it.
-3. The animal in the arena now uses your model instead of a colored ball. (Rojo leaves this folder alone.)
+Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` exports and preview renders.
+
+**One-time setup:** in Studio's Explorer, create two Folders inside **ReplicatedStorage**: `AnimalModels` and `BoxModels`. (Rojo leaves them alone.)
+
+**For each model:**
+1. **Home → Import 3D** → pick the file in `art/export/` (e.g. `Hamster.fbx`).
+2. In the import preview, keep it as **one Model** with its parts. Colors come from the materials. If a part comes in grey, just set its Color in Properties.
+3. Click **Import**, then drag the Model into `ReplicatedStorage > AnimalModels` (animals) or `ReplicatedStorage > BoxModels` (boxes).
+4. Make sure the Model's **name matches the game id**: `Hamster` for animals, `Cardboard` / `Wood` / `Steel` / `Vault` for boxes.
+
+**What happens in game:** the arena animal uses your model, and during BOX the box in the arena uses your box model with your animal poking out of it. The game sizes and places models automatically, so import scale doesn't matter. **Facing backwards?** Select the Model and add a Number attribute `YawOffset` = `180`.
 
 ## Handy commands
 ```

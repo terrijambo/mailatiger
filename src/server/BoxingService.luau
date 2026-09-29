@@ -28,6 +28,7 @@ local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local MapBuilder = require(script.Parent.MapBuilder)
+local ModelFit = require(script.Parent.ModelFit)
 local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
 local StampsConfig = require(ReplicatedStorage.Shared.Config.Stamps)
@@ -179,7 +180,7 @@ local function buildBox(s: Session): Model
 	local boxColor = Config.Boxes.ById[s.BoxId].Color
 	local scale = if animal.Carriers > 1 then 2 else 1 -- giants get a giant box
 	local box = piece("Box", Vector3.new(3, 3, 3) * scale, boxCFrame * CFrame.new(0, 1.5 * (scale - 1), 0), boxColor)
-	piece(
+	local lid = piece(
 		"Lid",
 		Vector3.new(3.1 * scale, 0.25, 3.1 * scale),
 		box.CFrame * CFrame.new(0, 1.6 * scale, 0),
@@ -201,6 +202,35 @@ local function buildBox(s: Session): Model
 	critter.Shape = Enum.PartType.Ball
 	MapBuilder.Label(box, `{s.Player.DisplayName}'s {animal.DisplayName}`, 4 * scale)
 	box:SetAttribute("Scale", scale)
+
+	-- Your Blender art, if you've put it in Studio: ReplicatedStorage > BoxModels > "<box id>" (e.g. "Cardboard")
+	-- and ReplicatedStorage > AnimalModels > "<animal id>". The plain parts stay (invisible) to keep positions.
+	local function art(folderName: string, id: string, name: string, floor: CFrame, width: number): Model?
+		local folder = ReplicatedStorage:FindFirstChild(folderName)
+		local template = folder and folder:FindFirstChild(id)
+		if not (template and template:IsA("Model")) then
+			return nil
+		end
+		local clone = template:Clone()
+		clone.Name = name
+		for _, descendant in clone:GetDescendants() do
+			if descendant:IsA("BasePart") then
+				descendant.Anchored = true
+				descendant.CanCollide = false
+			end
+		end
+		ModelFit.Fit(clone, floor, width)
+		clone.Parent = model
+		return clone
+	end
+	if art("BoxModels", s.BoxId, "BoxArt", box.CFrame * CFrame.new(0, -1.5 * scale, 0), 3 * scale) then
+		box.Transparency = 1
+		lid.Transparency = 1 -- the model has its own flaps
+	end
+	-- The animal sits down inside the box with its top half poking out
+	if art("AnimalModels", s.AnimalId, "AnimalArt", box.CFrame * CFrame.new(0, 0.6 * scale, 0), 1.9 * scale) then
+		critter.Transparency = 1
+	end
 
 	model.PrimaryPart = box
 	model.Parent = boxesFolder
@@ -550,6 +580,10 @@ local function mail(s: Session)
 		local critter = model:FindFirstChild("Animal") :: Part?
 		if critter then
 			critter.Transparency = 1 -- it's in the box now
+		end
+		local animalArt = model:FindFirstChild("AnimalArt")
+		if animalArt then
+			animalArt:Destroy()
 		end
 		task.spawn(function()
 			local from = model:GetPivot()

@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 local BoxingConfig = require(ReplicatedStorage.Shared.Config.Boxing)
 local Config = require(ReplicatedStorage.Shared.Config)
 local MapBuilder = require(script.Parent.MapBuilder)
+local ModelFit = require(script.Parent.ModelFit)
 local Types = require(script.Parent.Types)
 
 type Session = Types.Session
@@ -146,7 +147,8 @@ local function wallAvoidance(arena: MapBuilder.Arena, position: Vector3): Vector
 end
 
 -- If you've made a model for this animal, put it in ReplicatedStorage > AnimalModels, named after the
--- animal's Id (e.g. "Hamster"). It's welded onto the running animal instead of showing a plain ball.
+-- animal's Id (e.g. "Hamster"). It's sized to the animal, stood on the ground and welded onto the running
+-- animal instead of showing a plain ball (see ModelFit.luau).
 local function attachModel(critter: Part, animalId: string)
 	local models = ReplicatedStorage:FindFirstChild("AnimalModels")
 	local template = models and models:FindFirstChild(animalId)
@@ -154,7 +156,8 @@ local function attachModel(critter: Part, animalId: string)
 		return
 	end
 	local model = template:Clone()
-	model:PivotTo(critter.CFrame)
+	local floor = critter.CFrame * CFrame.new(0, -critter.Size.Y / 2, 0)
+	ModelFit.Fit(model, floor, critter.Size.X * 1.15)
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
 			descendant.Anchored = false
