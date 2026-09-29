@@ -11,6 +11,7 @@ return {
 	Stamps = require(script.Stamps),
 	Tools = require(script.Tools),
 	Progression = require(script.Progression),
+	Sounds = require(script.Sounds),
 	Gruff = require(script.Gruff),
 
 	Dev = {

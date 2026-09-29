@@ -2,8 +2,8 @@
 -- Stamps are one-use modifiers. Buy them at the Supply Shop, pick one as your "next job" stamp, and it's
 -- used up when you start boxing your next animal. Risk more, earn more.
 --   PayoutMult     : multiplies the job's payout
---   MissesAllowed  : replaces how many STUFF misses you get (normally 2)
---   StartLid       : replaces where the lid starts in TAPE
+--   AngerMult      : multiplies how fast the animal gets angry in the BOX stage
+--   StartAnger     : replaces how angry it starts in the BOX stage
 --   UnderParMult   : extra payout multiplier if you finish under par time
 
 export type Stamp = {
@@ -12,8 +12,8 @@ export type Stamp = {
 	Description: string,
 	Price: number,
 	PayoutMult: number,
-	MissesAllowed: number?,
-	StartLid: number?,
+	AngerMult: number?,
+	StartAnger: number?,
 	UnderParMult: number?,
 }
 
@@ -21,10 +21,10 @@ local List: { Stamp } = {
 	{
 		Id = "Fragile",
 		DisplayName = "FRAGILE",
-		Description = "+50% pay, but only 1 miss allowed while stuffing.",
+		Description = "+50% pay, but the animal gets angry 30% faster.",
 		Price = 150,
 		PayoutMult = 1.5,
-		MissesAllowed = 1,
+		AngerMult = 1.3,
 	},
 	{
 		Id = "Express",
@@ -37,10 +37,10 @@ local List: { Stamp } = {
 	{
 		Id = "Priority",
 		DisplayName = "PRIORITY",
-		Description = "Double pay, but the lid starts half open. Gruff approves.",
+		Description = "Double pay, but the animal starts half-furious. Gruff approves.",
 		Price = 1500,
 		PayoutMult = 2,
-		StartLid = 50,
+		StartAnger = 50,
 	},
 }
 

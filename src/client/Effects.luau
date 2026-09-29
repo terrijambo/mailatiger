@@ -7,6 +7,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local Ragdoll = require(script.Parent.Ragdoll)
+
 local player = Players.LocalPlayer
 
 local Effects = {}
@@ -77,6 +79,10 @@ function Effects.Start()
 			shakeCamera(0.5, 0.15)
 		elseif kind == "Breakout" then
 			shakeCamera(2.5, 0.9)
+		elseif kind == "Launch" then
+			-- VINE BOOM (the sound plays from the server so everyone nearby hears it)
+			shakeCamera(2, 0.4)
+			Ragdoll.Launch(data.Velocity, data.Seconds)
 		end
 	end)
 end

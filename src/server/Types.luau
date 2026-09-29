@@ -1,28 +1,23 @@
 --!strict
 -- Types shared between server modules.
 
--- The Stuff stage's moving bar. Everything is computed from these numbers and the synced server clock,
--- so the client can draw it and the server can judge presses without sending updates every frame.
-export type StuffState = {
-	Start: number, -- server time when the marker started sweeping
-	Speed: number, -- sweeps per second
-	ZoneCenter: number, -- 0..1 along the bar
-	ZoneWidth: number, -- 0..1
-	Amplitude: number, -- how far the zone wiggles (0 = still)
-	Frequency: number, -- wiggles per second
-	Hits: number,
-	HitsNeeded: number,
-	Misses: number,
-	MissesAllowed: number,
-	LastPress: number,
-}
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-export type TapeState = {
-	Lid: number, -- 0 = shut, 100 = bursts open
-	Tape: number, -- 0..100, done at 100
-	Start: number,
-	Presses: { number }, -- times of recent presses (for the auto-clicker limit)
+local BoxMath = require(ReplicatedStorage.Shared.BoxMath)
+
+-- The BOX stage: the animal on your screen (with pet spots) and the box (with seams to tape).
+export type BoxState = {
+	Start: number, -- server time the stage began (the spots drift from here)
+	Anger: number, -- 0..100. At 100 you get launched
+	Spots: { BoxMath.Spot },
+	SeamCount: number,
+	Taped: { boolean }, -- one per seam
+	LastSeam: number, -- os.clock() of the last strip (nobody tapes that fast)
+	LastPet: number, -- os.clock() of the last pet message (limits calming per second)
+	LastAngryTouch: number,
 	NextPound: number, -- for animals with the Pound twist
+	TapeAngerMult: number, -- Tape Gun
+	AngerMult: number, -- box and stamp
 }
 
 -- One player's current boxing job, from catching to mailing.
@@ -30,11 +25,11 @@ export type Session = {
 	Player: Player,
 	AnimalId: string,
 	ArenaId: string, -- where the animal is released (by its tier, see Config/Arenas.luau)
-	Stage: string, -- "Catch", "Stuff" or "Tape"
+	Stage: string, -- "Catch" or "Box"
 	StartTime: number,
 	Escapes: number,
-	StuffMisses: number,
-	MaxLid: number,
+	AngryTouches: number, -- how often you rubbed an angry spot
+	MaxAnger: number,
 	Bonus: number,
 
 	-- Locked in when the job starts, from the player's gear
@@ -42,13 +37,12 @@ export type Session = {
 	StampId: string?, -- stamp used on this job (already taken from their inventory)
 	GrabHoldMult: number, -- Gloves
 	GrabDistanceBonus: number, -- Net
-	TapeMult: number, -- Tape Gun
+	TapeAngerMult: number, -- Tape Gun
 
 	Critter: Part?, -- the running animal during Catch
 	CatchState: { [string]: any }, -- scratch space for the catch AI
-	BoxModel: Model?, -- the box on the ground during Stuff and Tape
-	Stuff: StuffState?,
-	Tape: TapeState?,
+	BoxModel: Model?, -- the box on the ground during Box (so other players can watch)
+	Box: BoxState?,
 }
 
 return {}

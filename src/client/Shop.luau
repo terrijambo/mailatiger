@@ -108,7 +108,7 @@ function Shop.Start()
 				local frame = row(
 					index,
 					box.DisplayName,
-					`Lid starts at {box.StartLid}% · animals push {math.round(box.PushMult * 100)}% as hard`
+					`Animals start at {box.StartAnger} anger · get angry {math.round(box.AngerMult * 100)}% as fast`
 				)
 				if profile.EquippedBox == box.Id then
 					rowButton(frame, 1, "Equipped", Ui.GREEN, nil)

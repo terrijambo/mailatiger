@@ -1,22 +1,21 @@
 # Mail a Tiger — Roadmap
 
 ## Pitch
-Catch increasingly wild animals, wrestle them into a box, tape it shut before they burst out, and mail them. Earn, upgrade, mail something bigger.
+Catch increasingly wild animals, pet them calm while you tape them into a box, and mail them. If they get too angry: VINE BOOM, you're launched into the sky. Earn, upgrade, mail something bigger.
 
 ## Core Loop
-1. **Pick an animal** at the Animal Pen (starts with a hamster, ends with a tiger… and beyond).
-2. **CATCH:** it's released into the catching arena. Corner it, then hold E to grab it. Faster animals juke past you, and many have tricks.
-3. **STUFF:** a marker bounces across a bar. Press when it's in the green zone to stuff the animal into the box. Wild animals need several hits, and the zone shrinks and wiggles.
-4. **TAPE:** the animal pushes the lid up. Mash to shove it down and fill the tape bar before the lid bursts. It pushes harder the longer it takes.
-5. **MAIL:** the box flies into the mail chute, and Gruff rates the job from 1 to 5 stamps and pays coins.
+1. **Pick an animal** at the Animal Pen (starts with a hamster, ends with a tiger… and beyond). You're teleported to its arena.
+2. **CATCH:** corner it in the arena, then hold E to grab it. Faster animals juke past you, and many have tricks.
+3. **BOX:** the animal and an open box pop up on your screen, and its **ANGER** keeps rising. **Rub its ♥ sweet spots** to calm it (never the ✖ angry spots!) while you **drag tape across each seam** of the box. Every strip of tape makes it angrier, so you have to keep going back to petting.
+4. **Anger hits 100:** *VINE BOOM*. You're launched into the air as a ragdoll, and the animal escapes back into the arena.
+5. **All seams taped:** the box flies into the mail chute, and Gruff rates the job from 1 to 5 stamps and pays coins.
 6. **Upgrade:** better boxes, tools and stamps, then rarer animals.
 
-Fail STUFF (too many misses) or TAPE (the lid bursts) and the animal escapes back into the arena. Each escape costs a stamp and halves the pay.
+Each escape costs a stamp and halves the pay.
 
 ### What makes it hard (all scales with the animal's tier)
 - **Catch:** animal speed (tier 6 outruns you), how often it jukes when cornered, how long you must hold E, and how well it avoids walls.
-- **Stuff:** marker speed, zone size, and hits needed (1 → 3).
-- **Tape:** push strength, presses needed, and twists like Pound, Snap and Squeeze.
+- **Box:** how fast anger rises (and keeps speeding up), seams to tape (2 → 5), smaller and drifting sweet spots, more angry spots, and twists like Pound, Snap, Squeeze, Wiggle and Poke.
 
 ---
 
@@ -33,18 +32,18 @@ Twists are set per animal in `Config/Boxing.luau → Twists`.
 
 | Tier | Zone | Animals and their tricks |
 |---|---|---|
-| 1 | Backyard | Hamster (none) · Bunny (hops) · Goldfish (slippery, wiggly zone) · Hedgehog (poke: some tape presses go "ouch") · Parrot (flies out of reach) |
-| 2 | Farm | Chicken (drops eggs worth bonus coins) · Goat (charges you, pounds the lid) · Pig (slippery) · Skunk (sprays: green, blurry screen) |
-| 3 | Wild | Monkey (flies/climbs, wiggly zone) · Kangaroo (hops, pounds) · Porcupine (poke) · Penguin (slippery) · Octopus (turns invisible, wiggly zone, tape peels) |
-| 4 | Apex | Crocodile (charges, lid snaps) · Gorilla (charges, pounds) · Bear (asleep: sneak up with C or it wakes and bolts) · **Tiger** (roar stuns you, snaps, **Breakout**) |
-| 5 | Giants | Giraffe (wiggly zone) · Elephant and Whale (co-op, Phase 5) |
-| 6 | Silly | Yeti (freezes you) · Dragon (flies, roars, tape burns off) · Alien (teleports, wiggly zone) · Unicorn (teleports, hops) · **Postmaster Gruff** (co-op, roars, pounds, Breakout) |
+| 1 | Backyard | Hamster (none) · Bunny (hops) · Goldfish (slippery, drifting spots) · Hedgehog (poke: big angry spots) · Parrot (flies out of reach) |
+| 2 | Farm | Chicken (drops eggs worth bonus coins) · Goat (charges you, anger spikes) · Pig (slippery) · Skunk (sprays: green, blurry screen) |
+| 3 | Wild | Monkey (flies/climbs, drifting spots) · Kangaroo (hops, anger spikes) · Porcupine (poke) · Penguin (slippery) · Octopus (turns invisible, drifting spots, peels tape off) |
+| 4 | Apex | Crocodile (charges, anger jolts) · Gorilla (charges, anger spikes) · Bear (asleep: sneak up with C or it wakes and bolts) · **Tiger** (roar stuns you, anger jolts, **Breakout**) |
+| 5 | Giants | Giraffe (drifting spots) · Elephant and Whale (co-op, Phase 5) |
+| 6 | Silly | Yeti (freezes you) · Dragon (flies, roars, peels tape off) · Alien (teleports, drifting spots) · Unicorn (teleports, hops) · **Postmaster Gruff** (co-op, roars, anger spikes, Breakout) |
 
-## Signature Clip Moment: "RETURN TO SENDER"
-The tiger fights the tape. The lid creeps up, you're mashing, and the tape is almost full...
-- If the lid bursts, the tiger explodes out of the box, Gruff's hat flies off, and a giant red **RETURN TO SENDER** stamp slams onto everyone's screen nearby. The tiger is loose in the arena again.
-- If you finish taping, the box sails into the mail chute and Gruff gives you his rare "...Acceptable."
-- **Why it's clippable:** the fail happens at the last second, it's loud and visual, and it's funny whether you win or lose. It's the thumbnail and trailer shot.
+## Signature Clip Moment: "VINE BOOM → RETURN TO SENDER"
+You're one strip of tape away. The tiger's anger is at 95, and you go for the last seam...
+- *VINE BOOM.* You're launched into the sky as a flailing ragdoll. For the tiger (and Gruff), Gruff's hat also flies off and a giant red **RETURN TO SENDER** stamp slams onto everyone's screen nearby. The tiger is loose in the arena again.
+- Pet it back down, tape the last seam, and the box sails into the mail chute. Gruff gives you his rare "...Acceptable."
+- **Why it's clippable:** the fail happens at the last second, it's loud and visual (a ragdoll flying off a rooftop!), and it's funny whether you win or lose. It's the thumbnail and trailer shot.
 
 ---
 
@@ -65,6 +64,20 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [x] UI: coins, tip banner, minigame panels, a big tap button for mobile, Gruff popups and receipts
 - [x] "Use the Pen twice within 5s" gives up on the current animal
 - [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works and feels good")
+- *Stuff and Tape were replaced on 2026-09-29 by the **Pet & Tape BOX stage**, see "Box Rework" below.*
+
+## Box Rework — Pet & Tape (2026-09-29)
+One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it calm while you tape the box, and if you fail you get launched.
+- [x] BOX screen (`client/BoxingScreen.luau`): the animal on the left with drifting ♥ sweet spots and ✖ angry spots, the box on the right with dashed seams, and an ANGER meter on top. Floating hearts show while you rub
+- [x] Rub detection needs actual rubbing (movement), not just holding. The server caps calming at 30/sec no matter how many messages arrive
+- [x] Tape strokes (`shared/BoxMath.luau`): drag from one end dot to the other, staying on the line. The server allows at most one strip per 0.35s
+- [x] Anger rises with time (tier-scaled, speeds up the longer it takes), jumps with every strip, and jumps when you touch an angry spot
+- [x] Anger 100: **VINE BOOM** (server-played so everyone nearby hears it, sound id in `Config/Sounds.luau`), then a **ragdoll launch** (`client/Ragdoll.luau`: swaps joints for ball sockets and flings you up), then the animal escapes
+- [x] Twists reworked for the Box stage: Pound and Snap (anger spikes), Squeeze (tape peels off), Wiggle (spots drift faster), Poke (bigger angry spots), Breakout (RETURN TO SENDER on launch)
+- [x] Boxes, stamps and the Tape Gun now use anger: better boxes start calmer and anger slower, FRAGILE angers 30% faster, PRIORITY starts at 50 anger, and the Tape Gun makes each strip annoy it 10% less per level
+- [x] Rating: −1 stamp each for anger ≥75, touching angry spots 3+ times, going over par, and each escape
+- [ ] **Vine boom sound id:** paste one into `Config/Sounds.luau` (see README → Vine boom)
+- [ ] **Playtest checkpoint**
 
 ## Phase 2 — Animal System ✅
 - [x] Animal config: tier (also sets difficulty), price, value, carriers, placeholder color (`Config/Animals.luau`)
@@ -77,9 +90,9 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 
 ## Phase 3 — Progression & Economy ✅
 - [x] **Supply Shop** counter behind the Animal Pen, with Boxes / Tools / Stamps / Rebirth tabs (`ShopService` + `client/Shop.luau`)
-- [x] Box tiers (`Config/Boxes.luau`): cardboard → wood → steel → vault. The lid starts lower (20 → 5) and animals push weaker (100% → 70%)
-- [x] Tools with 3–5 upgrade levels (`Config/Tools.luau`): Grabbing Gloves (−10% hold per level), Sneakers (+1 speed), Tape Gun (+10% tape per press), Butterfly Net (+1 stud reach)
-- [x] Stamps, reworked for boxing (`Config/Stamps.luau`): *Fragile* (+50% pay, 1 stuff miss allowed), *Express* (+75% if under par), *Priority* (double pay, lid starts at 50). Buy them, pick one for your next job, and it's used up when the job starts
+- [x] Box tiers (`Config/Boxes.luau`): cardboard → wood → steel → vault. Animals start calmer (anger 20 → 5) and anger slower (100% → 70%) *(updated in the Box Rework)*
+- [x] Tools with 3–5 upgrade levels (`Config/Tools.luau`): Grabbing Gloves (−10% hold per level), Sneakers (+1 speed), Tape Gun (each strip annoys it 10% less per level), Butterfly Net (+1 stud reach)
+- [x] Stamps, reworked for boxing (`Config/Stamps.luau`): *Fragile* (+50% pay, angers 30% faster), *Express* (+75% if under par), *Priority* (double pay, starts at 50 anger). Buy them, pick one for your next job, and it's used up when the job starts
 - [x] Gruff's orders board next to the Post Office (`Orders.luau`): 3 saved orders like "Mail a Skunk without it escaping" for 2–4.5× bonus, refreshed every 10 min, only for animals you own
 - [x] Rebirth: resets coins, animals, boxes, tools and stamps for a permanent +25% coins per rebirth. The first costs 10M, and each one after costs 2.5× more. Click twice to confirm
 - [x] DataStore saving with **session locking** (`DataService.luau`): autosave every 60s, save on leave and on server shutdown, a lock so two servers never write the same save, stale-lock takeover so nobody gets stuck, and old saves get new fields filled in automatically. If DataStores are off, the HUD warns that progress isn't saving
@@ -101,7 +114,7 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [ ] **Playtest checkpoint** (checklist in README)
 
 ## Phase 5 — Multiplayer / Social
-- [ ] Co-op giants (Elephant, Whale, Gruff): herd together to catch, then one player holds the lid while the other tapes
+- [ ] Co-op giants (Elephant, Whale, Gruff): herd together to catch, then one player pets while the other tapes
 - [ ] Opt-in **Chaos Arena**: higher payout, but other players can spook your animal and bump you. The normal arena stays PvP-free
 - [ ] Global leaderboards (fastest tiger, most 5-stamp jobs, rarest animal mailed)
 
@@ -115,7 +128,7 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 
 ## Phase 6 — Juice, UI & Audio
 - [ ] Final UI kit (Pen menu, shop, receipt screen)
-- [ ] SFX: tape screech, lid thumps, animal sounds, Gruff's stamp slam
+- [ ] SFX: tape screech, happy purrs while petting, angry growls, animal sounds, Gruff's stamp slam
 - [ ] Camera punch-ins during Tape, particles, box wobble while stuffing
 - [ ] Tutorial / first-time user experience (first 60 seconds matter most)
 
@@ -129,7 +142,7 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [ ] Icon + thumbnails + trailer clip (RETURN TO SENDER!)
 - [ ] Analytics events (funnel: join → first catch → first mail → first unlock → rebirth)
 - [ ] Soft launch → fix retention drop-offs → sponsored ads
-- [ ] Anti-exploit review: the server already judges every press. Tighten the Stuff lag allowance if needed
+- [ ] Anti-exploit review: the server already rate-limits petting and taping. Consider checking tape strokes server-side too
 - [ ] Live save test (moved from Phase 3): publish, enable API access, then check join/leave/rejoin, two quick rejoins (session lock), and a server shutdown
 
 ## Phase 9 — Live Ops
@@ -146,7 +159,7 @@ _None right now. New questions get added here as they come up, always as a multi
 
 ## Decisions
 - **Workflow:** Rojo + VS Code + Git. Code lives in this folder, and Studio is used for building and playtesting.
-- **Core mechanic (2026-09-29):** boxing is the challenge, with three stages: Catch → Stuff → Tape. There's **no carrying and no obstacle course**, and the box is mailed right away.
+- **Core mechanic (2026-09-29):** Catch → **BOX** (pet the animal calm while dragging tape across the box seams, with an anger meter). Anger at 100 = vine boom + ragdoll launch + escape. **No carrying and no obstacle course**, and the box is mailed right away.
 - **Difficulty:** scales with the animal's tier, plus per-animal twists. Hard animals should be genuinely hard.
 - **PvP:** opt-in Chaos Arena that pays more. Everywhere else is PvP-free, with co-op for giant animals.
 - **Experience:** beginner. Keep the architecture simple, and explain each system as it's built.
@@ -156,5 +169,5 @@ _None right now. New questions get added here as they come up, always as a multi
 - **Vibe:** chaotic comedy. Loud sound effects, and failing is entertaining.
 - **Getting animals:** buy them with coins at the Animal Pen once they're unlocked. No random crates, so no odds disclosure is needed.
 - **Boss:** Postmaster Gruff, a grumpy walrus. He runs the tutorial and the orders board, rates jobs, and is the final job.
-- **Signature moment:** "RETURN TO SENDER", where the tiger bursts the lid during Tape.
+- **Signature moment:** VINE BOOM ragdoll launch, plus "RETURN TO SENDER" for the tiger.
 - **Roster:** real animals through the mid-game (hamster → tiger), then silly ones at late tiers (dragon, alien, a mailman).

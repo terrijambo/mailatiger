@@ -1,5 +1,8 @@
 --!strict
--- Tuning for the three boxing stages: CATCH -> STUFF -> TAPE.
+-- Tuning for boxing an animal: CATCH it in the arena, then BOX it.
+--   BOX: the animal and the box pop up on your screen. Rub the animal's sweet spots to keep it calm while you
+--   drag tape across every seam of the box. Taping annoys it. If its ANGER hits 100: VINE BOOM, you get
+--   launched into the air as a ragdoll, and it escapes back into the arena.
 -- Difficulty scales with the animal's tier (1-6). Each animal also gets "twists" (its own tricks), listed below.
 
 export type TwistSet = {
@@ -15,14 +18,13 @@ export type TwistSet = {
 	Charge: boolean?, -- charges and knocks you back
 	Slippery: boolean?, -- can slip out of your hands when you grab it
 	Eggs: boolean?, -- drops eggs you can pick up for bonus coins
-	-- Stuff stage
-	Wiggle: boolean?, -- the green zone moves
-	-- Tape stage
-	Poke: boolean?, -- some of your presses go "ouch" and don't count
-	Pound: boolean?, -- slams the lid up every few seconds
-	Snap: boolean?, -- random lid jolts
-	Squeeze: boolean?, -- tape slowly peels off
-	Breakout: boolean?, -- bursting the lid triggers the big RETURN TO SENDER moment
+	-- Box stage
+	Wiggle: boolean?, -- its sweet spots move around faster
+	Poke: boolean?, -- its angry spots are bigger (careful where you rub!)
+	Pound: boolean?, -- anger spikes every few seconds
+	Snap: boolean?, -- random anger jolts
+	Squeeze: boolean?, -- taped seams can peel back open
+	Breakout: boolean?, -- getting launched triggers the big RETURN TO SENDER moment
 }
 
 local Twists: { [string]: TwistSet } = {
@@ -71,29 +73,33 @@ return {
 		SneakSpeed = 9, -- moving slower than this counts as sneaking (hold C)
 	},
 
-	-- Stage 2: STUFF. A marker sweeps across a bar; press when it's in the green zone.
-	Stuff = {
-		BaseSweepsPerSecond = 0.6, -- how fast the marker crosses the bar at tier 1...
-		SweepsPerTier = 0.18, -- ...plus this per tier above 1
-		BaseZoneWidth = 0.3, -- green zone width (fraction of the bar) at tier 1...
-		ZoneWidthPerTier = -0.035, -- ...changes by this per tier
-		MinZoneWidth = 0.08,
-		HitsNeededByTier = { 1, 1, 2, 2, 3, 3 },
-		MissesAllowed = 2, -- one more miss than this and it escapes
-		PressCooldown = 0.25,
-		LatencyAllowance = 0.4, -- seconds of network lag the server forgives when judging your press
-	},
+	-- Stage 2: BOX. Pet it calm while you tape the box shut.
+	Box = {
+		SeamsByTier = { 2, 2, 3, 3, 4, 5 }, -- tape strips needed to close the box
+		StartAnger = 20, -- (boxes and stamps can change this)
+		BaseAngerRate = 4, -- anger per second at tier 1...
+		AngerRatePerTier = 2.5, -- ...plus this per tier above 1
+		AngerGrowth = 0.04, -- and it grows 4% per second the longer it takes
+		TapeAnger = 12, -- every seam you tape annoys it this much
+		PetCalmPerSecond = 30, -- the most calming you can do per second by rubbing sweet spots
+		AngrySpotAnger = 15, -- rubbing an angry spot adds this much (at most twice a second)
+		DangerAnger = 75, -- letting anger get above this costs a stamp
+		MinSeamInterval = 0.35, -- seconds between tape strips (nobody tapes faster than that)
 
-	-- Stage 3: TAPE. The animal pushes the lid up; mash to shove it down and tape it shut.
-	Tape = {
-		BasePush = 10, -- lid rises this much per second at tier 1 (100 = burst open)...
-		PushPerTier = 6, -- ...plus this per tier above 1
-		RageGrowth = 0.05, -- push grows 5% per second as the animal gets angrier
-		PressDown = 7, -- each press shoves the lid down this much
-		BasePresses = 12, -- presses needed to finish taping at tier 1...
-		PressesPerTier = 5, -- ...plus this per tier above 1
-		MaxPressesPerSecond = 14, -- extra presses are ignored (no auto-clickers)
-		DangerLid = 75, -- letting the lid get above this costs a stamp
+		-- The animal on your screen: where to rub (positions are 0..1 across the picture)
+		SweetSpots = 2,
+		AngrySpotsByTier = { 1, 1, 2, 2, 3, 3 },
+		SweetRadius = 0.14, -- sweet spot size at tier 1...
+		SweetRadiusPerTier = -0.012, -- ...changes by this per tier
+		MinSweetRadius = 0.07,
+		AngryRadius = 0.1,
+		SpotMovePerTier = 0.04, -- how far spots drift around, per tier above 1
+		SpotMoveSpeed = 0.35, -- drifts per second
+
+		-- Getting launched when anger hits 100
+		LaunchSpeed = 110, -- straight up (studs/sec)
+		LaunchSideways = 35,
+		RagdollSeconds = 3,
 	},
 
 	-- Twist tuning (seconds unless noted)
@@ -109,17 +115,18 @@ return {
 		Charge = { Interval = 6, Range = 16, SpeedMult = 2.5, Seconds = 0.8, Knockback = 60 },
 		Slippery = { SlipChance = 0.35 },
 		Eggs = { Interval = 8, BonusFraction = 0.1 }, -- each egg picked up = 10% of the animal's value
-		Wiggle = { Amplitude = 0.25, Frequency = 0.6 },
-		Poke = { OuchChance = 0.2 },
-		Pound = { Interval = 3, Spike = 22 },
-		Snap = { ChancePerSecond = 0.35, Spike = 14 },
-		Squeeze = { TapeLossPerSecond = 4 },
+		Wiggle = { SpotSpeedMult = 2.5 },
+		Poke = { AngryRadiusMult = 1.6 },
+		Pound = { Interval = 3, Spike = 18 },
+		Snap = { ChancePerSecond = 0.35, Spike = 12 },
+		Squeeze = { PeelChancePerSecond = 0.08 },
 	},
 
 	Twists = Twists,
 
-	-- Rating: start at 5 stamps, lose one for each stuff miss, letting the lid pass DangerLid, going over par
-	-- time, and each escape. Payout = animal value x StarPayoutMult[stamps] x EscapePayoutMult^escapes + egg bonus.
+	-- Rating: start at 5 stamps, lose one each for: letting anger pass DangerAnger, rubbing angry spots 3+ times,
+	-- going over par time, and each escape. Payout = value x StarPayoutMult[stamps] x EscapePayoutMult^escapes
+	-- (x stamp and rebirth bonuses) + egg bonus.
 	ParSecondsBase = 30,
 	ParSecondsPerTier = 10,
 	StarPayoutMult = { 0.4, 0.6, 0.8, 1, 1.25 },

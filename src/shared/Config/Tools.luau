@@ -37,7 +37,7 @@ local List: { Tool } = {
 	{
 		Id = "TapeGun",
 		DisplayName = "Tape Gun",
-		Description = "More tape per press: +10% per level.",
+		Description = "Smoother taping: each strip annoys the animal 10% less per level.",
 		MaxLevel = 5,
 		BasePrice = 400,
 		PriceGrowth = 3,

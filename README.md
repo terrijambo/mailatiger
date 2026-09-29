@@ -39,28 +39,31 @@ src/
 ## How to play
 1. Hold **E** at the **Animal Pen** counter and pick an animal. (In Studio they're all free, set in `Config/init.luau` under `Dev`.)
 2. **CATCH:** chase it around the fenced arena, corner it, and hold **E** to grab it. Hold **C** to sneak.
-3. **STUFF:** press **SPACE** (or tap the big button) when the white marker is inside the green zone.
-4. **TAPE:** mash **E / SPACE** to keep the red LID bar down until the TAPE bar is full.
-5. The box flies into the mail chute and Gruff rates you from 1 to 5 stamps.
+3. **BOX:** the animal and the box pop up on screen, and the ANGER bar keeps rising.
+   - **Rub** (click-and-drag back and forth, or swipe) over the pink **♥** spots on the animal to calm it. Never touch the red **✖** spots!
+   - **Tape:** drag from one black dot to the other along each dashed seam on the box. Every strip makes it angrier, so keep going back to petting.
+   - Tape every seam and the box flies into the mail chute. Gruff rates you from 1 to 5 stamps.
+4. If ANGER hits 100: *VINE BOOM*. You're launched into the sky as a ragdoll, and the animal escapes back into the arena.
 - Changed your mind? Use the Pen counter twice within 5 seconds to give up on the current animal.
 
 ## Playtest checklist
-All the difficulty numbers live in `src/shared/Config/Boxing.luau`.
-- [ ] **Hamster:** easy start to finish. Does it feel fun? Is corner-and-grab satisfying?
-- [ ] **Stuff:** miss on purpose 3 times, and the animal escapes back into the arena.
-- [ ] **Tape:** stop mashing, and the lid bursts and the animal escapes.
+All the difficulty numbers live in `src/shared/Config/Boxing.luau` (the `Box` section).
+- [ ] **Hamster:** easy start to finish. Does rubbing and taping feel good?
+- [ ] **Box:** tape all the seams without petting. Anger climbs, you get launched as a ragdoll, and the animal escapes.
+- [ ] Touch a red ✖ spot: the animal card shakes and anger jumps.
+- [ ] **Octopus / Dragon:** a taped seam can peel back off, so re-tape it.
 - [ ] **Bear:** it starts asleep. Walk up normally and it wakes and bolts. Sneak with **C** and you can grab it.
 - [ ] **Goldfish / Pig / Penguin:** grabs sometimes slip. **Parrot / Monkey** fly out of reach. **Octopus** vanishes. **Alien / Unicorn** teleport.
 - [ ] **Goat / Crocodile / Gorilla** charge and knock you back. **Skunk** sprays your screen. **Yeti** freezes you.
 - [ ] **Chicken:** picking up its eggs adds bonus coins.
-- [ ] **Tiger:** hard! Its roar stuns you, and if the lid bursts during Tape you get **RETURN TO SENDER** and Gruff's hat flies off.
+- [ ] **Tiger:** hard! Its roar stuns you, and if you get launched you also get **RETURN TO SENDER** and Gruff's hat flies off.
 - [ ] Two players (**Test → Clients and Servers → 2 players**): each player's animal ignores the other player, and you can't grab someone else's.
 
 ## Phase 3 checklist: shop, orders, rebirth
-- [ ] **Supply Shop** (blue counter behind the Pen): buy the Wooden Crate. It's equipped, and during Tape the lid starts lower and the box is brown.
+- [ ] **Supply Shop** (blue counter behind the Pen): buy the Wooden Crate. It's equipped, the animal starts calmer during BOX, and the box is brown.
 - [ ] Upgrade **Sneakers** and you run faster. Sneak with C, let go, and you're back to your upgraded speed.
 - [ ] Upgrade **Gloves** / **Net**: grabbing is quicker, and works from farther away.
-- [ ] Buy a **FRAGILE** stamp. The coins line says "Next job: FRAGILE". Box an animal and you only get 1 stuff miss, and the receipt shows FRAGILE with higher pay.
+- [ ] Buy a **FRAGILE** stamp. The coins line says "Next job: FRAGILE". Box an animal and it gets angry faster, and the receipt shows FRAGILE with higher pay.
 - [ ] **Gruff's Orders** (board right of the Post Office): mail a matching animal and the receipt shows "+X order!". The board then marks it DONE.
 - [ ] **Rebirth** tab: shows the cost. (To test it quickly, temporarily set `Rebirth.BaseCost` to 10 in `Config/Progression.luau`.)
 - [ ] The player list shows Coins and Rebirths.
@@ -73,6 +76,13 @@ Arena tuning (mud slowdown, ice grip, rooftop fall stun) is in `src/shared/Confi
 - [ ] Pick a **Tiger** (tier 4): the **Ice Rink**. You slide and turn slowly. Is it fun-hard or annoying-hard? (`IceGrip`: higher = more grip)
 - [ ] Pick a **Dragon** (tier 6): the **Rooftop**. Walk off the edge and you're put back up, dazed.
 - [ ] Finish a job in a far arena: the box flies all the way to the mail chute in town.
+
+## Vine boom sound
+Roblox can only play sounds uploaded to Roblox, so the vine boom needs a real sound asset id:
+1. In Studio, open the **Toolbox → Marketplace → Audio**, search **"vine boom"**, and pick one you're allowed to use. Or upload your own in the Creator Dashboard.
+2. Right-click it → **Copy Asset ID**.
+3. Paste it into `src/shared/Config/Sounds.luau` as `VineBoom = "rbxassetid://THE_ID"`.
+Until then the ragdoll launch still happens, just without the boom.
 
 ## Saving (DataStores)
 Progress saves automatically: every 60 seconds, when you leave, and when a server shuts down.
