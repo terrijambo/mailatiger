@@ -5,6 +5,14 @@ return {
 	FirstBox = "You. New hire. Box the hamster at the pen and bring it here in one piece. Don't mess it up.",
 	AlreadyCarrying = "One animal at a time. I'm not paying you double.",
 	NotYours = "That's not YOUR animal. Hands off.",
+	TooPoor = "You can't afford that. Deliver more hamsters.",
+	NeedsCoop = "That one takes a whole crew to carry. Not yet.",
+	TooFar = "Come back to the pen counter if you want an animal.",
+
+	Breakout = {
+		"MY HAT! RETURN TO SENDER! RETURN TO SENDER!",
+		"Not in MY lobby! GET. IT. OUT.",
+	},
 
 	Ratings = {
 		[1] = {

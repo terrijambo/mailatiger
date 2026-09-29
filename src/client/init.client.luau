@@ -6,8 +6,10 @@ local Players = game:GetService("Players")
 
 local BoxEffects = require(script.BoxEffects)
 local Hud = require(script.Hud)
+local PenMenu = require(script.PenMenu)
 
 Hud.Start()
+PenMenu.Start()
 BoxEffects.Start()
 
 print(`[Mail a Tiger] Client started for {Players.LocalPlayer.Name}.`)

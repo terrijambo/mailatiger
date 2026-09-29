@@ -13,9 +13,11 @@ local MapBuilder = {}
 
 export type Map = {
 	PenPrompt: ProximityPrompt,
+	PenCounter: BasePart,
 	BellZone: BasePart,
 	BellSound: Sound,
 	DeliveryZone: BasePart,
+	GruffHat: BasePart,
 }
 
 local ROAD_TOP = 4
@@ -183,7 +185,7 @@ function MapBuilder.Build(): Map
 	MapBuilder.Label(counter, "ANIMAL PEN", 4, COLORS.Yellow)
 
 	local penPrompt = Instance.new("ProximityPrompt")
-	penPrompt.ActionText = "Box a Hamster"
+	penPrompt.ActionText = "Choose an Animal"
 	penPrompt.ObjectText = "Animal Pen"
 	penPrompt.HoldDuration = 0.3
 	penPrompt.RequiresLineOfSight = false
@@ -231,6 +233,33 @@ function MapBuilder.Build(): Map
 	-- Spinning sweepers
 	sweeper(map, 135, 1.2)
 	sweeper(map, 190, -1.8)
+
+	-- Low-clearance signs: characters and normal boxes fit under, tall boxes (giraffe!) must duck (hold C)
+	for _, x in { 70, 145 } do
+		local clearance = ROAD_TOP + 7
+		local sign = block(
+			map,
+			"LowSign",
+			Vector3.new(x - 0.5, clearance, -W - 1),
+			Vector3.new(x + 0.5, clearance + 1.5, W + 1),
+			COLORS.Yellow
+		)
+		block(
+			map,
+			"LowSignPost",
+			Vector3.new(x - 0.5, 0, -W - 1.5),
+			Vector3.new(x + 0.5, clearance + 1.5, -W - 0.5),
+			COLORS.Stone
+		)
+		block(
+			map,
+			"LowSignPost",
+			Vector3.new(x - 0.5, 0, W + 0.5),
+			Vector3.new(x + 0.5, clearance + 1.5, W + 1.5),
+			COLORS.Stone
+		)
+		MapBuilder.Label(sign, "LOW CLEARANCE - hold C to duck", 2, COLORS.Yellow)
+	end
 
 	-- Hill: up ramp, flat top, down ramp
 	wedge(
@@ -312,11 +341,21 @@ function MapBuilder.Build(): Map
 	})
 	MapBuilder.Label(gruff, "Postmaster Gruff", 5)
 
+	-- His tiny postal cap. A tiger breakout knocks it off.
+	local gruffHat = part(map, {
+		Name = "GruffHat",
+		Size = Vector3.new(3.5, 1, 3.5),
+		Position = Vector3.new(284, ROAD_TOP + 7.5, 0),
+		Color = COLORS.PostBlue,
+	})
+
 	return {
 		PenPrompt = penPrompt,
+		PenCounter = counter,
 		BellZone = bellZone,
 		BellSound = bellSound,
 		DeliveryZone = deliveryZone,
+		GruffHat = gruffHat,
 	}
 end
 

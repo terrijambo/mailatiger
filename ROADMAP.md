@@ -64,16 +64,19 @@ Goal: one animal, one box, one route, one post office. Is carrying a fragile box
 - [ ] **Playtest checkpoint** before moving on (checklist in the Phase 1 section of README)
 
 ## Phase 2 — Animal System
-- [ ] Animal config: rarity, base value, weight, rage rate, special behavior
-- [ ] Starter roster (~10–15 animals across tiers) *(see Open Questions)*
-- [ ] Special behaviors (examples):
-  - Hamster — calm, cheap
-  - Skunk — sprays when angry, blurs screen
-  - Kangaroo — box hops on its own
-  - Porcupine — damages box from inside
-  - Octopus — squeezes out of any gap
-  - Tiger — high rage, roars stun nearby players
-- [ ] Animal models/animations (placeholder → final)
+- [x] Animal config: tier, price, value, weight, rage rate, carriers, behavior, placeholder color, custom box size (`Config/Animals.luau`)
+- [x] Roster: all 26 animals are in the config. The 23 single-carrier animals are playable, and Elephant, Whale and Gruff show "needs carriers" until co-op arrives (Phase 5)
+- [x] Animal Pen menu: pick any animal, pay its price once to unlock it (free in Studio for testing, via `Config.Dev`)
+- [x] 19 special behaviors (`src/server/Behaviors.luau`, tuned in `Config/Behaviors.luau`):
+  - Goldfish sloshes when you turn fast · Hedgehog pokes · Parrot squawks and lights up the box
+  - Chicken lays bonus eggs when calm · Goat headbutts the box forward · Skunk sprays (green, blurry screen)
+  - Monkey steals stamps (-10% pay) · Kangaroo hops · Porcupine hurts more when angry · Penguin speeds you up downhill · Octopus slips out of a damaged box
+  - Crocodile lunges sideways · Gorilla rattles twice as hard · Bear falls asleep (heavy, no rage) and wakes up FURIOUS if bumped · Tiger roars and stuns nearby players
+  - Giraffe has a tall box, so hold C to duck under the new LOW CLEARANCE signs · Yeti leaves ice that freezes other players · Dragon's fire burns the box · Alien floats the box up into signs · Unicorn leaves a rainbow trail that speeds up others
+- [x] **Doorstep Breakout:** a maxed-out tiger has a 50% chance to burst out when the door bell rings. It roars, knocks Gruff's hat off, and slams RETURN TO SENDER on everyone's screen
+- [x] Placeholder visuals: colored balls with name labels, plus a **model hook**. Put a Model named after the animal's Id (e.g. `Tiger`) in `ReplicatedStorage > AnimalModels`, and escaped animals use it automatically
+- [ ] Final models/animations: this is the Art Track (your Blender work)
+- [ ] **Playtest checkpoint** (checklist in the Phase 2 section of README)
 
 ## Phase 3 — Progression & Economy
 - [ ] Box tiers (HP, weight, cost)

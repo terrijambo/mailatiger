@@ -4,6 +4,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local player = Players.LocalPlayer
 
@@ -124,7 +125,9 @@ function Hud.Start()
 			local rage = player:GetAttribute("Rage") or 0
 			local hpFraction = math.clamp(hp / maxHp, 0, 1)
 
-			title.Text = `{player:GetAttribute("AnimalName") or "?"} in a {player:GetAttribute("BoxName") or "box"}`
+			local sleeping = if player:GetAttribute("Asleep") then "  (asleep - don't bump it!)" else ""
+			title.Text =
+				`{player:GetAttribute("AnimalName") or "?"} in a {player:GetAttribute("BoxName") or "box"}{sleeping}`
 			hpFill.Size = UDim2.fromScale(hpFraction, 1)
 			hpFill.BackgroundColor3 = HP_EMPTY:Lerp(HP_FULL, hpFraction)
 			hpText.Text = `BOX  {hp} / {maxHp}`
@@ -133,10 +136,10 @@ function Hud.Start()
 		elseif player:GetAttribute("Loose") == true then
 			hint.Text = "Your animal escaped! Find it and hold E to catch it."
 		else
-			hint.Text = "Go to the Animal Pen and box a hamster!"
+			hint.Text = "Go to the Animal Pen and choose an animal!"
 		end
 	end
-	for _, name in { "Carrying", "HP", "MaxHP", "Rage", "AnimalName", "BoxName", "Loose" } do
+	for _, name in { "Carrying", "HP", "MaxHP", "Rage", "AnimalName", "BoxName", "Loose", "Asleep" } do
 		player:GetAttributeChangedSignal(name):Connect(refresh)
 	end
 	refresh()
@@ -199,6 +202,32 @@ function Hud.Start()
 		end)
 	end
 
+	-- A giant red stamp that slams onto the screen (the "Doorstep Breakout" moment)
+	local function slamStamp(text: string)
+		local stamp = make("TextLabel", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.45),
+			Size = UDim2.fromOffset(1400, 360),
+			Rotation = -12,
+			BackgroundTransparency = 1,
+			Font = FONT,
+			TextScaled = true,
+			TextColor3 = Color3.fromRGB(220, 30, 30),
+			TextTransparency = 1,
+			Text = text,
+			ZIndex = 10,
+		}, gui)
+		make("UIStroke", { Thickness = 6, Color = Color3.fromRGB(120, 0, 0) }, stamp)
+		local slam = TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+		TweenService:Create(stamp, slam, { Size = UDim2.fromOffset(700, 180), TextTransparency = 0 }):Play()
+		task.delay(2.5, function()
+			local fade = TweenService:Create(stamp, TweenInfo.new(0.5), { TextTransparency = 1 })
+			fade:Play()
+			fade.Completed:Wait()
+			stamp:Destroy()
+		end)
+	end
+
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })
 		if kind == "Message" then
@@ -209,6 +238,10 @@ function Hud.Start()
 			showToast("Postmaster Gruff", `"{data.Line}"`, `{stars}   +{data.Coins} coins   ({time}s)`)
 		elseif kind == "Bell" then
 			showToast("*DING DONG*", "The door bell spooked your animal!")
+		elseif kind == "Roar" then
+			showToast("ROOOOAR!", "The tiger roared! Anyone close by is stunned.")
+		elseif kind == "Breakout" then
+			slamStamp("RETURN TO SENDER")
 		end
 	end)
 end

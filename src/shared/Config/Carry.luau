@@ -5,7 +5,9 @@
 return {
 	-- Where the box floats relative to your character (studs). Negative Z = in front of you.
 	HoldOffset = Vector3.new(0, 0.5, -3.5),
-	BoxSize = Vector3.new(3, 3, 3),
+	BoxSize = Vector3.new(3, 3, 3), -- default; tall animals override this in Animals.luau
+	DuckDrop = 1.7, -- how far holding C lowers the box
+	RattleImpulse = 16, -- studs/sec kick when the animal rattles. Keep below ImpactThreshold.
 
 	-- Wobble: lower responsiveness = floppier, laggier box
 	PositionResponsiveness = 18,

@@ -6,7 +6,9 @@
 --   Weight     : slows the carrier (1 = light)
 --   RageRate   : rage gained per second while carried
 --   Carriers   : players needed to lift the box
---   Behavior   : special ability id (implemented in Phase 2)
+--   Behavior   : special ability id (tuned in Behaviors.luau, coded in src/server/Behaviors.luau)
+--   Color      : placeholder color until the Blender model exists (set below)
+--   BoxSize    : optional custom box size (set below)
 
 export type Animal = {
 	Id: string,
@@ -18,6 +20,8 @@ export type Animal = {
 	RageRate: number,
 	Carriers: number,
 	Behavior: string?,
+	Color: Color3?,
+	BoxSize: Vector3?,
 }
 
 local List: { Animal } = {
@@ -316,10 +320,44 @@ local List: { Animal } = {
 	},
 }
 
+-- Placeholder colors (used for the loose-animal ball and the Pen menu until real models exist)
+local Colors: { [string]: Color3 } = {
+	Hamster = Color3.fromRGB(235, 160, 70),
+	Bunny = Color3.fromRGB(240, 240, 240),
+	Goldfish = Color3.fromRGB(255, 140, 30),
+	Hedgehog = Color3.fromRGB(120, 90, 60),
+	Parrot = Color3.fromRGB(60, 200, 80),
+	Chicken = Color3.fromRGB(255, 250, 235),
+	Goat = Color3.fromRGB(200, 190, 170),
+	Pig = Color3.fromRGB(250, 170, 180),
+	Skunk = Color3.fromRGB(30, 30, 35),
+	Monkey = Color3.fromRGB(140, 95, 55),
+	Kangaroo = Color3.fromRGB(190, 120, 70),
+	Porcupine = Color3.fromRGB(90, 75, 60),
+	Penguin = Color3.fromRGB(25, 25, 30),
+	Octopus = Color3.fromRGB(200, 70, 150),
+	Crocodile = Color3.fromRGB(70, 120, 60),
+	Gorilla = Color3.fromRGB(50, 50, 55),
+	Bear = Color3.fromRGB(110, 70, 40),
+	Tiger = Color3.fromRGB(245, 140, 30),
+	Giraffe = Color3.fromRGB(235, 190, 90),
+	Elephant = Color3.fromRGB(150, 150, 160),
+	Whale = Color3.fromRGB(60, 90, 160),
+	Yeti = Color3.fromRGB(220, 235, 255),
+	Dragon = Color3.fromRGB(200, 40, 40),
+	Alien = Color3.fromRGB(120, 255, 120),
+	Unicorn = Color3.fromRGB(255, 180, 240),
+	Gruff = Color3.fromRGB(130, 110, 100),
+}
+
 local ById: { [string]: Animal } = {}
 for _, animal in List do
+	animal.Color = Colors[animal.Id]
 	ById[animal.Id] = animal
 end
+
+-- The giraffe needs a tall box. Duck (hold C) under low signs!
+ById.Giraffe.BoxSize = Vector3.new(3, 6, 3)
 
 return {
 	List = List,

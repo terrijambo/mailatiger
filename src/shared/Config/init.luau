@@ -9,5 +9,12 @@ return {
 	Stamps = require(script.Stamps),
 	Routes = require(script.Routes),
 	Carry = require(script.Carry),
+	Behaviors = require(script.Behaviors),
 	Gruff = require(script.Gruff),
+
+	Dev = {
+		-- In Roblox Studio every animal is free, so you can test any of them right away.
+		-- Has no effect in the live game.
+		FreeAnimalsInStudio = true,
+	},
 }

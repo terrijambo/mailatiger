@@ -47,6 +47,24 @@ Press Play and try each one. Every number mentioned lives in `src/shared/Config/
 - [ ] Drop off inside the green zone. You get a stamp rating from Gruff and coins.
 - [ ] Break a box on purpose (the sweepers are good for this). The hamster escapes, hops around, and you can hold **E** to catch it for half pay.
 
+## Phase 2 playtest checklist
+In Studio every animal is free (set in `Config/init.luau`, under `Dev`). Walk to the Animal Pen, hold **E**, and pick an animal. Behavior numbers live in `src/shared/Config/Behaviors.luau`.
+- [ ] The Pen menu opens, shows all 26 animals, and the co-op ones are greyed out.
+- [ ] **Goldfish:** spin in circles and the water sloshes (rage and damage).
+- [ ] **Chicken:** stay calm for 10s and it lays an egg (+bonus shown on the receipt).
+- [ ] **Skunk:** let rage pass 60 and your screen goes green and blurry.
+- [ ] **Kangaroo / Goat / Crocodile:** the box hops, lurches forward, or lunges sideways by itself.
+- [ ] **Bear:** walk gently for 15s and it falls asleep (you get slower). Bump something and it wakes up angry.
+- [ ] **Giraffe:** tall box. Hold **C** to duck under the LOW CLEARANCE signs.
+- [ ] **Tiger:** reach the door at 100 rage, and about half the time you get RETURN TO SENDER and Gruff's hat flies off.
+- [ ] **Dragon / Alien / Yeti / Unicorn:** burning box / floating box / ice trail / rainbow trail.
+- [ ] Two-player test (**Test → Clients and Servers → 2 players**): the tiger's roar stuns the other player, yeti ice freezes them, and unicorn rainbows speed them up.
+
+## Adding your Blender models
+1. Import your model in Studio (**Home → Import 3D**) and name the Model after the animal's Id, e.g. `Hamster`.
+2. In Explorer, create a Folder named `AnimalModels` inside **ReplicatedStorage**, and put the model in it.
+3. Escaped animals now use your model instead of a colored ball. (Rojo leaves this folder alone.)
+
 ## Handy commands
 ```
 rojo serve                     # live-sync to Studio
