@@ -113,13 +113,13 @@ One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it ca
 - [x] Client movement module (`client/Movement.luau`): sneak (C), mud slow, and ice sliding, all built on the server's speed so Sneakers upgrades and stuns still apply
 - [ ] **Playtest checkpoint** (checklist in README)
 
-## Phase 5 — Multiplayer / Social
+## Phase 5 — Multiplayer / Social ✅
 - [x] **Co-op giants** (Elephant 2p, Whale 4p, Postmaster Gruff 4p): now pickable at the Pen. Other players press E on the animal to **join the crew**, and the grab only works with a full crew all within 14 studs. Giants get a double-size box
 - [x] **Co-op BOX roles:** the owner tapes and helpers alternate Pet / Tape. Each player's screen shades the part that isn't theirs, and the server only accepts your role's actions. Two petters calm twice as fast. Giants anger 1.4× faster. If a crewmate leaves mid-BOX, roles reshuffle. A burst launches the whole crew
 - [x] Everyone in the crew gets the full payout (with their own rebirth bonus), their own orders progress, and leaderboard credit. Use the Pen twice to leave a crew
 - [x] **Chaos Mode** (a toggle in the Pen menu instead of a separate arena, so it works in every arena): +50% pay, but any other player can **spook** your animal (E on it: it darts off and runs faster for 3s) and **shove** you (F: knockback, plus +10 anger if you're mid-BOX). Non-Chaos jobs can't be touched
 - [x] **Leaderboards** (`LeaderboardService.luau`): three boards on the west side of the plaza for Fastest Tiger, Most 5-Stamp Jobs and Rarest Animal Mailed. They use global OrderedDataStores when saving works, rank this server's players when it doesn't, and refresh every 60s. Stats live in the profile and survive rebirths
-- [ ] **Playtest checkpoint** (needs 2+ players: **Test → Clients and Servers → 2 or 4 players**)
+- [x] **Playtest checkpoint:** passed in a multi-client Studio test on 2026-09-29 (crews, roles, Chaos Mode, leaderboards)
 
 ## Art Track (runs in parallel from Phase 2 on)
 - [ ] Blender → Roblox pipeline test: export one low-poly box + hamster as FBX, import with the 3D Importer, and check scale and pivot
