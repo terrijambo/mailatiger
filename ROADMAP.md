@@ -122,7 +122,7 @@ One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it ca
 - [x] **Playtest checkpoint:** passed in a multi-client Studio test on 2026-09-29 (crews, roles, Chaos Mode, leaderboards)
 
 ## Art Track (runs in parallel from Phase 2 on)
-- [ ] Blender → Roblox pipeline test: export one low-poly box + hamster as FBX, import with the 3D Importer, and check scale and pivot
+- [x] Blender → Roblox pipeline test: scripted hamster + cardboard box (`art/`), imported in Studio. Auto-fit (`ModelFit.Fit`) and auto-color (`ModelFit.Paint`, since the importer drops colors) confirmed working on 2026-09-29
 - [ ] Style guide: palette, poly budget per animal (~500–2k tris), flat or gradient-texture shading
 - [ ] Rigging + animations per animal: idle, run, caught (dangling), struggling in the box, bursting out
 - [ ] Box set: cardboard, wood, steel, vault, plus a lid and tape strips
