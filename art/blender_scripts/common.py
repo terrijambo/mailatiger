@@ -14,6 +14,7 @@ Conventions (so models drop straight into the game):
 The game re-scales and re-centers imported models itself, so exact import settings don't matter much.
 """
 
+import json
 import math
 import os
 
@@ -35,6 +36,7 @@ def reset():
 def material(name, rgb, roughness=0.8):
     """A flat color. rgb is 0-255, like Roblox's Color3.fromRGB."""
     mat = bpy.data.materials.get(name) or bpy.data.materials.new(name)
+    mat["mailatiger_rgb"] = list(rgb)  # remembered so finish() can write the game's color file
     color = tuple(srgb_to_linear(c / 255) for c in rgb) + (1.0,)
     mat.diffuse_color = color  # what the preview render shows
     try:
@@ -150,8 +152,24 @@ def render_preview(name, target_height, distance):
     bpy.data.objects.remove(target)
 
 
+def write_colors(name, parts):
+    """Roblox's importer drops plain material colors, so the game paints imported parts itself.
+    This writes each part's color to src/shared/ArtColors/<name>.json, which Rojo syncs into the game."""
+    colors = {}
+    for part in parts:
+        mat = part.data.materials[0] if part.data.materials else None
+        if mat and "mailatiger_rgb" in mat:
+            colors[part.name] = [int(channel) for channel in mat["mailatiger_rgb"]]
+    folder = os.path.join(os.path.dirname(ART), "src", "shared", "ArtColors")
+    os.makedirs(folder, exist_ok=True)
+    with open(os.path.join(folder, f"{name}.json"), "w", encoding="utf-8") as file:
+        json.dump(colors, file, indent="\t")
+        file.write("\n")
+
+
 def finish(name, parts, target_height=1.0, distance=6.0):
-    """Save the .blend, export the .fbx and render the preview."""
+    """Save the .blend, export the .fbx, write the game's color file and render the preview."""
+    write_colors(name, parts)
     render_preview(name, target_height, distance)
 
     select_only(parts)

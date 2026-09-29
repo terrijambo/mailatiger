@@ -213,6 +213,7 @@ local function buildBox(s: Session): Model
 		end
 		local clone = template:Clone()
 		clone.Name = name
+		ModelFit.Paint(clone, id)
 		for _, descendant in clone:GetDescendants() do
 			if descendant:IsA("BasePart") then
 				descendant.Anchored = true

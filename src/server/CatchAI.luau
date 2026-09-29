@@ -158,6 +158,7 @@ local function attachModel(critter: Part, animalId: string): (Model?, CFrame?)
 		return nil, nil
 	end
 	local model = template:Clone()
+	ModelFit.Paint(model, animalId)
 	local floor = critter.CFrame * CFrame.new(0, -critter.Size.Y / 2, 0)
 	ModelFit.Fit(model, floor, critter.Size.X * 1.15)
 	for _, descendant in model:GetDescendants() do

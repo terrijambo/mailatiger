@@ -107,7 +107,7 @@ Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` expo
 
 **For each model:**
 1. **Home → Import 3D** → pick the file in `art/export/` (e.g. `Hamster.fbx`).
-2. In the import preview, keep it as **one Model** with its parts. Colors come from the materials. If a part comes in grey, just set its Color in Properties.
+2. In the import preview, keep it as **one Model** with its parts (don't merge them into one mesh). It will look grey in Studio, which is fine: the game paints each part from `src/shared/ArtColors/` when it spawns.
 3. Click **Import**, then drag the Model into `ReplicatedStorage > AnimalModels` (animals) or `ReplicatedStorage > BoxModels` (boxes).
 4. Make sure the Model's **name matches the game id**: `Hamster` for animals, `Cardboard` / `Wood` / `Steel` / `Vault` for boxes.
 
