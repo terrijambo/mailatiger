@@ -116,7 +116,7 @@ Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` expo
 ## Handy commands
 ```
 rojo serve                     # live-sync to Studio
-rojo build -o MailATiger.rbxl  # build a fresh place file
+rojo build -o MailATiger.rbxl  # build a fresh place file (REPLACES the .rbxl: anything you made in Studio is lost)
 selene src                     # lint
 stylua src                     # format everything
 ```
