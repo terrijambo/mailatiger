@@ -42,7 +42,8 @@ src/
 3. **BOX:** the animal and the box pop up on screen, and the ANGER bar keeps rising.
    - **Rub** (click-and-drag back and forth, or swipe) over the pink **♥** spots on the animal to calm it. Never touch the red **✖** spots!
    - **Tape:** drag from one black dot to the other along each dashed seam on the box. Every strip makes it angrier, so keep going back to petting.
-   - Tape every seam and the box flies into the mail chute. Gruff rates you from 1 to 5 stamps.
+   - Tape every seam and the animal goes into your **bag** as a Parcel (you'll see it in your arms).
+5. **MAIL IT:** carry your parcels to the **Mail Chute** in town and hold **E**. That's when you get paid and Gruff rates you. Your bag holds 3 to start (upgrade the **Mail Bag** in the Supply Shop).
 4. If ANGER hits 100: *VINE BOOM*. You're launched into the sky as a ragdoll, and the animal escapes back into the arena.
 - Changed your mind? Use the Pen counter twice within 5 seconds to give up on the current animal.
 
@@ -77,6 +78,14 @@ Arena tuning (mud slowdown, ice grip, rooftop fall stun) is in `src/shared/Confi
 - [ ] Pick a **Dragon** (tier 6): the **Rooftop**. Walk off the edge and you're put back up, dazed.
 - [ ] Finish a job in a far arena: the box flies all the way to the mail chute in town.
 
+## Mail It Yourself checklist
+- [ ] Box a Hamster: the "Taped!" popup says it's in your bag, a parcel appears in your arms, and the top bar shows **Bag 1/3**.
+- [ ] The bottom tip tells you to take it to the Mail Chute. Hold **E** at the chute: the parcel flies in, and Gruff's receipt shows the pay.
+- [ ] Fill your bag (3 parcels), then try to pick another animal: Gruff says your bag is full.
+- [ ] **Supply Shop → Chutes:** buy the Express Chute (Studio: give yourself coins, or test later). The receipt says "+15%" and the hold at the chute is shorter.
+- [ ] **Supply Shop → Tools → Mail Bag:** upgrade it and the bag shows 5 slots.
+- [ ] Leave and rejoin with parcels in your bag: they're still there (needs saving to be on).
+
 ## Phase 5 checklist: multiplayer
 Test with several players: in Studio, **Test tab → Clients and Servers → 2 players** (or 4 for the Whale and Gruff). Tuning is in `src/shared/Config/Social.luau`.
 - [ ] **Co-op:** Player 1 picks the **Elephant** (the card says "co-op 2p"). Player 2 walks to the Ice Rink (travel pad) and presses **E** on the elephant: "joined the crew". The label shows crew 2/2.
@@ -103,13 +112,14 @@ Progress saves automatically: every 60 seconds, when you leave, and when a serve
 ## Adding your Blender models
 Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` exports and preview renders.
 
-**One-time setup:** in Studio's Explorer, create two Folders inside **ReplicatedStorage**: `AnimalModels` and `BoxModels`. (Rojo leaves them alone.)
+**One-time setup:** in Studio's Explorer, create three Folders inside **ReplicatedStorage**: `AnimalModels`, `BoxModels` and `PropModels`. (Rojo leaves them alone.)
 
 **For each model:**
 1. **Home → Import 3D** → pick the file in `art/export/` (e.g. `Hamster.fbx`).
 2. In the import preview, keep it as **one Model** with its parts (don't merge them into one mesh). It will look grey in Studio, which is fine: the game paints each part from `src/shared/ArtColors/` when it spawns.
 3. Click **Import**, then drag the Model into `ReplicatedStorage > AnimalModels` (animals) or `ReplicatedStorage > BoxModels` (boxes).
 4. Make sure the Model's **name matches the game id**: `Hamster` for animals, `Cardboard` / `Wood` / `Steel` / `Vault` for boxes.
+5. **Props** go in `PropModels`: `Parcel` (the box in your arms) and the chutes `MailChute`, `MailChuteExpress`, `MailChutePneumatic`, `MailChuteRocket` (you see your own upgrade at the Mail Chute).
 
 **What happens in game:** the arena animal uses your model, and during BOX the box in the arena uses your box model with your animal poking out of it. The game sizes and places models automatically, so import scale doesn't matter. **Facing backwards?** Select the Model and add a Number attribute `YawOffset` = `180`.
 

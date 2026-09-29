@@ -79,14 +79,15 @@ One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it ca
 - [ ] **Vine boom sound id:** paste one into `Config/Sounds.luau` (see README → Vine boom)
 - [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works great", after the seam-layer fix)
 
-## Next: Mail It Yourself (requested 2026-09-29)
+## Mail It Yourself (requested 2026-09-29)
 Taped boxes go into your **inventory** instead of mailing themselves. You carry them to the **mail chute** and mail
 them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailChute` → `MailChuteExpress` →
 `MailChutePneumatic` → `MailChuteRocket`).
-- [ ] Inventory: taped boxes become Parcels you carry (shown in your hands and on the HUD), with a starting capacity
-- [ ] Mail them yourself at the chute (hold E), and the payout happens there
-- [ ] Chute upgrades in the Supply Shop: faster mailing, more parcels at once, bonus pay per tier
-- [ ] Carry-capacity upgrade (a bigger bag)
+- [x] Inventory: taped boxes become **Parcels** in your bag (`MailService.luau`), saved with your progress. Up to 3 show stacked in your arms (your Blender `Parcel` model if it's imported), and the HUD shows **Bag N/Max**. A full bag blocks starting or joining a job
+- [x] Mail them yourself: hold E at the Mail Chute and the parcels fly in. Pay, orders, stats and leaderboards all happen at mailing time, with one receipt for the whole bag
+- [x] Chute upgrades (Supply Shop → **Chutes**, bought in order, `Config/Mail.luau`): Basic → Express (+15%, faster) → Pneumatic (+30%) → Rocket (+50%, and **press M to mail from anywhere**). Each player sees their own chute model at the Mail Chute (client-side)
+- [x] **Mail Bag** tool (Tools tab): +2 capacity per level, up to 13
+- [ ] **Playtest checkpoint**
 
 ## Phase 2 — Animal System ✅
 - [x] Animal config: tier (also sets difficulty), price, value, carriers, placeholder color (`Config/Animals.luau`)

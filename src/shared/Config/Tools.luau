@@ -52,6 +52,15 @@ local List: { Tool } = {
 		PriceGrowth = 4,
 		PerLevel = 1,
 	},
+	{
+		Id = "MailBag",
+		DisplayName = "Mail Bag",
+		Description = "Carry more parcels: +2 per level (you start with room for 3).",
+		MaxLevel = 5,
+		BasePrice = 500,
+		PriceGrowth = 3,
+		PerLevel = 2,
+	},
 }
 
 local ById: { [string]: Tool } = {}

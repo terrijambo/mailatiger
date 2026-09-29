@@ -1,6 +1,7 @@
 --!strict
 -- The boxing loop:
---   Pick an animal at the Pen -> CATCH it in the arena -> BOX it -> it flies into the mail chute and Gruff rates you.
+--   Pick an animal at the Pen -> CATCH it in the arena -> BOX it -> it goes into your bag as a Parcel
+--   -> carry it to the Mail Chute and mail it yourself (MailService.luau), where you get paid and rated.
 --
 -- BOX: the animal and an open box pop up on your screen. Its ANGER keeps rising. Rub its sweet spots to calm it
 -- (don't touch its angry spots!) while you drag tape across every seam of the box. Each strip annoys it more.
@@ -26,10 +27,9 @@ local CatchAI = require(script.Parent.CatchAI)
 local Config = require(ReplicatedStorage.Shared.Config)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
-local LeaderboardService = require(script.Parent.LeaderboardService)
+local MailService = require(script.Parent.MailService)
 local MapBuilder = require(script.Parent.MapBuilder)
-local ModelFit = require(script.Parent.ModelFit)
-local Orders = require(script.Parent.Orders)
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Remotes = require(script.Parent.Remotes)
 local StampsConfig = require(ReplicatedStorage.Shared.Config.Stamps)
 local Travel = require(script.Parent.Travel)
@@ -545,19 +545,10 @@ local function starsFor(s: Session): number
 	return math.clamp(stars, 1, 5)
 end
 
-local function animalIndex(animalId: string): number
-	for index, animal in Config.Animals.List do
-		if animal.Id == animalId then
-			return index
-		end
-	end
-	return 0
-end
-
--- Taped shut! Fly it to the mail chute and pay everyone in the job.
---   coins = value x stamps x escapes x stamp x chaos x (each player's own rebirth bonus) + egg bonus,
---   plus any of that player's orders it fills
-local function mail(s: Session)
+-- Taped shut! Everyone in the job gets a Parcel in their bag. They get paid when they mail it at the chute
+-- (MailService), so the pay is worked out now and stored on the parcel:
+--   coins = value x stamps x escapes x stamp x chaos x (each player's own rebirth bonus) + egg bonus
+local function finishJob(s: Session)
 	local animal = Config.Animals.ById[s.AnimalId]
 	local stars = starsFor(s)
 	local underPar = isUnderPar(s)
@@ -575,6 +566,7 @@ local function mail(s: Session)
 		mult *= Social.Chaos.PayoutMult
 	end
 
+	-- The taped box shrinks into the owner's arms
 	local model = s.BoxModel
 	s.BoxModel = nil
 	if model then
@@ -586,17 +578,14 @@ local function mail(s: Session)
 		if animalArt then
 			animalArt:Destroy()
 		end
+		local root = getCharacterParts(s.Player)
 		task.spawn(function()
 			local from = model:GetPivot()
-			local to = map.Chute.CFrame * CFrame.new(0, map.Chute.Size.Y / 2 + 1.5, 0)
-			-- It flies all the way to the chute in town: farther arenas = longer, higher flight
-			local distance = (to.Position - from.Position).Magnitude
-			local frames = math.clamp(math.round(distance / 4), 30, 90)
-			local height = math.max(6, distance / 4)
-			for i = 1, frames do
-				local t = i / frames
-				local arc = CFrame.new(0, math.sin(t * math.pi) * height, 0)
-				model:PivotTo(arc * from:Lerp(to, t))
+			local to = if root then root.CFrame * CFrame.new(0, 0, -1.4) else from
+			for i = 1, 15 do
+				local t = i / 15
+				model:PivotTo(from:Lerp(to, t))
+				model:ScaleTo(math.max(0.1, 1 - t * 0.7))
 				task.wait()
 			end
 			model:Destroy()
@@ -605,35 +594,26 @@ local function mail(s: Session)
 
 	local members = membersOf(s)
 	endSession(s)
-	local line = pick(Gruff.Ratings[stars])
+	local label = if stamp then stamp.DisplayName elseif s.Chaos then "CHAOS" else nil
 	for _, member in members do
 		local coins = math.max(1, math.round(animal.BaseValue * mult * Economy.PayoutMult(member) + s.Bonus))
-		local orderBonus = 0
-		local profile = DataService.Get(member)
-		if profile then
-			profile.Mailed += 1
-			orderBonus =
-				Orders.OnMailed(profile, s.AnimalId, { Stars = stars, Escapes = s.Escapes, UnderPar = underPar })
-			-- Leaderboard stats
-			if stars == 5 then
-				profile.FiveStampJobs += 1
-			end
-			if s.AnimalId == "Tiger" and (profile.BestTigerSeconds == 0 or seconds < profile.BestTigerSeconds) then
-				profile.BestTigerSeconds = seconds
-			end
-			profile.RarestIndex = math.max(profile.RarestIndex, animalIndex(s.AnimalId))
-			LeaderboardService.Submit(member)
-		end
+		MailService.AddParcel(member, {
+			AnimalId = s.AnimalId,
+			Stars = stars,
+			Coins = coins,
+			Seconds = seconds,
+			Escapes = s.Escapes,
+			UnderPar = underPar,
+			Stamp = label,
+		})
 		notify(member, "BoxDone", {})
-		Economy.AddCoins(member, coins + orderBonus)
-		notify(member, "Receipt", {
+		notify(member, "Parcel", {
 			Animal = animal.DisplayName,
 			Stars = stars,
 			Coins = coins,
-			OrderBonus = orderBonus,
-			Stamp = if stamp then stamp.DisplayName elseif s.Chaos then "CHAOS" else nil,
-			Line = line,
-			Seconds = seconds,
+			Stamp = label,
+			Count = MailService.Count(member),
+			Capacity = MailService.Capacity(member),
 		})
 	end
 end
@@ -718,6 +698,10 @@ local function onPrompt(s: Session, who: Player)
 
 	-- Not in this job: join a giant's crew if there's room...
 	if animal.Carriers > 1 and not jobOf(who) and 1 + #s.Crew < animal.Carriers then
+		if not MailService.HasRoom(who) then
+			gruffSays(who, Gruff.BagFull)
+			return
+		end
 		joinCrew(s, who)
 		return
 	end
@@ -792,7 +776,7 @@ local function onTape(s: Session, player: Player, seamIndex: unknown)
 		allTaped = allTaped and done
 	end
 	if allTaped and state.Anger < 100 then
-		mail(s)
+		finishJob(s)
 		return
 	end
 	notifyAll(s, "SeamTaped", { Seam = seamIndex })
@@ -915,6 +899,10 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 	end
 	if jobOf(player) then
 		gruffSays(player, Gruff.AlreadyBoxing)
+		return
+	end
+	if not MailService.HasRoom(player) then
+		gruffSays(player, Gruff.BagFull)
 		return
 	end
 	if not Economy.Owns(player, animalId) then

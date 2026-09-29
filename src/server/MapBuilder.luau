@@ -44,6 +44,7 @@ export type Map = {
 	TravelPads: { [string]: BasePart }, -- in town, one per arena
 	ReturnPads: { BasePart }, -- at each arena, back to town
 	Chute: BasePart,
+	ChutePrompt: ProximityPrompt,
 	GruffHat: BasePart,
 	ShopPrompt: ProximityPrompt,
 	ShopCounter: BasePart,
@@ -480,6 +481,9 @@ function MapBuilder.Build(): Map
 	})
 	local chute = block(map, "MailChute", Vector3.new(22, 0.3, 6), Vector3.new(26, 5, 10), COLORS.Chute)
 	MapBuilder.Label(chute, "MAIL CHUTE", 3.5, COLORS.Yellow)
+	-- Hold E here to mail your bag. (Each player's client shortens the hold to match their chute upgrade.)
+	local chutePrompt = prompt(chute, "Mail Parcels", "Mail Chute", Config.Mail.ChuteById.Basic.HoldTime)
+	chutePrompt.MaxActivationDistance = 12
 
 	-- Gruff's orders board (right of the Post Office)
 	local board = block(map, "OrdersBoard", Vector3.new(30, 0, 8), Vector3.new(31, 7, 14), COLORS.Wood)
@@ -543,6 +547,7 @@ function MapBuilder.Build(): Map
 		TravelPads = travelPads,
 		ReturnPads = returnPads,
 		Chute = chute,
+		ChutePrompt = chutePrompt,
 		GruffHat = gruffHat,
 		ShopPrompt = shopPrompt,
 		ShopCounter = shopCounter,

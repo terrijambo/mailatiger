@@ -13,6 +13,7 @@ return {
 	Progression = require(script.Progression),
 	Sounds = require(script.Sounds),
 	Social = require(script.Social),
+	Mail = require(script.Mail),
 	Gruff = require(script.Gruff),
 
 	Dev = {

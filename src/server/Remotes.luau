@@ -5,6 +5,7 @@
 --   BoxingInput    client -> server   a button press in the Stuff or Tape stage (server judges it)
 --   ShopAction     client -> server   buy/equip/upgrade/rebirth at the Supply Shop (server checks everything)
 --   Shove          client -> server   Chaos Mode shove (server picks the target and checks range/cooldown)
+--   MailAnywhere   client -> server   press M to mail your bag from anywhere (Rocket Chute only; server checks)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -23,6 +24,7 @@ local requestAnimal = remote("RequestAnimal")
 local boxingInput = remote("BoxingInput")
 local shopAction = remote("ShopAction")
 local shove = remote("Shove")
+local mailAnywhere = remote("MailAnywhere")
 
 folder.Parent = ReplicatedStorage
 
@@ -32,4 +34,5 @@ return {
 	BoxingInput = boxingInput,
 	ShopAction = shopAction,
 	Shove = shove,
+	MailAnywhere = mailAnywhere,
 }

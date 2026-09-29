@@ -49,6 +49,20 @@ function Hud.Start()
 	}, gui)
 	round(coinsLabel)
 
+	-- Your mail bag (right of the coins): parcels carried / capacity
+	local bagLabel = make("TextLabel", {
+		AnchorPoint = Vector2.new(0, 0),
+		Position = UDim2.new(0.5, 98, 0, 8),
+		Size = UDim2.fromOffset(110, 40),
+		BackgroundColor3 = PANEL,
+		BackgroundTransparency = 0.2,
+		Font = FONT,
+		TextSize = 22,
+		TextColor3 = Color3.fromRGB(215, 175, 105),
+		Text = "Bag 0/3",
+	}, gui)
+	round(bagLabel)
+
 	-- Status line under the coins: rebirth bonus, next-job stamp, and a warning if progress isn't saving
 	local status = make("TextLabel", {
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -64,6 +78,11 @@ function Hud.Start()
 	local function refreshStatus()
 		local profile = Profile.Get()
 		coinsLabel.Text = `{profile.Coins} coins`
+		local capacity = Profile.BagCapacity(profile)
+		bagLabel.Text = `Bag {#profile.Parcels}/{capacity}`
+		bagLabel.TextColor3 = if #profile.Parcels >= capacity
+			then Color3.fromRGB(255, 110, 100)
+			else Color3.fromRGB(215, 175, 105)
 		local parts = {}
 		if player:GetAttribute("Chaos") then
 			table.insert(parts, "CHAOS MODE (+50% pay): others can spook your animal and shove you")
@@ -104,10 +123,14 @@ function Hud.Start()
 		if typeof(text) == "string" and text ~= "" then
 			tip.Text = text
 		else
-			tip.Text = "Go to the Animal Pen and choose an animal!"
+			local parcels = #Profile.Get().Parcels
+			tip.Text = if parcels > 0
+				then `You have {parcels} parcel{if parcels == 1 then "" else "s"} in your bag: mail them at the Mail Chute (hold E), or box another animal!`
+				else "Go to the Animal Pen and choose an animal!"
 		end
 		tip.Visible = player:GetAttribute("Stage") ~= "Box" -- the BOX screen has its own instructions
 	end
+	Profile.Watch(refreshTip)
 	player:GetAttributeChangedSignal("Tip"):Connect(refreshTip)
 	player:GetAttributeChangedSignal("Stage"):Connect(refreshTip)
 	refreshTip()
@@ -200,20 +223,23 @@ function Hud.Start()
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })
 		if kind == "Message" then
 			showToast(data.Speaker, data.Text)
-		elseif kind == "Receipt" then
+		elseif kind == "Parcel" then
+			-- A taped box went into your bag
 			local stars = string.rep("★", data.Stars) .. string.rep("☆", 5 - data.Stars)
-			local time = string.format("%.0f", data.Seconds)
-			local extras = ""
-			if data.Stamp then
-				extras ..= `   {data.Stamp}`
-			end
-			if data.OrderBonus and data.OrderBonus > 0 then
-				extras ..= `   +{data.OrderBonus} order!`
-			end
+			local stamp = if data.Stamp then `   {data.Stamp}` else ""
 			showToast(
-				`Postmaster Gruff  ·  {data.Animal} mailed!`,
-				`"{data.Line}"`,
-				`{stars}   +{data.Coins} coins   ({time}s){extras}`
+				`Taped!  ·  {data.Animal} is in your bag ({data.Count}/{data.Capacity})`,
+				"Carry it to the Mail Chute in town and hold E to mail it.",
+				`{stars}   worth {data.Coins} coins{stamp}`
+			)
+		elseif kind == "MailReceipt" then
+			-- You mailed your bag at the chute
+			local extras = if data.OrderBonus > 0 then `   +{data.OrderBonus} from orders!` else ""
+			local plural = if data.Count == 1 then "parcel" else "parcels"
+			showToast(
+				`Postmaster Gruff  ·  {data.Count} {plural} mailed ({data.Chute})`,
+				`"{data.Line}"   {table.concat(data.Lines, ",  ")}`,
+				`+{data.Coins} coins{extras}`
 			)
 		elseif kind == "Roar" then
 			showToast("ROOOOAR!", "It roared at you! You're frozen in fear for a second.")

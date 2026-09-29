@@ -1,5 +1,5 @@
 --!strict
--- The Supply Shop window: Boxes, Tools, Stamps and Rebirth tabs.
+-- The Supply Shop window: Boxes, Tools, Stamps, Chutes and Rebirth tabs.
 -- Buttons only ASK the server (ShopAction). The server checks coins and distance, then updates your profile,
 -- and this window redraws from the new profile.
 
@@ -14,7 +14,7 @@ local player = Players.LocalPlayer
 
 local Shop = {}
 
-local TABS = { "Boxes", "Tools", "Stamps", "Rebirth" }
+local TABS = { "Boxes", "Tools", "Stamps", "Chutes", "Rebirth" }
 
 local function rebirthCost(rebirths: number): number
 	local rebirth = Config.Progression.Rebirth
@@ -155,6 +155,25 @@ function Shop.Start()
 					rowButton(frame, 2, "Use next job", Ui.BLUE, function()
 						shopAction:FireServer("SelectStamp", stamp.Id)
 					end)
+				end
+			end
+		elseif currentTab == "Chutes" then
+			-- Your personal chute upgrade: bought in order, each one mails faster and pays more
+			local current = Config.Mail.ChuteIndex[profile.ChuteTier] or 1
+			for index, chute in Config.Mail.Chutes do
+				local pay = math.round((chute.PayMult - 1) * 100)
+				local frame =
+					row(index, `{chute.DisplayName}  (+{pay}% pay, {chute.HoldTime}s to mail)`, chute.Description)
+				if index == current then
+					rowButton(frame, 1, "Installed", Ui.GREEN, nil)
+				elseif index < current then
+					rowButton(frame, 1, "Owned", Ui.GREY, nil)
+				elseif index == current + 1 then
+					rowButton(frame, 1, `Buy: {chute.Price}`, Ui.ORANGE, function()
+						shopAction:FireServer("BuyChute", chute.Id)
+					end)
+				else
+					rowButton(frame, 1, "Locked", Ui.GREY, nil)
 				end
 			end
 		elseif currentTab == "Rebirth" then

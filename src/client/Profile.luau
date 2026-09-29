@@ -4,6 +4,9 @@
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = require(ReplicatedStorage.Shared.Config)
 
 local player = Players.LocalPlayer
 
@@ -21,10 +24,14 @@ export type Data = {
 	Mailed: number,
 	Orders: { { AnimalId: string, Condition: string, Reward: number, Done: boolean } },
 	OrdersRefreshAt: number,
+	Parcels: { { AnimalId: string, Stars: number, Coins: number } },
+	ChuteTier: string,
 }
 
 local EMPTY: Data = {
 	Coins = 0,
+	Parcels = {},
+	ChuteTier = "Basic",
 	Owned = { Hamster = true },
 	Boxes = { Cardboard = true },
 	EquippedBox = "Cardboard",
@@ -44,6 +51,12 @@ function Profile.Get(): Data
 	end
 	local ok, data = pcall(HttpService.JSONDecode, HttpService, raw)
 	return if ok and type(data) == "table" then data else EMPTY
+end
+
+-- How many parcels your bag holds (starting size + Mail Bag upgrades)
+function Profile.BagCapacity(data: Data): number
+	local mail = Config.Mail
+	return mail.BagCapacity + (data.Tools.MailBag or 0) * Config.Tools.ById.MailBag.PerLevel
 end
 
 -- Calls `callback` now and whenever your progress changes.

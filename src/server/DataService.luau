@@ -24,8 +24,22 @@ export type Order = {
 	Done: boolean,
 }
 
+-- A taped-up animal in your bag, waiting to be mailed. Its pay is worked out when it's taped; the chute you
+-- mail it with can add a bonus.
+export type Parcel = {
+	AnimalId: string,
+	Stars: number,
+	Coins: number,
+	Seconds: number,
+	Escapes: number,
+	UnderPar: boolean,
+	Stamp: string?, -- stamp or CHAOS label, shown on the receipt
+}
+
 export type Profile = {
 	Coins: number,
+	Parcels: { Parcel }, -- your bag
+	ChuteTier: string, -- your mail chute upgrade (Config.Mail.Chutes id)
 	Owned: { [string]: boolean }, -- animals
 	Boxes: { [string]: boolean },
 	EquippedBox: string,
@@ -56,6 +70,8 @@ local store: DataStore? = nil
 local function newProfile(): Profile
 	return {
 		Coins = 0,
+		Parcels = {},
+		ChuteTier = "Basic",
 		Owned = { Hamster = true },
 		Boxes = { Cardboard = true },
 		EquippedBox = "Cardboard",

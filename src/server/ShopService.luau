@@ -1,7 +1,8 @@
 --!strict
--- The Supply Shop (boxes, tools, stamps, rebirth) and Gruff's orders board.
+-- The Supply Shop (boxes, tools, stamps, chutes, rebirth) and Gruff's orders board.
 -- Clients send ShopAction(action, id). The server checks coins, distance and ownership before changing anything.
---   BuyBox / EquipBox (box id)   UpgradeTool (tool id)   BuyStamp / SelectStamp (stamp id, "" = none)   Rebirth
+--   BuyBox / EquipBox (box id)   UpgradeTool (tool id)   BuyStamp / SelectStamp (stamp id, "" = none)
+--   BuyChute (chute id, must be the next one up)   Rebirth
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -90,6 +91,19 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		elseif (profile.Stamps[itemId] or 0) > 0 then
 			profile.SelectedStamp = itemId
 		end
+	elseif action == "BuyChute" then
+		-- Chutes are bought in order: you can only buy the next one up
+		local chute = Config.Mail.ChuteById[itemId]
+		local current = Config.Mail.ChuteIndex[profile.ChuteTier] or 1
+		if not chute or Config.Mail.ChuteIndex[itemId] ~= current + 1 then
+			return
+		end
+		if not Economy.TrySpend(player, chute.Price) then
+			reply(player, `The {chute.DisplayName} costs {chute.Price} coins.`)
+			return
+		end
+		profile.ChuteTier = itemId
+		reply(player, `{chute.DisplayName} installed! {chute.Description}`)
 	elseif action == "Rebirth" then
 		local cost = Economy.RebirthCost(profile.Rebirths)
 		if profile.Coins < cost then
@@ -101,6 +115,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		profile.Owned = { Hamster = true }
 		profile.Boxes = { Cardboard = true }
 		profile.EquippedBox = "Cardboard"
+		profile.ChuteTier = "Basic" -- (parcels still in your bag are kept)
 		profile.Tools = {}
 		profile.Stamps = {}
 		profile.SelectedStamp = nil

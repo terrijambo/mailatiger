@@ -2,7 +2,8 @@
 -- Everything Postmaster Gruff says. Add lines freely; one is picked at random.
 
 return {
-	FirstBox = "You. New hire. Pick an animal at the Pen, catch it, box it, tape it. Don't mess it up.",
+	FirstBox = "You. New hire. Pick an animal at the Pen, catch it, box it, tape it, then mail it in MY chute. Don't mess it up.",
+	BagFull = "Your mail bag is stuffed! Mail those parcels at the chute first.",
 	AlreadyBoxing = "Finish the one you've got. Use the Pen again within 5 seconds to give up on it.",
 	GaveUp = "Quitter. Fine. It's going back in the pen.",
 	NotYours = "That's not YOUR animal. Hands off.",

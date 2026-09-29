@@ -11,7 +11,7 @@ local Workspace = game:GetService("Workspace")
 local BoxingConfig = require(ReplicatedStorage.Shared.Config.Boxing)
 local Config = require(ReplicatedStorage.Shared.Config)
 local MapBuilder = require(script.Parent.MapBuilder)
-local ModelFit = require(script.Parent.ModelFit)
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Types = require(script.Parent.Types)
 
 type Session = Types.Session
