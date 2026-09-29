@@ -112,14 +112,22 @@ Progress saves automatically: every 60 seconds, when you leave, and when a serve
 ## Adding your Blender models
 Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` exports and preview renders.
 
-**One-time setup:** in Studio's Explorer, create three Folders inside **ReplicatedStorage**: `AnimalModels`, `BoxModels` and `PropModels`. (Rojo leaves them alone.)
+**Folders** (in **ReplicatedStorage**, Rojo leaves them alone). Every model goes in one of these, named exactly like its `.fbx` file:
+
+| Folder | Models | Used by the game? |
+|---|---|---|
+| `AnimalModels` | All 25 animals + `Gruff` | Yes |
+| `BoxModels` | `Cardboard`, `Wood`, `Steel`, `Vault` | Yes |
+| `PropModels` | `Parcel`, `MailChute`, `MailChuteExpress`, `MailChutePneumatic`, `MailChuteRocket` | Yes |
+| `PropModels` | `GruffHat`, `Egg`, `TapeRoll`, `RubberStamp`, `Envelope`, `GrabbingGloves`, `Sneakers`, `TapeGun`, `ButterflyNet` | Coming soon |
+| `MapModels` | Town: `PostOffice`, `PostCounter`, `PenCounter`, `ShopStall`, `OrdersBoard`, `LeaderboardStand`, `TravelPad`, `SpawnPad`, `Lamppost`, `Bench`, `Mailbox`, `Planter` | Coming soon (replaces the grey map blocks) |
+| `MapModels` | Arenas: `ArenaGate`, `PicketFence`, `Bush`, `Doghouse`, `Flowerbed`, `Barn`, `HayBale`, `FarmFence`, `Trough`, `JungleTree`, `MudPuddle`, `BambooFence`, `Rock`, `RinkBoard`, `HockeyGoal`, `Snowman`, `ACUnit`, `WaterTower`, `Chimney` | Coming soon (replaces the grey map blocks) |
 
 **For each model:**
-1. **Home → Import 3D** → pick the file in `art/export/` (e.g. `Hamster.fbx`).
+1. **Home → Import 3D** → pick the file in `art/export/`.
 2. In the import preview, keep it as **one Model** with its parts (don't merge them into one mesh). It will look grey in Studio, which is fine: the game paints each part from `src/shared/ArtColors/` when it spawns.
-3. Click **Import**, then drag the Model into `ReplicatedStorage > AnimalModels` (animals) or `ReplicatedStorage > BoxModels` (boxes).
-4. Make sure the Model's **name matches the game id**: `Hamster` for animals, `Cardboard` / `Wood` / `Steel` / `Vault` for boxes.
-5. **Props** go in `PropModels`: `Parcel` (the box in your arms) and the chutes `MailChute`, `MailChuteExpress`, `MailChutePneumatic`, `MailChuteRocket` (you see your own upgrade at the Mail Chute).
+3. Click **Import**, then drag the Model into its folder from the table.
+4. Check the Model's **name matches the file** exactly (no "(1)" or extra words).
 
 **What happens in game:** the arena animal uses your model, and during BOX the box in the arena uses your box model with your animal poking out of it. The game sizes and places models automatically, so import scale doesn't matter. **Facing backwards?** Select the Model and add a Number attribute `YawOffset` = `180`.
 
