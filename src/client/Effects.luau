@@ -1,7 +1,7 @@
 --!strict
--- Screen and character effects: camera shake, skunk spray, yeti freeze, charge knockback, and sneaking.
+-- Screen and character effects: camera shake, skunk spray, yeti freeze, charge knockback.
+-- (Sneaking, mud and ice are in Movement.luau.)
 
-local ContextActionService = game:GetService("ContextActionService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -10,14 +10,6 @@ local TweenService = game:GetService("TweenService")
 local player = Players.LocalPlayer
 
 local Effects = {}
-
-local SNEAK_SPEED = 7
-
--- Your normal speed (the server raises it when you upgrade Sneakers)
-local function normalSpeed(): number
-	local speed = player:GetAttribute("WalkSpeed")
-	return if typeof(speed) == "number" then speed else 16
-end
 
 local function getHumanoid(): Humanoid?
 	local character = player.Character
@@ -67,23 +59,7 @@ local function knockback(direction: Vector3, strength: number)
 	shakeCamera(1.2, 0.3)
 end
 
--- Hold C to sneak (moving slowly doesn't wake sleeping animals)
-local function onSneak(_name: string, state: Enum.UserInputState, _input: InputObject)
-	local humanoid = getHumanoid()
-	if humanoid then
-		if state == Enum.UserInputState.Begin and humanoid.WalkSpeed > 0 then
-			humanoid.WalkSpeed = SNEAK_SPEED
-		elseif state ~= Enum.UserInputState.Begin and humanoid.WalkSpeed == SNEAK_SPEED then
-			humanoid.WalkSpeed = normalSpeed()
-		end
-	end
-	return Enum.ContextActionResult.Pass
-end
-
 function Effects.Start()
-	ContextActionService:BindAction("Sneak", onSneak, true, Enum.KeyCode.C, Enum.KeyCode.ButtonL2)
-	ContextActionService:SetTitle("Sneak", "Sneak")
-
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })
 		if kind == "Spray" then

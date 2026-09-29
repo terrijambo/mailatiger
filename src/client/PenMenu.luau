@@ -132,7 +132,7 @@ function PenMenu.Start()
 			TextSize = 14,
 			TextXAlignment = Enum.TextXAlignment.Left,
 			TextColor3 = Color3.fromRGB(120, 110, 100),
-			Text = `Tier {animal.Tier} · {TIER_NAMES[animal.Tier] or ""}`,
+			Text = `Tier {animal.Tier} · {TIER_NAMES[animal.Tier] or ""} · {Config.Arenas.ByTier[animal.Tier].DisplayName}`,
 		}, button)
 		make("TextLabel", {
 			Position = UDim2.fromOffset(10, 54),

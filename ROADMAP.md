@@ -88,9 +88,17 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [ ] **Save test on Roblox:** deferred to Phase 8 (Launch Prep) at your request. Needs the place published
 
 ## Phase 4 — World & Arenas
-- [ ] Hub town: Animal Pen, Tool Shop, Post Office
-- [ ] Themed arenas that unlock by tier: Backyard (open lawn), Barn (hay-bale cover), Jungle (trees, water), Ice Rink (you slide), Rooftop (edges!)
-- [ ] Arena obstacles the animal AI steers around
+- [x] Hub town: a cobblestone plaza with the spawn, Animal Pen, Supply Shop, Post Office (Gruff and the chute), Gruff's Orders, and a row of **travel pads**, one per arena
+- [x] Five themed arenas (`MapBuilder.luau`, tiers in `Config/Arenas.luau`). Picking an animal **teleports you to its arena**:
+  - **Backyard** (tier 1): open lawn with a few bushes, next to town
+  - **Barn** (tier 2): six hay bales to duck around, with a big red barn behind
+  - **Jungle** (tier 3): seven trees, plus **mud pits** that halve your speed
+  - **Ice Rink** (tiers 4–5): **you slide** on the ice (momentum, slow turning). The animals don't
+  - **Rooftop** (tier 6): 30 studs up with **no fences**. Fall off and you're put back on the roof, dazed, with a word from Gruff
+- [x] Each arena has a BACK TO TOWN pad. Mailed boxes fly all the way to the chute in town (farther = higher arc)
+- [x] Obstacle-aware AI (`CatchAI.luau`): animals steer around trees, bales, bushes and AC units, slide along them instead of passing through, and use them as corners you can trap them against
+- [x] Client movement module (`client/Movement.luau`): sneak (C), mud slow, and ice sliding, all built on the server's speed so Sneakers upgrades and stuns still apply
+- [ ] **Playtest checkpoint** (checklist in README)
 
 ## Phase 5 — Multiplayer / Social
 - [ ] Co-op giants (Elephant, Whale, Gruff): herd together to catch, then one player holds the lid while the other tapes

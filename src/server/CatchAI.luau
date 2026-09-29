@@ -66,29 +66,69 @@ local function playerRoot(player: Player): BasePart?
 	return character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 end
 
-local function clampToArena(position: Vector3, radius: number): Vector3
+local function arenaOf(s: Session): MapBuilder.Arena
+	return map.Arenas[s.ArenaId]
+end
+
+-- Positions in the AI are flat (Y = 0). The arena's floor height is added only when placing the part.
+local function clampToArena(arena: MapBuilder.Arena, position: Vector3, radius: number): Vector3
 	return Vector3.new(
-		math.clamp(position.X, map.ArenaMin.X + radius, map.ArenaMax.X - radius),
+		math.clamp(position.X, arena.Min.X + radius, arena.Max.X - radius),
 		0,
-		math.clamp(position.Z, map.ArenaMin.Z + radius, map.ArenaMax.Z - radius)
+		math.clamp(position.Z, arena.Min.Z + radius, arena.Max.Z - radius)
 	)
 end
 
-local function randomArenaPoint(radius: number): Vector3
-	return clampToArena(
-		Vector3.new(randomBetween(map.ArenaMin.X, map.ArenaMax.X), 0, randomBetween(map.ArenaMin.Z, map.ArenaMax.Z)),
-		radius
-	)
+-- Moves a point out of any obstacle it's inside (so animals slide around trees instead of through them)
+local function pushOutOfObstacles(arena: MapBuilder.Arena, position: Vector3, radius: number): Vector3
+	for _, obstacle in arena.Obstacles do
+		local offset = position - flat(obstacle.Center)
+		local minDistance = obstacle.Radius + radius
+		if offset.Magnitude < minDistance then
+			local outward = if offset.Magnitude > 0.01 then offset.Unit else Vector3.xAxis
+			position = flat(obstacle.Center) + outward * minDistance
+		end
+	end
+	return position
 end
 
--- Pushes away from nearby fences, so smarter animals run along walls instead of into corners.
-local function wallAvoidance(position: Vector3): Vector3
+local function randomArenaPoint(arena: MapBuilder.Arena, radius: number): Vector3
+	local point = Vector3.zero
+	for _ = 1, 10 do -- try a few times to find a spot that isn't inside an obstacle
+		point = clampToArena(
+			arena,
+			Vector3.new(randomBetween(arena.Min.X, arena.Max.X), 0, randomBetween(arena.Min.Z, arena.Max.Z)),
+			radius
+		)
+		if pushOutOfObstacles(arena, point, radius) == point then
+			break
+		end
+	end
+	return pushOutOfObstacles(arena, point, radius)
+end
+
+-- Steers away from obstacles just ahead, so animals weave around trees and hay bales.
+local function obstacleAvoidance(arena: MapBuilder.Arena, position: Vector3, radius: number): Vector3
+	local push = Vector3.zero
+	for _, obstacle in arena.Obstacles do
+		local offset = position - flat(obstacle.Center)
+		local range = obstacle.Radius + radius + 4
+		local distance = offset.Magnitude
+		if distance < range and distance > 0.01 then
+			push += offset.Unit * (1 - distance / range) * 1.5
+		end
+	end
+	return push
+end
+
+-- Pushes away from nearby fences/edges, so smarter animals run along walls instead of into corners.
+local function wallAvoidance(arena: MapBuilder.Arena, position: Vector3): Vector3
 	local range = 6
 	local push = Vector3.zero
-	local left = position.X - map.ArenaMin.X
-	local right = map.ArenaMax.X - position.X
-	local back = position.Z - map.ArenaMin.Z
-	local front = map.ArenaMax.Z - position.Z
+	local left = position.X - arena.Min.X
+	local right = arena.Max.X - position.X
+	local back = position.Z - arena.Min.Z
+	local front = arena.Max.Z - position.Z
 	if left < range then
 		push += Vector3.xAxis * (1 - left / range)
 	end
@@ -156,7 +196,7 @@ local function placeCritter(s: Session)
 		return
 	end
 	local st = s.CatchState
-	local position = st.Pos + Vector3.new(0, map.ArenaMin.Y + st.Radius + st.Lift, 0)
+	local position = st.Pos + Vector3.new(0, arenaOf(s).FloorY + st.Radius + st.Lift, 0)
 	critter.CFrame = CFrame.lookAt(position, position + st.Facing)
 end
 
@@ -178,7 +218,7 @@ local function dropEgg(s: Session)
 	egg.Color = Color3.fromRGB(255, 250, 235)
 	egg.Anchored = true
 	egg.CanCollide = false
-	egg.Position = st.Pos + Vector3.new(0, map.ArenaMin.Y + 0.5, 0)
+	egg.Position = st.Pos + Vector3.new(0, arenaOf(s).FloorY + 0.5, 0)
 	egg.Parent = folder
 	Debris:AddItem(egg, 20)
 
@@ -260,7 +300,10 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 		onGrab(s, who)
 	end)
 
-	local start = if at then clampToArena(flat(at), radius) else randomArenaPoint(radius)
+	local arena = arenaOf(s)
+	local start = if at
+		then pushOutOfObstacles(arena, clampToArena(arena, flat(at), radius), radius)
+		else randomArenaPoint(arena, radius)
 	s.CatchState = {
 		Pos = start,
 		Radius = radius,
@@ -285,6 +328,7 @@ function CatchAI.Update(s: Session, now: number, dt: number)
 	local twists = twistsFor(s.AnimalId)
 	local tier = animal.Tier
 	local root = playerRoot(player)
+	local arena = arenaOf(s)
 
 	local toPlayer = if root then flat(root.Position) - st.Pos else Vector3.zero
 	local distance = if root then toPlayer.Magnitude else math.huge
@@ -342,15 +386,17 @@ function CatchAI.Update(s: Session, now: number, dt: number)
 		end
 	elseif distance < Catch.FleeRadius then
 		local smarts = (tier - 1) * 0.25 -- higher tiers steer away from walls, so they're harder to corner
-		local flee = away + wallAvoidance(st.Pos) * smarts
+		local flee = away + wallAvoidance(arena, st.Pos) * smarts + obstacleAvoidance(arena, st.Pos, st.Radius)
 		direction = if flee.Magnitude > 0.01 then flee.Unit else away
 	else
 		if not st.WanderTarget or now > st.WanderUntil or (st.WanderTarget - st.Pos).Magnitude < 1 then
-			st.WanderTarget = randomArenaPoint(st.Radius)
+			st.WanderTarget = randomArenaPoint(arena, st.Radius)
 			st.WanderUntil = now + randomBetween(2, 4)
 		end
 		local toTarget = st.WanderTarget - st.Pos
-		direction = if toTarget.Magnitude > 0.01 then toTarget.Unit else Vector3.zero
+		local wander = (if toTarget.Magnitude > 0.01 then toTarget.Unit else Vector3.zero)
+			+ obstacleAvoidance(arena, st.Pos, st.Radius)
+		direction = if wander.Magnitude > 0.01 then wander.Unit else Vector3.zero
 		speed = Catch.WanderSpeed
 	end
 
@@ -377,15 +423,16 @@ function CatchAI.Update(s: Session, now: number, dt: number)
 	setHidden(critter, st.HideUntil ~= nil and now < st.HideUntil)
 
 	if twists.Teleport and every(st, "Teleport", now, Tuning.Teleport.Interval) then
-		st.Pos = randomArenaPoint(st.Radius)
+		st.Pos = randomArenaPoint(arena, st.Radius)
 	end
 	if twists.Eggs and every(st, "Egg", now, Tuning.Eggs.Interval) then
 		dropEgg(s)
 	end
 
-	-- Move, staying inside the arena. Barely moving while fleeing = cornered, which is when it tries to juke.
+	-- Move, staying inside the arena and outside obstacles. Barely moving while fleeing = cornered
+	-- (against a fence, a tree, a hay bale...), which is when it tries to juke past you.
 	local intended = st.Pos + direction * speed * dt
-	local clamped = clampToArena(intended, st.Radius)
+	local clamped = clampToArena(arena, pushOutOfObstacles(arena, intended, st.Radius), st.Radius)
 	local moved = (clamped - st.Pos).Magnitude
 	st.Pos = clamped
 	if direction.Magnitude > 0.01 then

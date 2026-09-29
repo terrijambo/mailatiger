@@ -10,8 +10,10 @@ local DataService = require(script.DataService)
 local Economy = require(script.Economy)
 local MapBuilder = require(script.MapBuilder)
 local ShopService = require(script.ShopService)
+local Travel = require(script.Travel)
 
 local map = MapBuilder.Build()
+Travel.Start(map)
 
 -- Everything that listens for "a player's save finished loading" connects first...
 Economy.Start()

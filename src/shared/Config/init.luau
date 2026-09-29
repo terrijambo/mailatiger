@@ -5,6 +5,7 @@
 
 return {
 	Animals = require(script.Animals),
+	Arenas = require(script.Arenas),
 	Boxing = require(script.Boxing),
 	Boxes = require(script.Boxes),
 	Stamps = require(script.Stamps),

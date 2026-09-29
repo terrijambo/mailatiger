@@ -21,6 +21,7 @@ local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
 local StampsConfig = require(ReplicatedStorage.Shared.Config.Stamps)
 local StuffMath = require(ReplicatedStorage.Shared.StuffMath)
+local Travel = require(script.Parent.Travel)
 local Types = require(script.Parent.Types)
 
 type Session = Types.Session
@@ -86,7 +87,8 @@ local function refreshMovement(player: Player)
 	local busy = s ~= nil and s.Stage ~= "Catch"
 	local stunned = os.clock() < (stunnedUntil[player] or 0)
 	local speed = WALK_SPEED + Economy.ToolBonus(player, "Sneakers")
-	player:SetAttribute("WalkSpeed", speed) -- the client returns to this after sneaking
+	player:SetAttribute("WalkSpeed", speed) -- the client's Movement module builds on this (sneak, mud, ice)
+	player:SetAttribute("Frozen", busy or stunned)
 	humanoid.UseJumpPower = false
 	humanoid.WalkSpeed = if busy or stunned then 0 else speed
 	humanoid.JumpHeight = if busy or stunned then 0 else JUMP_HEIGHT
@@ -111,11 +113,13 @@ end
 local function buildBox(s: Session): Model
 	local root = getCharacterParts(s.Player)
 	local animal = Config.Animals.ById[s.AnimalId]
-	local base = if root then root.CFrame else CFrame.new(map.ArenaCenter)
+	local arena = map.Arenas[s.ArenaId]
+	local base = if root then root.CFrame else CFrame.new(arena.Center)
 	local look = base.LookVector
 	local spot = base.Position + Vector3.new(look.X, 0, look.Z).Unit * 4
+	local boxY = arena.FloorY + 1.5 -- sits on the arena floor (the Rooftop is 30 studs up)
 	local boxCFrame =
-		CFrame.lookAt(Vector3.new(spot.X, 1.5, spot.Z), Vector3.new(base.Position.X, 1.5, base.Position.Z))
+		CFrame.lookAt(Vector3.new(spot.X, boxY, spot.Z), Vector3.new(base.Position.X, boxY, base.Position.Z))
 
 	local model = Instance.new("Model")
 	model.Name = `Box_{s.Player.UserId}`
@@ -190,10 +194,11 @@ end
 
 local function catchTip(s: Session): string
 	local animal = Config.Animals.ById[s.AnimalId]
+	local arenaName = Config.Arenas.ById[s.ArenaId].DisplayName
 	if twistsFor(s.AnimalId).Sleep then
-		return `Your {animal.DisplayName} is asleep. Hold C to sneak up on it, then hold E to grab it.`
+		return `Your {animal.DisplayName} is asleep in the {arenaName}. Hold C to sneak up, then hold E to grab it.`
 	end
-	return `Catch your {animal.DisplayName}! Corner it in the arena, then hold E to grab it.`
+	return `Catch your {animal.DisplayName} in the {arenaName}! Corner it, then hold E to grab it.`
 end
 
 local function startCatch(s: Session, at: Vector3?)
@@ -306,7 +311,10 @@ end
 local function escape(s: Session, how: string)
 	local root = getCharacterParts(s.Player)
 	local model = s.BoxModel
-	local position = if model then model:GetPivot().Position elseif root then root.Position else map.ArenaCenter
+	local position = if model
+		then model:GetPivot().Position
+		elseif root then root.Position
+		else map.Arenas[s.ArenaId].Center
 	s.Escapes += 1
 	notify(s.Player, "Break", {})
 	if how == "Burst" and twistsFor(s.AnimalId).Breakout then
@@ -364,9 +372,13 @@ local function mail(s: Session)
 		task.spawn(function()
 			local from = model:GetPivot()
 			local to = map.Chute.CFrame * CFrame.new(0, map.Chute.Size.Y / 2 + 1.5, 0)
-			for i = 1, 30 do
-				local t = i / 30
-				local arc = CFrame.new(0, math.sin(t * math.pi) * 6, 0)
+			-- It flies all the way to the chute in town: farther arenas = longer, higher flight
+			local distance = (to.Position - from.Position).Magnitude
+			local frames = math.clamp(math.round(distance / 4), 30, 90)
+			local height = math.max(6, distance / 4)
+			for i = 1, frames do
+				local t = i / frames
+				local arc = CFrame.new(0, math.sin(t * math.pi) * height, 0)
 				model:PivotTo(arc * from:Lerp(to, t))
 				task.wait()
 			end
@@ -558,9 +570,11 @@ local function onRequestAnimal(player: Player, animalId: unknown)
 		Economy.Sync(player)
 	end
 
+	local arenaId = Config.Arenas.ByTier[animal.Tier].Id
 	local s: Session = {
 		Player = player,
 		AnimalId = animalId,
+		ArenaId = arenaId,
 		Stage = "Catch",
 		StartTime = os.clock(),
 		Escapes = 0,
@@ -575,9 +589,21 @@ local function onRequestAnimal(player: Player, animalId: unknown)
 		CatchState = {},
 	}
 	sessions[player] = s
+	Travel.ToArena(player, arenaId) -- off to the arena for this animal's tier
 	startCatch(s, nil)
 	if stampId then
 		say(player, "Stamp", `{Config.Stamps.ById[stampId].DisplayName} stamp applied to this job!`)
+	end
+end
+
+-- Rooftop: fall off the edge and you're put back on the roof, dazed, with a word from Gruff.
+local function checkFall(s: Session)
+	local arena = map.Arenas[s.ArenaId]
+	local root = getCharacterParts(s.Player)
+	if arena.Edges and root and root.Position.Y < arena.FloorY - 8 then
+		Travel.ToArena(s.Player, s.ArenaId)
+		stun(s.Player, Config.Arenas.FallBackStun)
+		gruffSays(s.Player, "You fell off the ROOF?! Get back up there.")
 	end
 end
 
@@ -671,6 +697,7 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 		for _, s in sessions do
 			if s.Stage == "Catch" then
 				CatchAI.Update(s, now, dt)
+				checkFall(s)
 			elseif s.Stage == "Tape" then
 				updateTape(s, now, dt)
 			end

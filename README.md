@@ -65,6 +65,15 @@ All the difficulty numbers live in `src/shared/Config/Boxing.luau`.
 - [ ] **Rebirth** tab: shows the cost. (To test it quickly, temporarily set `Rebirth.BaseCost` to 10 in `Config/Progression.luau`.)
 - [ ] The player list shows Coins and Rebirths.
 
+## Phase 4 checklist: arenas
+Arena tuning (mud slowdown, ice grip, rooftop fall stun) is in `src/shared/Config/Arenas.luau`.
+- [ ] Town has a row of 5 glowing **travel pads**. Each one takes you to its arena, and each arena's **BACK TO TOWN** pad brings you home.
+- [ ] Pick a **Chicken** (tier 2): you're teleported to the **Barn**. The chicken dodges around hay bales, and you can trap it against one.
+- [ ] Pick a **Monkey** (tier 3): the **Jungle**. Mud pits slow you down, and animals weave between the trees.
+- [ ] Pick a **Tiger** (tier 4): the **Ice Rink**. You slide and turn slowly. Is it fun-hard or annoying-hard? (`IceGrip`: higher = more grip)
+- [ ] Pick a **Dragon** (tier 6): the **Rooftop**. Walk off the edge and you're put back up, dazed.
+- [ ] Finish a job in a far arena: the box flies all the way to the mail chute in town.
+
 ## Saving (DataStores)
 Progress saves automatically: every 60 seconds, when you leave, and when a server shuts down.
 - **In Studio**, saving only works once the place is published to Roblox **and** you turn on **Game Settings → Security → Enable Studio Access to API Services**. Until then the game still runs, but the HUD shows "⚠ Progress isn't saving".

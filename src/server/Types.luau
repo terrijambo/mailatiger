@@ -29,6 +29,7 @@ export type TapeState = {
 export type Session = {
 	Player: Player,
 	AnimalId: string,
+	ArenaId: string, -- where the animal is released (by its tier, see Config/Arenas.luau)
 	Stage: string, -- "Catch", "Stuff" or "Tape"
 	StartTime: number,
 	Escapes: number,
