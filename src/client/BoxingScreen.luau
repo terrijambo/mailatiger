@@ -195,6 +195,37 @@ function BoxingScreen.Start()
 	})
 	local popping = false
 
+	-- Co-op roles: "Both" when solo. In a crew you only pet OR tape, and the other half is shaded.
+	local role = "Both"
+	local function shade(parent: GuiObject, text: string, corner: number): Frame
+		local frame = Ui.make("Frame", {
+			Size = UDim2.fromScale(1, 1),
+			BackgroundColor3 = Color3.new(0, 0, 0),
+			BackgroundTransparency = 0.55,
+			Visible = false,
+			ZIndex = 20,
+		}, parent)
+		Ui.round(frame, corner)
+		Ui.label(frame, {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.3),
+			Size = UDim2.fromScale(0.9, 0.2),
+			TextXAlignment = Enum.TextXAlignment.Center,
+			TextScaled = true,
+			TextColor3 = Ui.WHITE,
+			ZIndex = 21,
+			Text = text,
+		})
+		return frame
+	end
+	local petShade = shade(animalCard, "Your crewmate is petting!", 1000)
+	local tapeShade = shade(boxCard, "Your crewmate is taping!", 10)
+	local function applyRole(newRole: string)
+		role = newRole
+		petShade.Visible = role == "Tape"
+		tapeShade.Visible = role == "Pet"
+	end
+
 	-- State for the current job
 	local start = 0
 	local spots: { BoxMath.Spot } = {}
@@ -304,7 +335,13 @@ function BoxingScreen.Start()
 			table.insert(spotFrames, frame)
 		end
 		drawSeams()
-		help.Text = "Rub the ♥ spots · Don't touch the ✖ spots · Drag tape from dot to dot along each seam"
+		applyRole(data.Role or "Both")
+		help.Text = if role == "Pet"
+			then "YOU PET: rub the ♥ spots to keep it calm while your crewmate tapes · Don't touch the ✖ spots"
+			elseif
+				role == "Tape"
+			then "YOU TAPE: drag from dot to dot along each seam while your crewmate keeps it calm"
+			else "Rub the ♥ spots · Don't touch the ✖ spots · Drag tape from dot to dot along each seam"
 
 		-- POP! The animal springs up out of the box
 		popping = true
@@ -397,11 +434,15 @@ function BoxingScreen.Start()
 		local screen = Vector2.new(inputObject.Position.X, inputObject.Position.Y)
 		-- The box is in front of the animal's lower half, so check the box first
 		if inside(boxCard, screen) then
-			mode = "Tape"
-			path = { toCard(boxCard, screen) }
+			if role ~= "Pet" then
+				mode = "Tape"
+				path = { toCard(boxCard, screen) }
+			end
 		elseif inside(animalCard, screen) then
-			mode = "Pet"
-			lastPoint = screen
+			if role ~= "Tape" then
+				mode = "Pet"
+				lastPoint = screen
+			end
 		end
 	end)
 
@@ -446,6 +487,9 @@ function BoxingScreen.Start()
 			setup(data)
 			refreshAnger()
 			gui.Enabled = true
+		elseif kind == "Role" then
+			applyRole(data.Role) -- a crewmate left, so the jobs got reshuffled
+			help.Text = `Your job now: {if role == "Both" then "pet AND tape" else string.lower(role)}!`
 		elseif kind == "SeamTaped" then
 			taped[data.Seam] = true
 			drawSeams()

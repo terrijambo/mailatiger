@@ -6,6 +6,12 @@
 -- (don't touch its angry spots!) while you drag tape across every seam of the box. Each strip annoys it more.
 -- If anger hits 100: VINE BOOM, you're launched into the air as a ragdoll, and it escapes back into the arena.
 --
+-- Multiplayer (Phase 5):
+--   * Giant animals need a CREW. Other players press E on the animal to join. Everyone must be close when it's
+--     grabbed, and on the BOX screen the owner tapes while the crew pets.
+--   * CHAOS MODE (chosen in the Pen menu) pays more, but other players can spook your animal (E on it) and
+--     shove you (F).
+--
 -- The server runs everything and checks every message. The client only draws the screen and reports what you
 -- rubbed and taped. Calming is capped per second and tape strips can't come faster than a human could drag them.
 
@@ -20,6 +26,7 @@ local CatchAI = require(script.Parent.CatchAI)
 local Config = require(ReplicatedStorage.Shared.Config)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local LeaderboardService = require(script.Parent.LeaderboardService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
@@ -32,6 +39,7 @@ type TwistSet = BoxingConfig.TwistSet
 
 local Boxing = Config.Boxing
 local Tuning = Boxing.TwistTuning
+local Social = Config.Social
 local Gruff = Config.Gruff
 
 local WALK_SPEED = 16
@@ -39,9 +47,11 @@ local JUMP_HEIGHT = 7.2
 
 local BoxingService = {}
 
-local sessions: { [Player]: Session } = {}
+local sessions: { [Player]: Session } = {} -- owner -> job
+local crewOf: { [Player]: Session } = {} -- crew member -> the job they're helping with
 local stunnedUntil: { [Player]: number } = {}
 local lastPenUse: { [Player]: number } = {}
+local lastShove: { [Player]: number } = {}
 local map: MapBuilder.Map
 local boxesFolder: Folder
 
@@ -80,13 +90,37 @@ local function getCharacterParts(player: Player): (BasePart?, Humanoid?)
 	return character:FindFirstChild("HumanoidRootPart") :: BasePart?, character:FindFirstChildOfClass("Humanoid")
 end
 
+-- The job a player is part of, as the owner or as crew
+local function jobOf(player: Player): Session?
+	return sessions[player] or crewOf[player]
+end
+
+-- Owner first, then the crew
+local function membersOf(s: Session): { Player }
+	local members = { s.Player }
+	for _, helper in s.Crew do
+		table.insert(members, helper)
+	end
+	return members
+end
+
+local function notifyAll(s: Session, kind: string, data: { [string]: any })
+	for _, member in membersOf(s) do
+		notify(member, kind, data)
+	end
+end
+
+local function sayAll(s: Session, speaker: string, text: string)
+	notifyAll(s, "Message", { Speaker = speaker, Text = text })
+end
+
 -- You can't walk while boxing, or while stunned (or ragdolled).
 local function refreshMovement(player: Player)
 	local _, humanoid = getCharacterParts(player)
 	if not humanoid then
 		return
 	end
-	local s = sessions[player]
+	local s = jobOf(player)
 	local busy = s ~= nil and s.Stage ~= "Catch"
 	local stunned = os.clock() < (stunnedUntil[player] or 0)
 	local speed = WALK_SPEED + Economy.ToolBonus(player, "Sneakers")
@@ -105,9 +139,12 @@ end
 
 local function setStage(s: Session, stage: string, tip: string)
 	s.Stage = stage
-	s.Player:SetAttribute("Stage", stage)
-	s.Player:SetAttribute("Tip", tip)
-	refreshMovement(s.Player)
+	for _, member in membersOf(s) do
+		member:SetAttribute("Stage", stage)
+		member:SetAttribute("Tip", tip)
+		member:SetAttribute("Chaos", s.Chaos)
+		refreshMovement(member)
+	end
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -140,24 +177,30 @@ local function buildBox(s: Session): Model
 	end
 
 	local boxColor = Config.Boxes.ById[s.BoxId].Color
-	local box = piece("Box", Vector3.new(3, 3, 3), boxCFrame, boxColor)
+	local scale = if animal.Carriers > 1 then 2 else 1 -- giants get a giant box
+	local box = piece("Box", Vector3.new(3, 3, 3) * scale, boxCFrame * CFrame.new(0, 1.5 * (scale - 1), 0), boxColor)
 	piece(
 		"Lid",
-		Vector3.new(3.1, 0.25, 3.1),
-		boxCFrame * CFrame.new(0, 1.6, 0),
+		Vector3.new(3.1 * scale, 0.25, 3.1 * scale),
+		box.CFrame * CFrame.new(0, 1.6 * scale, 0),
 		boxColor:Lerp(Color3.new(0, 0, 0), 0.15)
 	)
-	local strip =
-		piece("Tape", Vector3.new(0.05, 0.3, 0.7), boxCFrame * CFrame.new(0, 1.75, 0), Color3.fromRGB(230, 200, 120))
+	local strip = piece(
+		"Tape",
+		Vector3.new(0.05, 0.3, 0.7),
+		box.CFrame * CFrame.new(0, 1.75 * scale, 0),
+		Color3.fromRGB(230, 200, 120)
+	)
 	strip.Transparency = 1 -- appears as you tape
 	local critter = piece(
 		"Animal",
-		Vector3.new(1.6, 1.6, 1.6),
-		boxCFrame * CFrame.new(0, 2.6, 0),
+		Vector3.new(1.6, 1.6, 1.6) * scale,
+		box.CFrame * CFrame.new(0, 2.6 * scale, 0),
 		animal.Color or Color3.new(1, 1, 1)
 	)
 	critter.Shape = Enum.PartType.Ball
-	MapBuilder.Label(box, `{s.Player.DisplayName}'s {animal.DisplayName}`, 4)
+	MapBuilder.Label(box, `{s.Player.DisplayName}'s {animal.DisplayName}`, 4 * scale)
+	box:SetAttribute("Scale", scale)
 
 	model.PrimaryPart = box
 	model.Parent = boxesFolder
@@ -177,14 +220,18 @@ local function updateBoxVisual(s: Session)
 	if not (box and lid and strip) then
 		return
 	end
-	local shake = if state.Anger > 70 then (math.random() - 0.5) * 0.15 else 0
+	local scale = (box:GetAttribute("Scale") :: number?) or 1
+	local shake = if state.Anger > 70 then (math.random() - 0.5) * 0.15 * scale else 0
 	local angle = math.rad(math.clamp(state.Anger, 0, 100) * 0.6)
-	lid.CFrame = box.CFrame * CFrame.new(shake, 1.6, 1.55) * CFrame.Angles(angle, 0, 0) * CFrame.new(0, 0, -1.55)
+	lid.CFrame = box.CFrame
+		* CFrame.new(shake, 1.6 * scale, 1.55 * scale)
+		* CFrame.Angles(angle, 0, 0)
+		* CFrame.new(0, 0, -1.55 * scale)
 	local taped = 0
 	for _, done in state.Taped do
 		taped += if done then 1 else 0
 	end
-	local length = 3.1 * taped / state.SeamCount
+	local length = 3.1 * scale * taped / state.SeamCount
 	strip.Transparency = if length > 0.05 then 0 else 1
 	strip.Size = Vector3.new(math.max(0.05, length), 0.3, 0.7)
 	strip.CFrame = lid.CFrame * CFrame.new(0, 0.15, 0)
@@ -203,6 +250,13 @@ end
 local function catchTip(s: Session): string
 	local animal = Config.Animals.ById[s.AnimalId]
 	local arenaName = Config.Arenas.ById[s.ArenaId].DisplayName
+	if animal.Carriers > 1 then
+		local have = 1 + #s.Crew
+		if have < animal.Carriers then
+			return `CO-OP: your {animal.DisplayName} needs {animal.Carriers} players ({have} so far). Others press E on it to join!`
+		end
+		return `Crew complete! Everyone get close to the {animal.DisplayName} in the {arenaName}, then hold E to grab it.`
+	end
 	if twistsFor(s.AnimalId).Sleep then
 		return `Your {animal.DisplayName} is asleep in the {arenaName}. Hold C to sneak up, then hold E to grab it.`
 	end
@@ -212,13 +266,34 @@ end
 local function startCatch(s: Session, at: Vector3?)
 	destroyBox(s)
 	s.Box = nil
-	s.Player:SetAttribute("Anger", nil)
+	for _, member in membersOf(s) do
+		member:SetAttribute("Anger", nil)
+	end
 	CatchAI.Spawn(s, at)
 	setStage(s, "Catch", catchTip(s))
 end
 
 ---------------------------------------------------------------------------------------------------
 -- Stage 2: BOX
+
+-- Who does what on the BOX screen. Solo: "Both". Crew: the owner tapes, and helpers take turns being petters
+-- and tapers (Pet, Tape, Pet...), so a 2-player crew is one taper + one petter.
+local function assignRoles(s: Session)
+	s.Roles = {}
+	if #s.Crew == 0 then
+		s.Roles[s.Player] = "Both"
+		return
+	end
+	s.Roles[s.Player] = "Tape"
+	for index, helper in s.Crew do
+		s.Roles[helper] = if index % 2 == 1 then "Pet" else "Tape"
+	end
+end
+
+local function canDo(s: Session, player: Player, action: string): boolean
+	local role = s.Roles[player]
+	return role == "Both" or role == action
+end
 
 -- Picks spots on the animal picture that don't overlap each other
 local function makeSpots(s: Session): { BoxMath.Spot }
@@ -275,20 +350,32 @@ end
 local function syncBox(s: Session)
 	local state = s.Box
 	if state then
-		s.Player:SetAttribute("Anger", math.floor(state.Anger))
+		for _, member in membersOf(s) do
+			member:SetAttribute("Anger", math.floor(state.Anger))
+		end
+	end
+end
+
+local function sendRoles(s: Session)
+	for _, member in membersOf(s) do
+		notify(member, "Role", { Role = s.Roles[member] or "Both" })
 	end
 end
 
 local function startBox(s: Session)
 	local cfg = Boxing.Box
-	local tier = Config.Animals.ById[s.AnimalId].Tier
+	local animal = Config.Animals.ById[s.AnimalId]
 	local box = Config.Boxes.ById[s.BoxId]
 	local stamp = stampOf(s)
-	local seamCount = cfg.SeamsByTier[tier] or 5
+	local seamCount = cfg.SeamsByTier[animal.Tier] or 5
 
 	local taped = {}
 	for index = 1, seamCount do
 		taped[index] = false
+	end
+	local angerMult = box.AngerMult * (if stamp and stamp.AngerMult then stamp.AngerMult else 1) -- FRAGILE is touchier
+	if animal.Carriers > 1 then
+		angerMult *= Social.Coop.AngerMult -- giants: more hands, angrier animal
 	end
 	s.Box = {
 		Start = Workspace:GetServerTimeNow(),
@@ -297,32 +384,39 @@ local function startBox(s: Session)
 		SeamCount = seamCount,
 		Taped = taped,
 		LastSeam = os.clock(),
-		LastPet = os.clock(),
+		LastPet = {},
 		LastAngryTouch = 0,
 		NextPound = os.clock() + Tuning.Pound.Interval,
 		TapeAngerMult = s.TapeAngerMult,
-		AngerMult = box.AngerMult * (if stamp and stamp.AngerMult then stamp.AngerMult else 1), -- FRAGILE is touchier
+		AngerMult = angerMult,
 	}
+	assignRoles(s)
 	setStage(s, "Box", "Rub the ♥ spots to keep it calm while you drag tape across every seam! Avoid the ✖ spots.")
 	local state = s.Box :: Types.BoxState
-	notify(s.Player, "BoxStart", {
-		AnimalId = s.AnimalId,
-		Start = state.Start,
-		Spots = state.Spots,
-		SeamCount = seamCount,
-	})
+	for _, member in membersOf(s) do
+		notify(member, "BoxStart", {
+			AnimalId = s.AnimalId,
+			Start = state.Start,
+			Spots = state.Spots,
+			SeamCount = seamCount,
+			Role = s.Roles[member] or "Both",
+		})
+	end
 	syncBox(s)
 	updateBoxVisual(s)
 end
 
 local function endSession(s: Session)
-	local player = s.Player
 	CatchAI.Remove(s)
-	sessions[player] = nil
-	player:SetAttribute("Stage", "")
-	player:SetAttribute("Tip", "")
-	player:SetAttribute("Anger", nil)
-	refreshMovement(player)
+	sessions[s.Player] = nil
+	for _, member in membersOf(s) do
+		crewOf[member] = nil
+		member:SetAttribute("Stage", "")
+		member:SetAttribute("Tip", "")
+		member:SetAttribute("Anger", nil)
+		member:SetAttribute("Chaos", false)
+		refreshMovement(member)
+	end
 end
 
 local function knockOffGruffsHat()
@@ -349,7 +443,9 @@ local function breakout(s: Session, position: Vector3)
 			notify(player, "Breakout", { Animal = Config.Animals.ById[s.AnimalId].DisplayName })
 		end
 	end
-	gruffSays(s.Player, pick(Gruff.Breakout))
+	for _, member in membersOf(s) do
+		gruffSays(member, pick(Gruff.Breakout))
+	end
 end
 
 -- The animal gets out and runs back into the arena.
@@ -361,11 +457,11 @@ local function escape(s: Session, how: string)
 		elseif root then root.Position
 		else map.Arenas[s.ArenaId].Center
 	s.Escapes += 1
-	notify(s.Player, "Break", {})
+	notifyAll(s, "Break", {})
 	if how == "Launch" and twistsFor(s.AnimalId).Breakout then
 		breakout(s, position)
 	else
-		gruffSays(s.Player, pick(Gruff.Escape))
+		sayAll(s, "Postmaster Gruff", pick(Gruff.Escape))
 	end
 	startCatch(s, position)
 end
@@ -386,19 +482,20 @@ local function playVineBoom(at: BasePart)
 	end)
 end
 
--- Anger hit 100: VINE BOOM, launch the player as a ragdoll, and the animal escapes.
+-- Anger hit 100: VINE BOOM, launch everyone in the job as ragdolls, and the animal escapes.
 local function launch(s: Session)
 	local cfg = Boxing.Box
-	local player = s.Player
-	local root = getCharacterParts(player)
-	local angle = math.random() * math.pi * 2
-	local velocity =
-		Vector3.new(math.cos(angle) * cfg.LaunchSideways, cfg.LaunchSpeed, math.sin(angle) * cfg.LaunchSideways)
-	if root then
-		playVineBoom(root)
+	for _, member in membersOf(s) do
+		local root = getCharacterParts(member)
+		local angle = math.random() * math.pi * 2
+		local velocity =
+			Vector3.new(math.cos(angle) * cfg.LaunchSideways, cfg.LaunchSpeed, math.sin(angle) * cfg.LaunchSideways)
+		if root then
+			playVineBoom(root)
+		end
+		notify(member, "Launch", { Velocity = velocity, Seconds = cfg.RagdollSeconds })
+		stun(member, cfg.RagdollSeconds)
 	end
-	notify(player, "Launch", { Velocity = velocity, Seconds = cfg.RagdollSeconds })
-	stun(player, cfg.RagdollSeconds)
 	escape(s, "Launch")
 end
 
@@ -417,31 +514,35 @@ local function starsFor(s: Session): number
 	return math.clamp(stars, 1, 5)
 end
 
--- Taped shut! Fly it to the mail chute and pay up.
---   coins = value x stamps x escapes x stamp bonus x rebirth bonus + egg bonus, plus any orders filled
+local function animalIndex(animalId: string): number
+	for index, animal in Config.Animals.List do
+		if animal.Id == animalId then
+			return index
+		end
+	end
+	return 0
+end
+
+-- Taped shut! Fly it to the mail chute and pay everyone in the job.
+--   coins = value x stamps x escapes x stamp x chaos x (each player's own rebirth bonus) + egg bonus,
+--   plus any of that player's orders it fills
 local function mail(s: Session)
-	local player = s.Player
 	local animal = Config.Animals.ById[s.AnimalId]
 	local stars = starsFor(s)
 	local underPar = isUnderPar(s)
 	local stamp = stampOf(s)
+	local seconds = os.clock() - s.StartTime
 
-	local mult = Boxing.StarPayoutMult[stars] * Boxing.EscapePayoutMult ^ s.Escapes * Economy.PayoutMult(player)
+	local mult = Boxing.StarPayoutMult[stars] * Boxing.EscapePayoutMult ^ s.Escapes
 	if stamp then
 		mult *= stamp.PayoutMult
 		if stamp.UnderParMult and underPar then
 			mult *= stamp.UnderParMult
 		end
 	end
-	local coins = math.max(1, math.round(animal.BaseValue * mult + s.Bonus))
-
-	local orderBonus = 0
-	local profile = DataService.Get(player)
-	if profile then
-		profile.Mailed += 1
-		orderBonus = Orders.OnMailed(profile, s.AnimalId, { Stars = stars, Escapes = s.Escapes, UnderPar = underPar })
+	if s.Chaos then
+		mult *= Social.Chaos.PayoutMult
 	end
-	local seconds = os.clock() - s.StartTime
 
 	local model = s.BoxModel
 	s.BoxModel = nil
@@ -467,33 +568,145 @@ local function mail(s: Session)
 		end)
 	end
 
+	local members = membersOf(s)
 	endSession(s)
-	notify(player, "BoxDone", {})
-	Economy.AddCoins(player, coins + orderBonus)
-	notify(player, "Receipt", {
-		Animal = animal.DisplayName,
-		Stars = stars,
-		Coins = coins,
-		OrderBonus = orderBonus,
-		Stamp = if stamp then stamp.DisplayName else nil,
-		Line = pick(Gruff.Ratings[stars]),
-		Seconds = seconds,
-	})
+	local line = pick(Gruff.Ratings[stars])
+	for _, member in members do
+		local coins = math.max(1, math.round(animal.BaseValue * mult * Economy.PayoutMult(member) + s.Bonus))
+		local orderBonus = 0
+		local profile = DataService.Get(member)
+		if profile then
+			profile.Mailed += 1
+			orderBonus =
+				Orders.OnMailed(profile, s.AnimalId, { Stars = stars, Escapes = s.Escapes, UnderPar = underPar })
+			-- Leaderboard stats
+			if stars == 5 then
+				profile.FiveStampJobs += 1
+			end
+			if s.AnimalId == "Tiger" and (profile.BestTigerSeconds == 0 or seconds < profile.BestTigerSeconds) then
+				profile.BestTigerSeconds = seconds
+			end
+			profile.RarestIndex = math.max(profile.RarestIndex, animalIndex(s.AnimalId))
+			LeaderboardService.Submit(member)
+		end
+		notify(member, "BoxDone", {})
+		Economy.AddCoins(member, coins + orderBonus)
+		notify(member, "Receipt", {
+			Animal = animal.DisplayName,
+			Stars = stars,
+			Coins = coins,
+			OrderBonus = orderBonus,
+			Stamp = if stamp then stamp.DisplayName elseif s.Chaos then "CHAOS" else nil,
+			Line = line,
+			Seconds = seconds,
+		})
+	end
 end
 
 local function cancel(s: Session)
 	destroyBox(s)
+	local members = membersOf(s)
 	endSession(s)
-	notify(s.Player, "BoxDone", {})
+	for _, member in members do
+		notify(member, "BoxDone", {})
+	end
+end
+
+---------------------------------------------------------------------------------------------------
+-- Crews
+
+local function joinCrew(s: Session, helper: Player)
+	table.insert(s.Crew, helper)
+	crewOf[helper] = s
+	CatchAI.RefreshLabel(s)
+	setStage(s, "Catch", catchTip(s))
+	local animal = Config.Animals.ById[s.AnimalId]
+	sayAll(s, "Crew", `{helper.DisplayName} joined the crew for {s.Player.DisplayName}'s {animal.DisplayName}!`)
+end
+
+-- A helper left (or died). During BOX the remaining players' roles are reshuffled so nothing is left undone.
+local function leaveCrew(s: Session, helper: Player)
+	local index = table.find(s.Crew, helper)
+	if not index then
+		return
+	end
+	table.remove(s.Crew, index)
+	crewOf[helper] = nil
+	s.Roles[helper] = nil
+	helper:SetAttribute("Stage", "")
+	helper:SetAttribute("Tip", "")
+	helper:SetAttribute("Anger", nil)
+	helper:SetAttribute("Chaos", false)
+	notify(helper, "BoxDone", {})
+	refreshMovement(helper)
+	CatchAI.RefreshLabel(s)
+	if s.Stage == "Box" then
+		assignRoles(s)
+		sendRoles(s)
+	else
+		setStage(s, "Catch", catchTip(s))
+	end
+	sayAll(s, "Crew", `{helper.DisplayName} left the crew.`)
+end
+
+-- Someone pressed E on a job's animal
+local function onPrompt(s: Session, who: Player)
+	local animal = Config.Animals.ById[s.AnimalId]
+	local isMember = who == s.Player or crewOf[who] == s
+
+	if isMember then
+		if animal.Carriers > 1 then
+			-- Co-op: the whole crew has to be here, and close
+			local members = membersOf(s)
+			if #members < animal.Carriers then
+				say(who, "Crew", `You need {animal.Carriers} players for this one ({#members} so far).`)
+				return
+			end
+			local critter = s.Critter
+			for _, member in members do
+				local root = getCharacterParts(member)
+				if
+					not (critter and root and (root.Position - critter.Position).Magnitude <= Social.Coop.GrabRadius)
+				then
+					say(who, "Crew", `Everyone has to be close! {member.DisplayName} is too far away.`)
+					return
+				end
+			end
+		end
+		if CatchAI.TryGrab(s, who) then
+			CatchAI.Remove(s)
+			s.BoxModel = buildBox(s)
+			startBox(s)
+		end
+		return
+	end
+
+	-- Not in this job: join a giant's crew if there's room...
+	if animal.Carriers > 1 and not jobOf(who) and 1 + #s.Crew < animal.Carriers then
+		joinCrew(s, who)
+		return
+	end
+	-- ...or spook it, if the owner turned on Chaos Mode
+	if s.Chaos then
+		local now = os.clock()
+		if now - (s.SpookedBy[who] or 0) >= Social.Chaos.SpookCooldown then
+			s.SpookedBy[who] = now
+			CatchAI.Spook(s, who)
+			sayAll(s, "CHAOS", `{who.DisplayName} spooked your {animal.DisplayName}!`)
+		end
+		return
+	end
+	gruffSays(who, Gruff.NotYours)
 end
 
 ---------------------------------------------------------------------------------------------------
 -- Messages from the BOX screen
 
--- Rubbing a sweet spot. Calming is limited by the time since the last message, so spamming doesn't help.
-local function onPet(s: Session, spotIndex: unknown)
+-- Rubbing a sweet spot. Calming is limited by the time since that player's last message, so spamming
+-- doesn't help, but two petters do calm twice as fast.
+local function onPet(s: Session, player: Player, spotIndex: unknown)
 	local state = s.Box
-	if not state or typeof(spotIndex) ~= "number" then
+	if not state or typeof(spotIndex) ~= "number" or not canDo(s, player, "Pet") then
 		return
 	end
 	local spot = state.Spots[spotIndex]
@@ -501,16 +714,16 @@ local function onPet(s: Session, spotIndex: unknown)
 		return
 	end
 	local now = os.clock()
-	local elapsed = math.min(now - state.LastPet, 0.25)
-	state.LastPet = now
+	local elapsed = math.min(now - (state.LastPet[player] or now), 0.25)
+	state.LastPet[player] = now
 	state.Anger = math.max(0, state.Anger - Boxing.Box.PetCalmPerSecond * elapsed)
 	syncBox(s)
 end
 
 -- Rubbed an angry spot. Ouch.
-local function onAngryTouch(s: Session, spotIndex: unknown)
+local function onAngryTouch(s: Session, player: Player, spotIndex: unknown)
 	local state = s.Box
-	if not state or typeof(spotIndex) ~= "number" then
+	if not state or typeof(spotIndex) ~= "number" or not canDo(s, player, "Pet") then
 		return
 	end
 	local spot = state.Spots[spotIndex]
@@ -521,14 +734,14 @@ local function onAngryTouch(s: Session, spotIndex: unknown)
 	state.LastAngryTouch = now
 	state.Anger += Boxing.Box.AngrySpotAnger
 	s.AngryTouches += 1
-	notify(s.Player, "AngryTouch", {})
+	notifyAll(s, "AngryTouch", {})
 	syncBox(s)
 end
 
 -- Dragged a strip of tape along a seam.
-local function onTape(s: Session, seamIndex: unknown)
+local function onTape(s: Session, player: Player, seamIndex: unknown)
 	local state = s.Box
-	if not state or typeof(seamIndex) ~= "number" then
+	if not state or typeof(seamIndex) ~= "number" or not canDo(s, player, "Tape") then
 		return
 	end
 	local now = os.clock()
@@ -547,7 +760,7 @@ local function onTape(s: Session, seamIndex: unknown)
 		mail(s)
 		return
 	end
-	notify(s.Player, "SeamTaped", { Seam = seamIndex })
+	notifyAll(s, "SeamTaped", { Seam = seamIndex })
 	syncBox(s)
 	updateBoxVisual(s)
 end
@@ -571,11 +784,11 @@ local function updateBox(s: Session, now: number, dt: number)
 	if twists.Pound and now >= state.NextPound then
 		state.NextPound = now + Tuning.Pound.Interval
 		state.Anger += Tuning.Pound.Spike
-		notify(s.Player, "Thump", {})
+		notifyAll(s, "Thump", {})
 	end
 	if twists.Snap and math.random() < Tuning.Snap.ChancePerSecond * dt then
 		state.Anger += Tuning.Snap.Spike
-		notify(s.Player, "Thump", {})
+		notifyAll(s, "Thump", {})
 	end
 	if twists.Squeeze and math.random() < Tuning.Squeeze.PeelChancePerSecond * dt then
 		-- A taped seam peels back open
@@ -588,7 +801,7 @@ local function updateBox(s: Session, now: number, dt: number)
 		if #taped > 0 then
 			local seam = taped[math.random(1, #taped)]
 			state.Taped[seam] = false
-			notify(s.Player, "Peel", { Seam = seam })
+			notifyAll(s, "Peel", { Seam = seam })
 		end
 	end
 
@@ -602,9 +815,56 @@ local function updateBox(s: Session, now: number, dt: number)
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Chaos Mode: shoving
+
+local function onShove(shover: Player)
+	local cfg = Social.Chaos
+	local now = os.clock()
+	if now - (lastShove[shover] or 0) < cfg.ShoveCooldown then
+		return
+	end
+	local shoverRoot = getCharacterParts(shover)
+	if not shoverRoot then
+		return
+	end
+	local shoverJob = jobOf(shover)
+
+	-- Shove the closest player who is doing a Chaos job (and isn't on your own crew)
+	local target: Player? = nil
+	local targetRoot: BasePart? = nil
+	local best = cfg.ShoveRange
+	for _, other in Players:GetPlayers() do
+		local job = jobOf(other)
+		local root = getCharacterParts(other)
+		if other ~= shover and job and job.Chaos and job ~= shoverJob and root then
+			local distance = (root.Position - shoverRoot.Position).Magnitude
+			if distance <= best then
+				target, targetRoot, best = other, root, distance
+			end
+		end
+	end
+	if not (target and targetRoot) then
+		return
+	end
+	lastShove[shover] = now
+
+	local flat = targetRoot.Position - shoverRoot.Position
+	local direction = Vector3.new(flat.X, 0, flat.Z)
+	direction = if direction.Magnitude > 0.01 then direction.Unit else shoverRoot.CFrame.LookVector
+	notify(target, "Knockback", { Direction = direction, Strength = cfg.ShoveStrength })
+	say(target, "CHAOS", `{shover.DisplayName} shoved you!`)
+
+	local job = jobOf(target)
+	if job and job.Box then
+		job.Box.Anger += cfg.ShoveAnger -- bumping someone mid-BOX riles up their animal
+		syncBox(job)
+	end
+end
+
+---------------------------------------------------------------------------------------------------
 -- Picking an animal
 
-local function onRequestAnimal(player: Player, animalId: unknown)
+local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown)
 	if typeof(animalId) ~= "string" then
 		return
 	end
@@ -618,12 +878,8 @@ local function onRequestAnimal(player: Player, animalId: unknown)
 		gruffSays(player, Gruff.TooFar)
 		return
 	end
-	if sessions[player] then
+	if jobOf(player) then
 		gruffSays(player, Gruff.AlreadyBoxing)
-		return
-	end
-	if animal.Carriers > 1 then
-		gruffSays(player, Gruff.NeedsCoop)
 		return
 	end
 	if not Economy.Owns(player, animalId) then
@@ -655,6 +911,10 @@ local function onRequestAnimal(player: Player, animalId: unknown)
 	local arenaId = Config.Arenas.ByTier[animal.Tier].Id
 	local s: Session = {
 		Player = player,
+		Crew = {},
+		Roles = {},
+		Chaos = chaos == true,
+		SpookedBy = {},
 		AnimalId = animalId,
 		ArenaId = arenaId,
 		Stage = "Catch",
@@ -676,33 +936,58 @@ local function onRequestAnimal(player: Player, animalId: unknown)
 	if stampId then
 		say(player, "Stamp", `{Config.Stamps.ById[stampId].DisplayName} stamp applied to this job!`)
 	end
+	if s.Chaos then
+		say(player, "CHAOS", "Chaos Mode ON: +50% pay, but anyone can spook your animal and shove you (F)!")
+	end
 end
 
 -- Rooftop: fall off the edge and you're put back on the roof, dazed, with a word from Gruff.
 local function checkFall(s: Session)
 	local arena = map.Arenas[s.ArenaId]
-	local root = getCharacterParts(s.Player)
-	if arena.Edges and root and root.Position.Y < arena.FloorY - 8 then
-		Travel.ToArena(s.Player, s.ArenaId)
-		stun(s.Player, Config.Arenas.FallBackStun)
-		gruffSays(s.Player, "You fell off the ROOF?! Get back up there.")
+	if not arena.Edges then
+		return
+	end
+	for _, member in membersOf(s) do
+		local root = getCharacterParts(member)
+		if root and root.Position.Y < arena.FloorY - 8 then
+			Travel.ToArena(member, s.ArenaId)
+			stun(member, Config.Arenas.FallBackStun)
+			gruffSays(member, "You fell off the ROOF?! Get back up there.")
+		end
 	end
 end
 
 local function onPenUsed(player: Player)
-	local s = sessions[player]
+	local s = jobOf(player)
 	if not s then
 		notify(player, "OpenPen", {})
 		return
 	end
-	-- Using the Pen twice within 5 seconds gives up on the current animal
+	-- Using the Pen twice within 5 seconds gives up on the current animal (or leaves the crew)
 	local last = lastPenUse[player]
 	lastPenUse[player] = os.clock()
 	if last and os.clock() - last < 5 then
-		gruffSays(player, Gruff.GaveUp)
-		cancel(s)
+		if s.Player == player then
+			gruffSays(player, Gruff.GaveUp)
+			cancel(s)
+		else
+			leaveCrew(s, player)
+		end
 	else
 		gruffSays(player, Gruff.AlreadyBoxing)
+	end
+end
+
+-- A player left the game or died
+local function dropPlayer(player: Player)
+	local s = sessions[player]
+	if s then
+		cancel(s)
+		return
+	end
+	local helping = crewOf[player]
+	if helping then
+		leaveCrew(helping, player)
 	end
 end
 
@@ -711,14 +996,12 @@ end
 local function onPlayerAdded(player: Player)
 	player:SetAttribute("Stage", "")
 	player:SetAttribute("Tip", "")
+	player:SetAttribute("Chaos", false)
 
 	player.CharacterAdded:Connect(function(character)
 		local humanoid = character:WaitForChild("Humanoid") :: Humanoid
 		humanoid.Died:Connect(function()
-			local s = sessions[player]
-			if s then
-				cancel(s)
-			end
+			dropPlayer(player)
 		end)
 	end)
 
@@ -740,26 +1023,24 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 		Stun = stun,
 		Effect = notify,
 		Say = say,
-		OnCaught = function(s: Session)
-			CatchAI.Remove(s)
-			s.BoxModel = buildBox(s)
-			startBox(s)
-		end,
+		OnPrompt = onPrompt,
+		Members = membersOf,
 	})
 
 	map.PenPrompt.Triggered:Connect(onPenUsed)
 	Remotes.RequestAnimal.OnServerEvent:Connect(onRequestAnimal)
+	Remotes.Shove.OnServerEvent:Connect(onShove)
 	Remotes.BoxingInput.OnServerEvent:Connect(function(player: Player, action: unknown, index: unknown)
-		local s = sessions[player]
+		local s = jobOf(player)
 		if not s or s.Stage ~= "Box" then
 			return
 		end
 		if action == "Pet" then
-			onPet(s, index)
+			onPet(s, player, index)
 		elseif action == "Angry" then
-			onAngryTouch(s, index)
+			onAngryTouch(s, player, index)
 		elseif action == "Tape" then
-			onTape(s, index)
+			onTape(s, player, index)
 		end
 	end)
 
@@ -768,12 +1049,10 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 		onPlayerAdded(player)
 	end
 	Players.PlayerRemoving:Connect(function(player)
-		local s = sessions[player]
-		if s then
-			cancel(s)
-		end
+		dropPlayer(player)
 		stunnedUntil[player] = nil
 		lastPenUse[player] = nil
+		lastShove[player] = nil
 	end)
 
 	RunService.Heartbeat:Connect(function(dt)

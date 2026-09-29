@@ -61,10 +61,13 @@ function Hud.Start()
 		TextStrokeTransparency = 0.4,
 		Text = "",
 	}, gui)
-	Profile.Watch(function()
+	local function refreshStatus()
 		local profile = Profile.Get()
 		coinsLabel.Text = `{profile.Coins} coins`
 		local parts = {}
+		if player:GetAttribute("Chaos") then
+			table.insert(parts, "CHAOS MODE (+50% pay): others can spook your animal and shove you")
+		end
 		if profile.Rebirths > 0 then
 			local bonus = math.round(profile.Rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth * 100)
 			table.insert(parts, `Rebirth {profile.Rebirths} (+{bonus}% coins)`)
@@ -77,7 +80,10 @@ function Hud.Start()
 			table.insert(parts, "⚠ Progress isn't saving (DataStores off)")
 		end
 		status.Text = table.concat(parts, "   ·   ")
-	end)
+		status.TextColor3 = if player:GetAttribute("Chaos") then Color3.fromRGB(255, 120, 120) else WHITE
+	end
+	Profile.Watch(refreshStatus)
+	player:GetAttributeChangedSignal("Chaos"):Connect(refreshStatus)
 
 	-- Tip banner (bottom center): what to do right now
 	local tip = make("TextLabel", {

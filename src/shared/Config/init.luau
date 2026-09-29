@@ -12,6 +12,7 @@ return {
 	Tools = require(script.Tools),
 	Progression = require(script.Progression),
 	Sounds = require(script.Sounds),
+	Social = require(script.Social),
 	Gruff = require(script.Gruff),
 
 	Dev = {

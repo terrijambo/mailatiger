@@ -20,7 +20,8 @@ export type Api = {
 	Stun: (player: Player, seconds: number) -> (),
 	Effect: (player: Player, kind: string, data: { [string]: any }) -> (),
 	Say: (player: Player, speaker: string, text: string) -> (),
-	OnCaught: (s: Session) -> (),
+	OnPrompt: (s: Session, who: Player) -> (), -- someone pressed E on the animal (grab / join crew / spook)
+	Members: (s: Session) -> { Player }, -- owner + crew
 }
 
 local Catch = Config.Boxing.Catch
@@ -235,23 +236,68 @@ local function dropEgg(s: Session)
 	end)
 end
 
-local function onGrab(s: Session, who: Player)
-	if who ~= s.Player then
-		api.Say(who, "Postmaster Gruff", Config.Gruff.NotYours)
-		return
+-- The closest job member (owner or crew) to the animal: it runs from, and attacks, whoever is nearest
+local function nearestMember(s: Session): (Player, BasePart?)
+	local best, bestRoot, bestDistance = s.Player, nil :: BasePart?, math.huge
+	for _, member in api.Members(s) do
+		local root = playerRoot(member)
+		if root then
+			local distance = (flat(root.Position) - s.CatchState.Pos).Magnitude
+			if distance < bestDistance then
+				best, bestRoot, bestDistance = member, root, distance
+			end
+		end
 	end
+	return best, bestRoot
+end
+
+-- A job member tried to grab it. Returns true if they got it (slippery animals sometimes wriggle free).
+function CatchAI.TryGrab(s: Session, who: Player): boolean
 	if s.Stage ~= "Catch" or not s.Critter then
-		return
+		return false
 	end
 	local animal = Config.Animals.ById[s.AnimalId]
 	if twistsFor(s.AnimalId).Slippery and math.random() < Tuning.Slippery.SlipChance then
-		local root = playerRoot(s.Player)
+		local root = playerRoot(who)
 		local toPlayer = if root then flat(root.Position) - s.CatchState.Pos else Vector3.xAxis
 		startDodge(s, os.clock(), toPlayer)
-		api.Say(s.Player, animal.DisplayName, "*SLIP* It wriggled right out of your hands!")
+		api.Say(who, animal.DisplayName, "*SLIP* It wriggled right out of your hands!")
+		return false
+	end
+	return true
+end
+
+-- Chaos Mode: another player startles the animal. It darts away and runs faster for a bit.
+function CatchAI.Spook(s: Session, spooker: Player)
+	local root = playerRoot(spooker)
+	if not s.Critter or not root then
 		return
 	end
-	api.OnCaught(s)
+	local now = os.clock()
+	startDodge(s, now, flat(root.Position) - s.CatchState.Pos)
+	s.CatchState.SpookUntil = now + Config.Social.Chaos.SpookSeconds
+end
+
+-- Updates the name tag, e.g. when someone joins the crew
+function CatchAI.RefreshLabel(s: Session)
+	local critter = s.Critter
+	if not critter then
+		return
+	end
+	local animal = Config.Animals.ById[s.AnimalId]
+	local text = `{s.Player.DisplayName}'s {animal.DisplayName}`
+	if animal.Carriers > 1 then
+		text ..= `  (crew {1 + #s.Crew}/{animal.Carriers})`
+	end
+	if s.Chaos then
+		text ..= "  [CHAOS]"
+	end
+	local gui = critter:FindFirstChild("Label")
+	local label = gui and gui:FindFirstChildOfClass("TextLabel")
+	if label then
+		label.Text = text
+		label.TextColor3 = if s.Chaos then Color3.fromRGB(255, 90, 90) else Color3.new(1, 1, 1)
+	end
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -288,8 +334,9 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 	attachModel(critter, s.AnimalId)
 	MapBuilder.Label(critter, `{s.Player.DisplayName}'s {animal.DisplayName}`, radius + 1.5)
 
+	-- One prompt for everyone: the owner/crew grab it, others can join a giant's crew or spook a Chaos animal
 	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText = "Grab"
+	prompt.ActionText = if animal.Carriers > 1 then "Grab / Join Crew" elseif s.Chaos then "Grab / Spook" else "Grab"
 	prompt.ObjectText = animal.DisplayName
 	-- Gloves shorten the hold, the Net adds reach
 	prompt.HoldDuration = (Catch.BaseGrabHold + Catch.GrabHoldPerTier * (animal.Tier - 1)) * s.GrabHoldMult
@@ -297,7 +344,7 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = critter
 	prompt.Triggered:Connect(function(who: Player)
-		onGrab(s, who)
+		api.OnPrompt(s, who)
 	end)
 
 	local arena = arenaOf(s)
@@ -313,6 +360,7 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 		Asleep = twists.Sleep == true,
 	}
 	s.Critter = critter
+	CatchAI.RefreshLabel(s)
 	placeCritter(s)
 	critter.Parent = folder
 end
@@ -323,11 +371,11 @@ function CatchAI.Update(s: Session, now: number, dt: number)
 		return
 	end
 	local st = s.CatchState
-	local player = s.Player
+	-- "player" is whichever job member is closest: that's who it runs from and who its tricks hit
+	local player, root = nearestMember(s)
 	local animal = Config.Animals.ById[s.AnimalId]
 	local twists = twistsFor(s.AnimalId)
 	local tier = animal.Tier
-	local root = playerRoot(player)
 	local arena = arenaOf(s)
 
 	local toPlayer = if root then flat(root.Position) - st.Pos else Vector3.zero
@@ -372,6 +420,9 @@ function CatchAI.Update(s: Session, now: number, dt: number)
 
 	-- Pick a direction and speed
 	local speed = (Catch.BaseSpeed + Catch.SpeedPerTier * (tier - 1)) * st.SpeedMult
+	if st.SpookUntil and now < st.SpookUntil then
+		speed *= Config.Social.Chaos.SpookSpeedMult -- spooked by another player (Chaos Mode)
+	end
 	local direction: Vector3
 	if st.DodgeUntil and now < st.DodgeUntil then
 		direction = st.DodgeDir

@@ -36,6 +36,10 @@ export type Profile = {
 	Mailed: number, -- total animals mailed
 	Orders: { Order },
 	OrdersRefreshAt: number, -- os.time() when new orders come in
+	-- Leaderboard stats (kept through rebirths)
+	FiveStampJobs: number,
+	BestTigerSeconds: number, -- 0 = never mailed a tiger
+	RarestIndex: number, -- position in Animals.List of the rarest animal ever mailed (0 = none)
 }
 
 local DataService = {}
@@ -62,6 +66,9 @@ local function newProfile(): Profile
 		Mailed = 0,
 		Orders = {},
 		OrdersRefreshAt = 0,
+		FiveStampJobs = 0,
+		BestTigerSeconds = 0,
+		RarestIndex = 0,
 	}
 end
 
@@ -166,6 +173,16 @@ end
 
 function DataService.Get(player: Player): Profile?
 	return profiles[player]
+end
+
+-- Every loaded profile on this server (used for leaderboards when DataStores are off)
+function DataService.GetAll(): { [Player]: Profile }
+	return profiles
+end
+
+-- Whether saving works this session (leaderboards need it too)
+function DataService.IsOnline(): boolean
+	return store ~= nil
 end
 
 -- Copies the profile onto the player as JSON so their UI can read it.

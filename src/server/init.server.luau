@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local BoxingService = require(script.BoxingService)
 local DataService = require(script.DataService)
 local Economy = require(script.Economy)
+local LeaderboardService = require(script.LeaderboardService)
 local MapBuilder = require(script.MapBuilder)
 local ShopService = require(script.ShopService)
 local Travel = require(script.Travel)
@@ -21,5 +22,7 @@ ShopService.Start(map)
 BoxingService.Start(map)
 -- ...then we start loading saves.
 DataService.Start()
+-- Leaderboards need to know whether DataStores work, so they start last.
+LeaderboardService.Start(map)
 
 print(`[Mail a Tiger] Server started. {#Config.Animals.List} animals loaded.`)

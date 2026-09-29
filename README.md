@@ -77,6 +77,16 @@ Arena tuning (mud slowdown, ice grip, rooftop fall stun) is in `src/shared/Confi
 - [ ] Pick a **Dragon** (tier 6): the **Rooftop**. Walk off the edge and you're put back up, dazed.
 - [ ] Finish a job in a far arena: the box flies all the way to the mail chute in town.
 
+## Phase 5 checklist: multiplayer
+Test with several players: in Studio, **Test tab → Clients and Servers → 2 players** (or 4 for the Whale and Gruff). Tuning is in `src/shared/Config/Social.luau`.
+- [ ] **Co-op:** Player 1 picks the **Elephant** (the card says "co-op 2p"). Player 2 walks to the Ice Rink (travel pad) and presses **E** on the elephant: "joined the crew". The label shows crew 2/2.
+- [ ] Grabbing with only one player nearby says someone is too far. With both close, it works.
+- [ ] **BOX with a crew:** Player 1 only tapes (the animal is shaded "Your crewmate is petting!"), and Player 2 only pets. Both get paid when it's mailed.
+- [ ] Let anger hit 100: *both* players get launched.
+- [ ] **Chaos Mode:** Player 1 turns on the red Chaos toggle in the Pen menu and picks a Hamster. Player 2 presses **E** on it (spooked, it darts off) and presses **F** near Player 1 (shoved). The receipt shows CHAOS and +50% pay.
+- [ ] A normal (non-Chaos) job can't be spooked or shoved.
+- [ ] **Leaderboards** (west side of the plaza): mail a 5-stamp job and the "Most 5-Stamp Jobs" board updates. It says "(this server only)" until saving is on.
+
 ## Vine boom sound
 Roblox can only play sounds uploaded to Roblox, so the vine boom needs a real sound asset id:
 1. In Studio, open the **Toolbox → Marketplace → Audio**, search **"vine boom"**, and pick one you're allowed to use. Or upload your own in the Creator Dashboard.

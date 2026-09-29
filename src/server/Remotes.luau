@@ -4,6 +4,7 @@
 --   RequestAnimal  client -> server   the player picked an animal in the Pen menu (server checks everything)
 --   BoxingInput    client -> server   a button press in the Stuff or Tape stage (server judges it)
 --   ShopAction     client -> server   buy/equip/upgrade/rebirth at the Supply Shop (server checks everything)
+--   Shove          client -> server   Chaos Mode shove (server picks the target and checks range/cooldown)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -21,6 +22,7 @@ local notify = remote("Notify")
 local requestAnimal = remote("RequestAnimal")
 local boxingInput = remote("BoxingInput")
 local shopAction = remote("ShopAction")
+local shove = remote("Shove")
 
 folder.Parent = ReplicatedStorage
 
@@ -29,4 +31,5 @@ return {
 	RequestAnimal = requestAnimal,
 	BoxingInput = boxingInput,
 	ShopAction = shopAction,
+	Shove = shove,
 }

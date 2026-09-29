@@ -48,6 +48,7 @@ export type Map = {
 	ShopPrompt: ProximityPrompt,
 	ShopCounter: BasePart,
 	OrdersPrompt: ProximityPrompt,
+	Leaderboards: { [string]: BasePart }, -- board id -> the part whose +X (Right) face shows the board
 }
 
 local COLORS = {
@@ -524,8 +525,17 @@ function MapBuilder.Build(): Map
 		travelPads[def.Id] = pad
 	end
 
+	-- Leaderboards on the west edge of the plaza, facing into town (LeaderboardService draws on them)
+	local leaderboards: { [string]: BasePart } = {}
+	for index, id in { "FastestTiger", "FiveStamps", "Rarest" } do
+		local z = 34 + (index - 1) * 10
+		leaderboards[id] =
+			block(map, `Leaderboard_{id}`, Vector3.new(-42, 0, z - 4.5), Vector3.new(-41, 11, z + 4.5), COLORS.PostBlue)
+	end
+
 	local townSpot = Vector3.new(0, 3, 40)
 	return {
+		Leaderboards = leaderboards,
 		PenPrompt = penPrompt,
 		PenCounter = counter,
 		Arenas = arenas,

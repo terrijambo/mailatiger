@@ -80,9 +80,33 @@ function PenMenu.Start()
 	}, window)
 	round(close, 20)
 
+	-- Chaos Mode toggle: +50% pay, but other players can spook your animal and shove you
+	local chaos = false
+	local chaosButton = make("TextButton", {
+		Position = UDim2.fromOffset(16, 56),
+		Size = UDim2.new(1, -32, 0, 34),
+		BackgroundColor3 = Color3.fromRGB(140, 140, 150),
+		Font = FONT,
+		TextSize = 17,
+		TextColor3 = WHITE,
+		Text = "",
+	}, window)
+	round(chaosButton, 8)
+	local function refreshChaos()
+		chaosButton.Text = if chaos
+			then "CHAOS MODE: ON  (+50% pay, but anyone can spook your animal and shove you)"
+			else "Chaos Mode: off  (click to turn on: +50% pay, others can mess with you)"
+		chaosButton.BackgroundColor3 = if chaos then Color3.fromRGB(210, 60, 60) else Color3.fromRGB(140, 140, 150)
+	end
+	chaosButton.Activated:Connect(function()
+		chaos = not chaos
+		refreshChaos()
+	end)
+	refreshChaos()
+
 	local list = make("ScrollingFrame", {
-		Position = UDim2.fromOffset(16, 60),
-		Size = UDim2.new(1, -32, 1, -76),
+		Position = UDim2.fromOffset(16, 98),
+		Size = UDim2.new(1, -32, 1, -114),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 8,
@@ -156,7 +180,7 @@ function PenMenu.Start()
 		round(status, 8)
 
 		button.Activated:Connect(function()
-			requestAnimal:FireServer(animal.Id)
+			requestAnimal:FireServer(animal.Id, chaos)
 			gui.Enabled = false
 		end)
 		cards[animal.Id] = { Button = button, Status = status }
@@ -168,24 +192,21 @@ function PenMenu.Start()
 		for _, animal in Config.Animals.List do
 			local card = cards[animal.Id]
 			local status = card.Status
-			if animal.Carriers > 1 then
-				status.Text = `Needs {animal.Carriers} carriers (soon)`
-				status.BackgroundColor3 = Color3.fromRGB(140, 140, 150)
-				card.Button.Active = false
-			elseif owned[animal.Id] then
-				status.Text = "Owned - Box it!"
+			local coop = if animal.Carriers > 1 then ` · co-op {animal.Carriers}p` else ""
+			if owned[animal.Id] then
+				status.Text = `Owned - Box it!{coop}`
 				status.BackgroundColor3 = Color3.fromRGB(90, 180, 90)
 				card.Button.Active = true
 			elseif freeInStudio then
-				status.Text = "FREE (Studio)"
+				status.Text = `FREE (Studio){coop}`
 				status.BackgroundColor3 = Color3.fromRGB(80, 150, 220)
 				card.Button.Active = true
 			elseif myCoins >= animal.Price then
-				status.Text = `Buy: {animal.Price} coins`
+				status.Text = `Buy: {animal.Price}{coop}`
 				status.BackgroundColor3 = Color3.fromRGB(230, 160, 40)
 				card.Button.Active = true
 			else
-				status.Text = `{animal.Price} coins`
+				status.Text = `{animal.Price} coins{coop}`
 				status.BackgroundColor3 = Color3.fromRGB(170, 90, 80)
 				card.Button.Active = true -- the server will say you can't afford it
 			end

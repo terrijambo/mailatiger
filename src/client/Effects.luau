@@ -1,12 +1,14 @@
 --!strict
--- Screen and character effects: camera shake, skunk spray, yeti freeze, charge knockback.
--- (Sneaking, mud and ice are in Movement.luau.)
+-- Screen and character effects: camera shake, skunk spray, yeti freeze, knockbacks, ragdoll launches,
+-- and the Chaos Mode shove key. (Sneaking, mud and ice are in Movement.luau.)
 
+local ContextActionService = game:GetService("ContextActionService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
 local Ragdoll = require(script.Parent.Ragdoll)
 
 local player = Players.LocalPlayer
@@ -62,6 +64,17 @@ local function knockback(direction: Vector3, strength: number)
 end
 
 function Effects.Start()
+	-- Chaos Mode: F (or the on-screen button) shoves the nearest player doing a Chaos job.
+	-- The server picks who, and checks range and cooldown.
+	local shove = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Shove") :: RemoteEvent
+	ContextActionService:BindAction("Shove", function(_name: string, state: Enum.UserInputState)
+		if state == Enum.UserInputState.Begin then
+			shove:FireServer()
+		end
+		return Enum.ContextActionResult.Pass
+	end, true, Config.Social.Chaos.ShoveKey, Enum.KeyCode.ButtonX)
+	ContextActionService:SetTitle("Shove", "Shove")
+
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })
 		if kind == "Spray" then

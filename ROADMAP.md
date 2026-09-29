@@ -114,9 +114,12 @@ One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it ca
 - [ ] **Playtest checkpoint** (checklist in README)
 
 ## Phase 5 — Multiplayer / Social
-- [ ] Co-op giants (Elephant, Whale, Gruff): herd together to catch, then one player pets while the other tapes
-- [ ] Opt-in **Chaos Arena**: higher payout, but other players can spook your animal and bump you. The normal arena stays PvP-free
-- [ ] Global leaderboards (fastest tiger, most 5-stamp jobs, rarest animal mailed)
+- [x] **Co-op giants** (Elephant 2p, Whale 4p, Postmaster Gruff 4p): now pickable at the Pen. Other players press E on the animal to **join the crew**, and the grab only works with a full crew all within 14 studs. Giants get a double-size box
+- [x] **Co-op BOX roles:** the owner tapes and helpers alternate Pet / Tape. Each player's screen shades the part that isn't theirs, and the server only accepts your role's actions. Two petters calm twice as fast. Giants anger 1.4× faster. If a crewmate leaves mid-BOX, roles reshuffle. A burst launches the whole crew
+- [x] Everyone in the crew gets the full payout (with their own rebirth bonus), their own orders progress, and leaderboard credit. Use the Pen twice to leave a crew
+- [x] **Chaos Mode** (a toggle in the Pen menu instead of a separate arena, so it works in every arena): +50% pay, but any other player can **spook** your animal (E on it: it darts off and runs faster for 3s) and **shove** you (F: knockback, plus +10 anger if you're mid-BOX). Non-Chaos jobs can't be touched
+- [x] **Leaderboards** (`LeaderboardService.luau`): three boards on the west side of the plaza for Fastest Tiger, Most 5-Stamp Jobs and Rarest Animal Mailed. They use global OrderedDataStores when saving works, rank this server's players when it doesn't, and refresh every 60s. Stats live in the profile and survive rebirths
+- [ ] **Playtest checkpoint** (needs 2+ players: **Test → Clients and Servers → 2 or 4 players**)
 
 ## Art Track (runs in parallel from Phase 2 on)
 - [ ] Blender → Roblox pipeline test: export one low-poly box + hamster as FBX, import with the 3D Importer, and check scale and pivot
@@ -135,7 +138,7 @@ One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it ca
 ## Phase 7 — Monetization
 - [ ] Game passes: 2x coins, VIP box skins, golden tape gun
 - [ ] Dev products: coin packs, skip-the-unlock for the next animal (no random crates)
-- [ ] No pay-to-win in the Chaos Arena
+- [ ] No pay-to-win in Chaos Mode
 - [ ] Private servers
 
 ## Phase 8 — Launch Prep
@@ -161,7 +164,7 @@ _None right now. New questions get added here as they come up, always as a multi
 - **Workflow:** Rojo + VS Code + Git. Code lives in this folder, and Studio is used for building and playtesting.
 - **Core mechanic (2026-09-29):** Catch → **BOX** (pet the animal calm while dragging tape across the box seams, with an anger meter). Anger at 100 = vine boom + ragdoll launch + escape. **No carrying and no obstacle course**, and the box is mailed right away.
 - **Difficulty:** scales with the animal's tier, plus per-animal twists. Hard animals should be genuinely hard.
-- **PvP:** opt-in Chaos Arena that pays more. Everywhere else is PvP-free, with co-op for giant animals.
+- **PvP:** opt-in **Chaos Mode** (a Pen toggle, +50% pay: others can spook your animal and shove you). Everything else is PvP-free, with co-op crews for giant animals.
 - **Experience:** beginner. Keep the architecture simple, and explain each system as it's built.
 - **Art:** low-poly cartoon, modeled and animated by you in Blender. Graybox with Parts first, and swap in models as they're ready.
 - **Audience:** all ages. Easy to pick up, with depth at high tiers.
