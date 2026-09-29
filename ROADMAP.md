@@ -75,7 +75,7 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [ ] Final models/animations: moved to the Art Track below (your Blender work, not blocking)
 - [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works and feels good")
 
-## Phase 3 — Progression & Economy
+## Phase 3 — Progression & Economy ✅
 - [x] **Supply Shop** counter behind the Animal Pen, with Boxes / Tools / Stamps / Rebirth tabs (`ShopService` + `client/Shop.luau`)
 - [x] Box tiers (`Config/Boxes.luau`): cardboard → wood → steel → vault. The lid starts lower (20 → 5) and animals push weaker (100% → 70%)
 - [x] Tools with 3–5 upgrade levels (`Config/Tools.luau`): Grabbing Gloves (−10% hold per level), Sneakers (+1 speed), Tape Gun (+10% tape per press), Butterfly Net (+1 stud reach)
@@ -84,8 +84,8 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [x] Rebirth: resets coins, animals, boxes, tools and stamps for a permanent +25% coins per rebirth. The first costs 10M, and each one after costs 2.5× more. Click twice to confirm
 - [x] DataStore saving with **session locking** (`DataService.luau`): autosave every 60s, save on leave and on server shutdown, a lock so two servers never write the same save, stale-lock takeover so nobody gets stuck, and old saves get new fields filled in automatically. If DataStores are off, the HUD warns that progress isn't saving
 - [x] Economy tuning sheet: `python tools/economy_sheet.py` reads the real config and writes `docs/economy.csv`. The first pass fixed a 78-minute Yeti wall (1.2M → 500k) and a too-cheap rebirth (1M → 10M). Currently about 7 hours to the first rebirth, with late unlocks taking ~20–35 min each
-- [ ] **Playtest checkpoint** (checklist in README)
-- [ ] **Save test on Roblox** (needs the place published, see README → Saving)
+- [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 (shop, tools, stamps, orders all work)
+- [ ] **Save test on Roblox:** deferred to Phase 8 (Launch Prep) at your request. Needs the place published
 
 ## Phase 4 — World & Arenas
 - [ ] Hub town: Animal Pen, Tool Shop, Post Office
@@ -122,6 +122,7 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [ ] Analytics events (funnel: join → first catch → first mail → first unlock → rebirth)
 - [ ] Soft launch → fix retention drop-offs → sponsored ads
 - [ ] Anti-exploit review: the server already judges every press. Tighten the Stuff lag allowance if needed
+- [ ] Live save test (moved from Phase 3): publish, enable API access, then check join/leave/rejoin, two quick rejoins (session lock), and a server shutdown
 
 ## Phase 9 — Live Ops
 - [ ] Weekly limited animal
