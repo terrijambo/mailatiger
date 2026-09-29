@@ -147,32 +147,31 @@ local function wallAvoidance(arena: MapBuilder.Arena, position: Vector3): Vector
 end
 
 -- If you've made a model for this animal, put it in ReplicatedStorage > AnimalModels, named after the
--- animal's Id (e.g. "Hamster"). It's sized to the animal, stood on the ground and welded onto the running
--- animal instead of showing a plain ball (see ModelFit.luau).
-local function attachModel(critter: Part, animalId: string)
+-- animal's Id (e.g. "Hamster"). It's sized to the animal and stood on the ground (see ModelFit.luau), and
+-- placeCritter moves it along with the invisible "runner" ball every frame.
+-- Returns the model and where it sits relative to the ball.
+-- (No welds on purpose: a weld made before the ball is in the world locks in the wrong offset.)
+local function attachModel(critter: Part, animalId: string): (Model?, CFrame?)
 	local models = ReplicatedStorage:FindFirstChild("AnimalModels")
 	local template = models and models:FindFirstChild(animalId)
 	if not (template and template:IsA("Model")) then
-		return
+		return nil, nil
 	end
 	local model = template:Clone()
 	local floor = critter.CFrame * CFrame.new(0, -critter.Size.Y / 2, 0)
 	ModelFit.Fit(model, floor, critter.Size.X * 1.15)
 	for _, descendant in model:GetDescendants() do
 		if descendant:IsA("BasePart") then
-			descendant.Anchored = false
+			descendant.Anchored = true
 			descendant.CanCollide = false
-			descendant.Massless = true
+			descendant.CanQuery = false
 			descendant:SetAttribute("BaseTransparency", descendant.Transparency)
-			local weld = Instance.new("WeldConstraint")
-			weld.Part0 = critter
-			weld.Part1 = descendant
-			weld.Parent = descendant
 		end
 	end
 	model.Parent = critter
 	critter.Transparency = 1
 	critter:SetAttribute("HasModel", true)
+	return model, critter.CFrame:ToObjectSpace(model:GetPivot())
 end
 
 local function setHidden(critter: Part, hidden: boolean)
@@ -202,6 +201,11 @@ local function placeCritter(s: Session)
 	local st = s.CatchState
 	local position = st.Pos + Vector3.new(0, arenaOf(s).FloorY + st.Radius + st.Lift, 0)
 	critter.CFrame = CFrame.lookAt(position, position + st.Facing)
+	-- Carry your Blender model along with the ball
+	local art = st.Art
+	if art then
+		art:PivotTo(critter.CFrame * st.ArtOffset)
+	end
 end
 
 local function startDodge(s: Session, now: number, toPlayer: Vector3)
@@ -334,7 +338,7 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 	critter.Color = animal.Color or Color3.new(1, 1, 1)
 	critter.Anchored = true
 	critter.CanCollide = false
-	attachModel(critter, s.AnimalId)
+	local art, artOffset = attachModel(critter, s.AnimalId)
 	MapBuilder.Label(critter, `{s.Player.DisplayName}'s {animal.DisplayName}`, radius + 1.5)
 
 	-- One prompt for everyone: the owner/crew grab it, others can join a giant's crew or spook a Chaos animal
@@ -361,6 +365,8 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 		Lift = 0,
 		SpeedMult = 1,
 		Asleep = twists.Sleep == true,
+		Art = art,
+		ArtOffset = artOffset,
 	}
 	s.Critter = critter
 	CatchAI.RefreshLabel(s)
