@@ -4,6 +4,7 @@
 -- the client UI reads.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local DataService = require(script.Parent.DataService)
@@ -39,6 +40,12 @@ local function setupPlayer(player: Player)
 	rebirths.Name = "Rebirths"
 	rebirths.Parent = leaderstats
 	leaderstats.Parent = player
+
+	-- Studio testing only: free coins when nothing is being saved (see Config.Dev.StudioTestCoins)
+	local profile = DataService.Get(player)
+	if profile and RunService:IsStudio() and player:GetAttribute("TemporaryData") == true then
+		profile.Coins = math.max(profile.Coins, Config.Dev.StudioTestCoins)
+	end
 	Economy.Sync(player)
 end
 

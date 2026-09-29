@@ -82,7 +82,7 @@ Arena tuning (mud slowdown, ice grip, rooftop fall stun) is in `src/shared/Confi
 - [ ] Box a Hamster: the "Taped!" popup says it's in your bag, a parcel appears in your arms, and the top bar shows **Bag 1/3**.
 - [ ] The bottom tip tells you to take it to the Mail Chute. Hold **E** at the chute: the parcel flies in, and Gruff's receipt shows the pay.
 - [ ] Fill your bag (3 parcels), then try to pick another animal: Gruff says your bag is full.
-- [ ] **Supply Shop → Chutes:** buy the Express Chute (Studio: give yourself coins, or test later). The receipt says "+15%" and the hold at the chute is shorter.
+- [ ] **Supply Shop → Chutes:** buy the Express Chute (in Studio you start with 2,000,000 test coins while saving is off). The receipt says "+15%" and the hold at the chute is shorter.
 - [ ] **Supply Shop → Tools → Mail Bag:** upgrade it and the bag shows 5 slots.
 - [ ] Leave and rejoin with parcels in your bag: they're still there (needs saving to be on).
 

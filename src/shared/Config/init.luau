@@ -20,5 +20,8 @@ return {
 		-- In Roblox Studio every animal is free, so you can test any of them right away.
 		-- Has no effect in the live game.
 		FreeAnimalsInStudio = true,
+		-- Coins you start with in Studio when progress isn't being saved, for testing shops and upgrades.
+		-- Never touches real saves or the live game. Set to 0 to turn off.
+		StudioTestCoins = 2000000,
 	},
 }
