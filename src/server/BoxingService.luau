@@ -233,10 +233,11 @@ local function makeSpots(s: Session): { BoxMath.Spot }
 	local spots: { BoxMath.Spot } = {}
 	local function add(kind: string, radius: number)
 		local margin = radius + drift + 0.02
-		local x, y = 0.5, 0.5
+		local x, y = 0.5, 0.3
 		for _ = 1, 30 do
+			-- Only on the part of the animal sticking out of the box (see BoxMath.VISIBLE_HEIGHT)
 			x = margin + math.random() * (1 - 2 * margin)
-			y = margin + math.random() * (1 - 2 * margin)
+			y = margin + math.random() * math.max(0, BoxMath.VISIBLE_HEIGHT - 2 * margin)
 			local clear = true
 			for _, other in spots do
 				if

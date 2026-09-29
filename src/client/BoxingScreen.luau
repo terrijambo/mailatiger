@@ -111,46 +111,87 @@ function BoxingScreen.Start()
 		Text = "",
 	})
 
-	-- The two cards, side by side
-	local function card(x: number, title: string, color: Color3): (Frame, TextLabel)
-		local frame = Ui.make("Frame", {
-			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(x, 0.58),
-			Size = UDim2.fromScale(0.36, 0.6),
-			BackgroundColor3 = color,
-		}, backdrop)
-		Ui.make("UIAspectRatioConstraint", { AspectRatio = 1 }, frame)
-		Ui.round(frame, 18)
-		Ui.make("UIStroke", { Thickness = 4, Color = DARK }, frame)
-		local label = Ui.label(frame, {
-			AnchorPoint = Vector2.new(0.5, 1),
-			Position = UDim2.new(0.5, 0, 0, -6),
-			Size = UDim2.new(1, 0, 0, 26),
-			TextXAlignment = Enum.TextXAlignment.Center,
-			TextSize = 22,
-			TextColor3 = Ui.WHITE,
-			TextStrokeTransparency = 0.4,
-			Text = title,
-		})
-		return frame, label
-	end
-	local animalCard, animalTitle = card(0.3, "", Ui.PAPER)
-	local boxCard, boxTitle = card(0.7, "", CARDBOARD)
-
-	local animalBody = Ui.make("Frame", {
+	-- One picture: the animal popping out of the top of the open box.
+	-- The scene is square. The animal fills the top 60%, and the box covers the bottom 56%, hiding the
+	-- animal's lower half. (The server only puts pet spots on the part you can see, see BoxMath.)
+	local scene = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.86, 0.86),
+		Position = UDim2.fromScale(0.5, 0.6),
+		Size = UDim2.fromScale(0.62, 0.7),
+		BackgroundTransparency = 1,
+	}, backdrop)
+	Ui.make("UIAspectRatioConstraint", { AspectRatio = 1 }, scene)
+
+	local ANIMAL_HOME = UDim2.fromScale(0.5, 0)
+	local ANIMAL_HIDDEN = UDim2.fromScale(0.5, 0.42) -- tucked inside the box, before it pops out
+	local animalCard = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = ANIMAL_HOME,
+		Size = UDim2.fromScale(0.6, 0.6),
+		BackgroundTransparency = 1,
+		ZIndex = 2,
+	}, scene)
+	local animalBody = Ui.make("Frame", {
+		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.new(1, 1, 1),
+		ZIndex = 2,
 	}, animalCard)
 	Ui.round(animalBody, 1000)
-	Ui.label(animalBody, {
-		Size = UDim2.fromScale(1, 1),
+	Ui.make("UIStroke", { Thickness = 4, Color = DARK }, animalBody)
+	local face = Ui.label(animalBody, {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.36),
+		Size = UDim2.fromScale(0.6, 0.22),
 		TextXAlignment = Enum.TextXAlignment.Center,
 		TextScaled = true,
-		TextTransparency = 0.5,
+		TextColor3 = DARK,
+		ZIndex = 3,
 		Text = "• ᴥ •",
 	})
+	local animalTitle = Ui.label(scene, {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 0, -8),
+		Size = UDim2.new(1, 0, 0, 26),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		TextSize = 22,
+		TextColor3 = Ui.WHITE,
+		TextStrokeTransparency = 0.4,
+		Text = "",
+	})
+
+	-- The open box: two flaps folded out, and the front face you tape
+	for _, side in { -1, 1 } do
+		local flap = Ui.make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5 + side * 0.34, 0.41),
+			Size = UDim2.fromScale(0.2, 0.06),
+			Rotation = side * -22,
+			BackgroundColor3 = CARDBOARD:Lerp(DARK, 0.15),
+			ZIndex = 4,
+		}, scene)
+		Ui.round(flap, 6)
+		Ui.make("UIStroke", { Thickness = 3, Color = DARK }, flap)
+	end
+	local boxCard = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.fromScale(0.5, 1),
+		Size = UDim2.fromScale(0.56, 0.56),
+		BackgroundColor3 = CARDBOARD,
+		ZIndex = 5, -- in front of the animal
+	}, scene)
+	Ui.round(boxCard, 10)
+	Ui.make("UIStroke", { Thickness = 4, Color = DARK }, boxCard)
+	local boxTitle = Ui.label(scene, {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 1, 8),
+		Size = UDim2.new(1, 0, 0, 26),
+		TextXAlignment = Enum.TextXAlignment.Center,
+		TextSize = 22,
+		TextColor3 = Ui.WHITE,
+		TextStrokeTransparency = 0.4,
+		Text = "",
+	})
+	local popping = false
 
 	-- State for the current job
 	local start = 0
@@ -262,6 +303,19 @@ function BoxingScreen.Start()
 		end
 		drawSeams()
 		help.Text = "Rub the ♥ spots · Don't touch the ✖ spots · Drag tape from dot to dot along each seam"
+
+		-- POP! The animal springs up out of the box
+		popping = true
+		animalCard.Position = ANIMAL_HIDDEN
+		local pop = TweenService:Create(
+			animalCard,
+			TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ Position = ANIMAL_HOME }
+		)
+		pop:Play()
+		pop.Completed:Once(function()
+			popping = false
+		end)
 	end
 
 	-- Spots drift around (same math and clock as the server)
@@ -277,6 +331,13 @@ function BoxingScreen.Start()
 				frame.Position = UDim2.fromScale(p.X, p.Y)
 			end
 		end
+		-- A furious animal trembles and strains to get out of the box
+		if not popping then
+			local anger = (player:GetAttribute("Anger") :: number?) or 0
+			local tremble = if anger >= 75 then 0.012 else 0
+			animalCard.Position = ANIMAL_HOME
+				+ UDim2.fromScale((math.random() - 0.5) * tremble, (math.random() - 0.5) * tremble)
+		end
 	end)
 
 	-- Anger meter
@@ -286,6 +347,7 @@ function BoxingScreen.Start()
 		meterFill.Size = UDim2.fromScale(fraction, 1)
 		meterFill.BackgroundColor3 = Ui.GREEN:Lerp(ANGRY, fraction)
 		meterText.Text = if anger >= 75 then `ANGER {anger}  - PET IT!!` else `ANGER {anger}`
+		face.Text = if anger >= 75 then "ಠ 益 ಠ" elseif anger >= 40 then "¬ _ ¬" else "• ᴥ •"
 	end
 	player:GetAttributeChangedSignal("Anger"):Connect(refreshAnger)
 
@@ -331,12 +393,13 @@ function BoxingScreen.Start()
 			return
 		end
 		local screen = Vector2.new(inputObject.Position.X, inputObject.Position.Y)
-		if inside(animalCard, screen) then
-			mode = "Pet"
-			lastPoint = screen
-		elseif inside(boxCard, screen) then
+		-- The box is in front of the animal's lower half, so check the box first
+		if inside(boxCard, screen) then
 			mode = "Tape"
 			path = { toCard(boxCard, screen) }
+		elseif inside(animalCard, screen) then
+			mode = "Pet"
+			lastPoint = screen
 		end
 	end)
 

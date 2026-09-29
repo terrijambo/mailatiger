@@ -7,6 +7,10 @@
 
 local BoxMath = {}
 
+-- The animal pokes out of the top of the box, and only the top part of its picture is visible.
+-- Pet spots are kept within 0..VISIBLE_HEIGHT (top to bottom) so they're never hidden behind the box.
+BoxMath.VISIBLE_HEIGHT = 0.7
+
 export type Spot = {
 	Kind: string, -- "Sweet" or "Angry"
 	X: number,
