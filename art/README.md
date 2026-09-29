@@ -28,7 +28,25 @@ This overwrites the `.blend`, `.fbx`, color file and preview for that model. **I
 See "Adding your Blender models" in the main [README](../README.md).
 
 ## Models
-| Model | Script | Status |
-|---|---|---|
-| Hamster | `hamster.py` | Pipeline test. Round body, cream belly and cheeks, pink ears, nose and paws |
-| Cardboard box | `cardboard_box.py` | Pipeline test. Open 3×3×3 box with four flaps folded out |
+**All 75 models are built.** The full list, by category, is in [MODEL_LIST.md](MODEL_LIST.md): 25 animals,
+4 boxes, 2 characters, 13 town pieces, 19 arena props, 5 gameplay props, 3 chute upgrades and 4 tools.
+
+| Script | Builds |
+|---|---|
+| `hamster.py` | Hamster |
+| `cardboard_box.py` | Cardboard |
+| `animals.py` | The other 24 animals |
+| `boxes.py` | Wood, Steel, Vault |
+| `characters.py` | Gruff, GruffHat |
+| `town.py` | Post office, counters, chute, boards, pads, street decoration |
+| `arenas.py` | Arena gate and the props for each arena |
+| `props.py` | Egg, tape roll, stamp, envelope, parcel, and the four shop tools |
+| `chutes.py` | The three mail chute upgrades |
+
+Multi-model scripts can rebuild just some models: add `-- Name1 Name2` to the end of the command.
+
+## Review a batch at a glance
+```
+python art/contact_sheet.py sheet.png Tiger Bear Gorilla
+```
+This puts the previews side by side with their names.

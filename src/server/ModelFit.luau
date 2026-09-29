@@ -42,11 +42,21 @@ function ModelFit.Paint(model: Model, artName: string)
 
 	for _, part in model:GetDescendants() do
 		if part:IsA("BasePart") then
-			for name, rgb in colors do
-				if part.Name == name or string.find(string.lower(part.Name), string.lower(name), 1, true) then
-					part.Color = Color3.fromRGB(rgb[1], rgb[2], rgb[3])
-					part.Material = Enum.Material.SmoothPlastic
-					break
+			-- Exact name first; otherwise a name that contains it (the importer sometimes adds prefixes)
+			local entry = colors[part.Name]
+			if not entry then
+				for name, candidate in colors do
+					if string.find(string.lower(part.Name), string.lower(name), 1, true) then
+						entry = candidate
+						break
+					end
+				end
+			end
+			if entry then
+				part.Color = Color3.fromRGB(entry[1], entry[2], entry[3])
+				part.Material = Enum.Material.SmoothPlastic
+				if entry[4] then
+					part.Transparency = entry[4] -- see-through parts, like the goldfish bowl
 				end
 			end
 		end

@@ -79,6 +79,15 @@ One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it ca
 - [ ] **Vine boom sound id:** paste one into `Config/Sounds.luau` (see README → Vine boom)
 - [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works great", after the seam-layer fix)
 
+## Next: Mail It Yourself (requested 2026-09-29)
+Taped boxes go into your **inventory** instead of mailing themselves. You carry them to the **mail chute** and mail
+them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailChute` → `MailChuteExpress` →
+`MailChutePneumatic` → `MailChuteRocket`).
+- [ ] Inventory: taped boxes become Parcels you carry (shown in your hands and on the HUD), with a starting capacity
+- [ ] Mail them yourself at the chute (hold E), and the payout happens there
+- [ ] Chute upgrades in the Supply Shop: faster mailing, more parcels at once, bonus pay per tier
+- [ ] Carry-capacity upgrade (a bigger bag)
+
 ## Phase 2 — Animal System ✅
 - [x] Animal config: tier (also sets difficulty), price, value, carriers, placeholder color (`Config/Animals.luau`)
 - [x] Animal Pen menu: pick any animal, pay its price once to unlock it (free in Studio for testing, via `Config.Dev`)
@@ -125,8 +134,8 @@ One combined BOX stage replaces Stuff and Tape. You pet the animal to keep it ca
 - [x] Blender → Roblox pipeline test: scripted hamster + cardboard box (`art/`), imported in Studio. Auto-fit (`ModelFit.Fit`) and auto-color (`ModelFit.Paint`, since the importer drops colors) confirmed working on 2026-09-29
 - [ ] Style guide: palette, poly budget per animal (~500–2k tris), flat or gradient-texture shading
 - [ ] Rigging + animations per animal: idle, run, caught (dangling), struggling in the box, bursting out
-- [ ] Box set: cardboard, wood, steel, vault, plus a lid and tape strips
-- [ ] Hub buildings: Post Office, Animal Pen, Tool Shop
+- [x] **All 75 models built in Blender** (`art/`, list in `art/MODEL_LIST.md`): every animal, the box set, Gruff and his hat, the town, props for all five arenas, gameplay props, shop tools and chute upgrades. Animals and boxes are already hooked into the game. Town and arena props replace the graybox parts in a later pass
+- [ ] Import the new models into Studio (`AnimalModels` / `BoxModels` folders) and swap the graybox map parts for the town and arena models
 - [ ] Priority: finish the Tier 1 animals first. Everything else stays as placeholders until launch-critical.
 
 ## Phase 6 — Juice, UI & Audio
