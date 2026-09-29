@@ -251,8 +251,9 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = "Grab"
 	prompt.ObjectText = animal.DisplayName
-	prompt.HoldDuration = Catch.BaseGrabHold + Catch.GrabHoldPerTier * (animal.Tier - 1)
-	prompt.MaxActivationDistance = Catch.GrabDistance
+	-- Gloves shorten the hold, the Net adds reach
+	prompt.HoldDuration = (Catch.BaseGrabHold + Catch.GrabHoldPerTier * (animal.Tier - 1)) * s.GrabHoldMult
+	prompt.MaxActivationDistance = Catch.GrabDistance + s.GrabDistanceBonus
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = critter
 	prompt.Triggered:Connect(function(who: Player)

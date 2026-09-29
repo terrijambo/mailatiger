@@ -76,13 +76,16 @@ Goal: is catching, stuffing and taping one animal fun for 5 minutes? *(The origi
 - [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 ("works and feels good")
 
 ## Phase 3 — Progression & Economy
-- [ ] Box tiers (cardboard → wood → steel → vault): the lid starts lower and gets pushed up more slowly
-- [ ] Tools: grabbing gloves (shorter hold), sneakers (run faster in the arena), tape gun (more tape per press), net (longer grab range)
-- [ ] Stamps, reworked for boxing: *Fragile* (+50% pay, but only 1 stuff miss allowed), *Express* (+pay if under par), *Priority* (double pay, and the lid starts at 50)
-- [ ] Gruff's orders board
-- [ ] Rebirth system (reset for a permanent multiplier)
-- [ ] DataStore saving (coins, unlocks, inventory) with session locking
-- [ ] Economy tuning spreadsheet (time-to-unlock per tier)
+- [x] **Supply Shop** counter behind the Animal Pen, with Boxes / Tools / Stamps / Rebirth tabs (`ShopService` + `client/Shop.luau`)
+- [x] Box tiers (`Config/Boxes.luau`): cardboard → wood → steel → vault. The lid starts lower (20 → 5) and animals push weaker (100% → 70%)
+- [x] Tools with 3–5 upgrade levels (`Config/Tools.luau`): Grabbing Gloves (−10% hold per level), Sneakers (+1 speed), Tape Gun (+10% tape per press), Butterfly Net (+1 stud reach)
+- [x] Stamps, reworked for boxing (`Config/Stamps.luau`): *Fragile* (+50% pay, 1 stuff miss allowed), *Express* (+75% if under par), *Priority* (double pay, lid starts at 50). Buy them, pick one for your next job, and it's used up when the job starts
+- [x] Gruff's orders board next to the Post Office (`Orders.luau`): 3 saved orders like "Mail a Skunk without it escaping" for 2–4.5× bonus, refreshed every 10 min, only for animals you own
+- [x] Rebirth: resets coins, animals, boxes, tools and stamps for a permanent +25% coins per rebirth. The first costs 10M, and each one after costs 2.5× more. Click twice to confirm
+- [x] DataStore saving with **session locking** (`DataService.luau`): autosave every 60s, save on leave and on server shutdown, a lock so two servers never write the same save, stale-lock takeover so nobody gets stuck, and old saves get new fields filled in automatically. If DataStores are off, the HUD warns that progress isn't saving
+- [x] Economy tuning sheet: `python tools/economy_sheet.py` reads the real config and writes `docs/economy.csv`. The first pass fixed a 78-minute Yeti wall (1.2M → 500k) and a too-cheap rebirth (1M → 10M). Currently about 7 hours to the first rebirth, with late unlocks taking ~20–35 min each
+- [ ] **Playtest checkpoint** (checklist in README)
+- [ ] **Save test on Roblox** (needs the place published, see README → Saving)
 
 ## Phase 4 — World & Arenas
 - [ ] Hub town: Animal Pen, Tool Shop, Post Office

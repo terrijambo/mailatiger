@@ -1,83 +1,103 @@
 --!strict
--- Coins and owned animals. Coins show in the player list via leaderstats.
--- Owned animals are mirrored to the "OwnedAnimals" player attribute (comma-separated) for the Pen menu.
--- Nothing is saved yet: saving comes in Phase 3.
+-- The rules for coins, unlocks, tools and rebirths, on top of the saved profile (DataService).
+-- Every change calls Economy.Sync, which updates leaderstats (the player list) and the "Profile" attribute
+-- the client UI reads.
 
-local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local DataService = require(script.Parent.DataService)
 
 local Economy = {}
 
-local owned: { [Player]: { [string]: boolean } } = {}
-
-local function coinsValue(player: Player): IntValue?
-	local leaderstats = player:FindFirstChild("leaderstats")
-	return leaderstats and leaderstats:FindFirstChild("Coins") :: IntValue?
-end
-
-local function syncOwned(player: Player)
-	local set = owned[player]
-	if not set then
+function Economy.Sync(player: Player)
+	local profile = DataService.Get(player)
+	if not profile then
 		return
 	end
-	local ids = {}
-	for id in set do
-		table.insert(ids, id)
+	local leaderstats = player:FindFirstChild("leaderstats")
+	if leaderstats then
+		local coins = leaderstats:FindFirstChild("Coins") :: IntValue?
+		local rebirths = leaderstats:FindFirstChild("Rebirths") :: IntValue?
+		if coins then
+			coins.Value = profile.Coins
+		end
+		if rebirths then
+			rebirths.Value = profile.Rebirths
+		end
 	end
-	player:SetAttribute("OwnedAnimals", table.concat(ids, ","))
+	DataService.Sync(player)
 end
 
 local function setupPlayer(player: Player)
 	local leaderstats = Instance.new("Folder")
 	leaderstats.Name = "leaderstats"
-
 	local coins = Instance.new("IntValue")
 	coins.Name = "Coins"
 	coins.Parent = leaderstats
-
+	local rebirths = Instance.new("IntValue")
+	rebirths.Name = "Rebirths"
+	rebirths.Parent = leaderstats
 	leaderstats.Parent = player
-
-	owned[player] = { Hamster = true } -- everyone starts with the hamster
-	syncOwned(player)
+	Economy.Sync(player)
 end
 
 function Economy.AddCoins(player: Player, amount: number)
-	local coins = coinsValue(player)
-	if coins then
-		coins.Value += amount
+	local profile = DataService.Get(player)
+	if profile then
+		profile.Coins += amount
+		Economy.Sync(player)
 	end
 end
 
 -- Takes coins if the player has enough. Returns whether it worked.
 function Economy.TrySpend(player: Player, amount: number): boolean
-	local coins = coinsValue(player)
-	if not coins or coins.Value < amount then
+	local profile = DataService.Get(player)
+	if not profile or profile.Coins < amount then
 		return false
 	end
-	coins.Value -= amount
+	profile.Coins -= amount
+	Economy.Sync(player)
 	return true
 end
 
 function Economy.Owns(player: Player, animalId: string): boolean
-	local set = owned[player]
-	return set ~= nil and set[animalId] == true
+	local profile = DataService.Get(player)
+	return profile ~= nil and profile.Owned[animalId] == true
 end
 
 function Economy.Unlock(player: Player, animalId: string)
-	local set = owned[player]
-	if set then
-		set[animalId] = true
-		syncOwned(player)
+	local profile = DataService.Get(player)
+	if profile then
+		profile.Owned[animalId] = true
+		Economy.Sync(player)
 	end
 end
 
+function Economy.ToolLevel(player: Player, toolId: string): number
+	local profile = DataService.Get(player)
+	return if profile then profile.Tools[toolId] or 0 else 0
+end
+
+-- How much the tool helps at the player's level (level x PerLevel)
+function Economy.ToolBonus(player: Player, toolId: string): number
+	return Economy.ToolLevel(player, toolId) * Config.Tools.ById[toolId].PerLevel
+end
+
+function Economy.RebirthCost(rebirths: number): number
+	local rebirth = Config.Progression.Rebirth
+	return math.round(rebirth.BaseCost * rebirth.CostGrowth ^ rebirths)
+end
+
+-- Permanent payout multiplier from rebirths
+function Economy.PayoutMult(player: Player): number
+	local profile = DataService.Get(player)
+	local rebirths = if profile then profile.Rebirths else 0
+	return 1 + rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
+end
+
 function Economy.Start()
-	Players.PlayerAdded:Connect(setupPlayer)
-	for _, player in Players:GetPlayers() do
-		setupPlayer(player)
-	end
-	Players.PlayerRemoving:Connect(function(player)
-		owned[player] = nil
-	end)
+	DataService.Loaded:Connect(setupPlayer)
 end
 
 return Economy

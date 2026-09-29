@@ -12,7 +12,12 @@ local player = Players.LocalPlayer
 local Effects = {}
 
 local SNEAK_SPEED = 7
-local NORMAL_SPEED = 16
+
+-- Your normal speed (the server raises it when you upgrade Sneakers)
+local function normalSpeed(): number
+	local speed = player:GetAttribute("WalkSpeed")
+	return if typeof(speed) == "number" then speed else 16
+end
 
 local function getHumanoid(): Humanoid?
 	local character = player.Character
@@ -69,7 +74,7 @@ local function onSneak(_name: string, state: Enum.UserInputState, _input: InputO
 		if state == Enum.UserInputState.Begin and humanoid.WalkSpeed > 0 then
 			humanoid.WalkSpeed = SNEAK_SPEED
 		elseif state ~= Enum.UserInputState.Begin and humanoid.WalkSpeed == SNEAK_SPEED then
-			humanoid.WalkSpeed = NORMAL_SPEED
+			humanoid.WalkSpeed = normalSpeed()
 		end
 	end
 	return Enum.ContextActionResult.Pass

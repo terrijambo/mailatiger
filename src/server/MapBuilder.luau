@@ -6,7 +6,8 @@
 --   Spawn           around (0, 45)
 --   Animal Pen      counter at (-14, 7), just outside the arena gate
 --   Catching arena  x -30..30, z -40..0, gate in the middle of the z = 0 fence
---   Post Office     Gruff's counter and the mail chute at (16, 8)
+--   Post Office     Gruff's counter and the mail chute at (16, 8), orders board at (30, 11)
+--   Supply Shop     counter at (-14, 21), behind the Animal Pen
 
 local Workspace = game:GetService("Workspace")
 
@@ -20,6 +21,9 @@ export type Map = {
 	ArenaCenter: Vector3,
 	Chute: BasePart,
 	GruffHat: BasePart,
+	ShopPrompt: ProximityPrompt,
+	ShopCounter: BasePart,
+	OrdersPrompt: ProximityPrompt,
 }
 
 local COLORS = {
@@ -158,6 +162,26 @@ function MapBuilder.Build(): Map
 	local chute = block(map, "MailChute", Vector3.new(22, 0.3, 6), Vector3.new(26, 5, 10), COLORS.Chute)
 	MapBuilder.Label(chute, "MAIL CHUTE", 3.5, COLORS.Yellow)
 
+	-- Gruff's orders board (right of the Post Office)
+	local board = block(map, "OrdersBoard", Vector3.new(30, 0, 8), Vector3.new(31, 7, 14), COLORS.Wood)
+	MapBuilder.Label(board, "GRUFF'S ORDERS", 5, COLORS.Yellow)
+	local ordersPrompt = Instance.new("ProximityPrompt")
+	ordersPrompt.ActionText = "Read Orders"
+	ordersPrompt.ObjectText = "Gruff's Orders"
+	ordersPrompt.HoldDuration = 0.2
+	ordersPrompt.RequiresLineOfSight = false
+	ordersPrompt.Parent = board
+
+	-- Supply Shop (behind the Animal Pen)
+	local shopCounter = block(map, "ShopCounter", Vector3.new(-18, 0, 20), Vector3.new(-10, 3, 22), COLORS.PostBlue)
+	MapBuilder.Label(shopCounter, "SUPPLY SHOP", 4, COLORS.Yellow)
+	local shopPrompt = Instance.new("ProximityPrompt")
+	shopPrompt.ActionText = "Shop"
+	shopPrompt.ObjectText = "Boxes, Tools, Stamps"
+	shopPrompt.HoldDuration = 0.2
+	shopPrompt.RequiresLineOfSight = false
+	shopPrompt.Parent = shopCounter
+
 	return {
 		PenPrompt = penPrompt,
 		PenCounter = counter,
@@ -166,6 +190,9 @@ function MapBuilder.Build(): Map
 		ArenaCenter = (arenaMin + arenaMax) / 2,
 		Chute = chute,
 		GruffHat = gruffHat,
+		ShopPrompt = shopPrompt,
+		ShopCounter = shopCounter,
+		OrdersPrompt = ordersPrompt,
 	}
 end
 

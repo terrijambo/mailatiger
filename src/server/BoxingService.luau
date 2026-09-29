@@ -14,9 +14,12 @@ local Workspace = game:GetService("Workspace")
 local BoxingConfig = require(ReplicatedStorage.Shared.Config.Boxing)
 local CatchAI = require(script.Parent.CatchAI)
 local Config = require(ReplicatedStorage.Shared.Config)
+local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local MapBuilder = require(script.Parent.MapBuilder)
+local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
+local StampsConfig = require(ReplicatedStorage.Shared.Config.Stamps)
 local StuffMath = require(ReplicatedStorage.Shared.StuffMath)
 local Types = require(script.Parent.Types)
 
@@ -61,6 +64,10 @@ local function twistsFor(animalId: string): TwistSet
 	return Boxing.Twists[animalId] or {}
 end
 
+local function stampOf(s: Session): StampsConfig.Stamp?
+	return if s.StampId then Config.Stamps.ById[s.StampId] else nil
+end
+
 local function getCharacterParts(player: Player): (BasePart?, Humanoid?)
 	local character = player.Character
 	if not character then
@@ -78,8 +85,10 @@ local function refreshMovement(player: Player)
 	local s = sessions[player]
 	local busy = s ~= nil and s.Stage ~= "Catch"
 	local stunned = os.clock() < (stunnedUntil[player] or 0)
+	local speed = WALK_SPEED + Economy.ToolBonus(player, "Sneakers")
+	player:SetAttribute("WalkSpeed", speed) -- the client returns to this after sneaking
 	humanoid.UseJumpPower = false
-	humanoid.WalkSpeed = if busy or stunned then 0 else WALK_SPEED
+	humanoid.WalkSpeed = if busy or stunned then 0 else speed
 	humanoid.JumpHeight = if busy or stunned then 0 else JUMP_HEIGHT
 end
 
@@ -123,8 +132,14 @@ local function buildBox(s: Session): Model
 		return p
 	end
 
-	local box = piece("Box", Vector3.new(3, 3, 3), boxCFrame, Color3.fromRGB(198, 156, 109))
-	piece("Lid", Vector3.new(3.1, 0.25, 3.1), boxCFrame * CFrame.new(0, 1.6, 0), Color3.fromRGB(170, 130, 85))
+	local boxColor = Config.Boxes.ById[s.BoxId].Color
+	local box = piece("Box", Vector3.new(3, 3, 3), boxCFrame, boxColor)
+	piece(
+		"Lid",
+		Vector3.new(3.1, 0.25, 3.1),
+		boxCFrame * CFrame.new(0, 1.6, 0),
+		boxColor:Lerp(Color3.new(0, 0, 0), 0.15)
+	)
 	local strip =
 		piece("Tape", Vector3.new(0.05, 0.3, 0.7), boxCFrame * CFrame.new(0, 1.75, 0), Color3.fromRGB(230, 200, 120))
 	strip.Transparency = 1 -- appears as you tape
@@ -204,6 +219,7 @@ local function startStuff(s: Session)
 	local cfg = Boxing.Stuff
 	local width = math.max(cfg.MinZoneWidth, cfg.BaseZoneWidth + cfg.ZoneWidthPerTier * (tier - 1))
 	local amplitude = if twistsFor(s.AnimalId).Wiggle then Tuning.Wiggle.Amplitude else 0
+	local stamp = stampOf(s)
 
 	s.Stuff = {
 		Start = Workspace:GetServerTimeNow(),
@@ -215,7 +231,7 @@ local function startStuff(s: Session)
 		Hits = 0,
 		HitsNeeded = cfg.HitsNeededByTier[tier] or 3,
 		Misses = 0,
-		MissesAllowed = cfg.MissesAllowed,
+		MissesAllowed = if stamp and stamp.MissesAllowed then stamp.MissesAllowed else cfg.MissesAllowed, -- FRAGILE
 		LastPress = 0,
 	}
 	setStage(s, "Stuff", "STUFF IT! Press SPACE (or tap) when the marker is in the green.")
@@ -232,8 +248,9 @@ end
 
 local function startTape(s: Session)
 	s.Stuff = nil
+	local stamp = stampOf(s)
 	s.Tape = {
-		Lid = 20,
+		Lid = if stamp and stamp.StartLid then stamp.StartLid else Config.Boxes.ById[s.BoxId].StartLid, -- PRIORITY
 		Tape = 0,
 		Start = os.clock(),
 		Presses = {},
@@ -300,26 +317,45 @@ local function escape(s: Session, how: string)
 	startCatch(s, position)
 end
 
-local function starsFor(s: Session): number
+local function isUnderPar(s: Session): boolean
 	local animal = Config.Animals.ById[s.AnimalId]
 	local par = Boxing.ParSecondsBase + Boxing.ParSecondsPerTier * (animal.Tier - 1)
+	return os.clock() - s.StartTime <= par
+end
+
+local function starsFor(s: Session): number
 	local stars = 5
 	stars -= math.min(2, s.StuffMisses)
 	stars -= if s.MaxLid >= Boxing.Tape.DangerLid then 1 else 0
-	stars -= if os.clock() - s.StartTime > par then 1 else 0
+	stars -= if isUnderPar(s) then 0 else 1
 	stars -= s.Escapes
 	return math.clamp(stars, 1, 5)
 end
 
 -- Taped shut! Slide it down the mail chute and pay up.
+--   coins = value x stamps x escapes x stamp bonus x rebirth bonus + egg bonus, plus any orders filled
 local function mail(s: Session)
 	local player = s.Player
 	local animal = Config.Animals.ById[s.AnimalId]
 	local stars = starsFor(s)
-	local coins = math.max(
-		1,
-		math.round(animal.BaseValue * Boxing.StarPayoutMult[stars] * Boxing.EscapePayoutMult ^ s.Escapes + s.Bonus)
-	)
+	local underPar = isUnderPar(s)
+	local stamp = stampOf(s)
+
+	local mult = Boxing.StarPayoutMult[stars] * Boxing.EscapePayoutMult ^ s.Escapes * Economy.PayoutMult(player)
+	if stamp then
+		mult *= stamp.PayoutMult
+		if stamp.UnderParMult and underPar then
+			mult *= stamp.UnderParMult
+		end
+	end
+	local coins = math.max(1, math.round(animal.BaseValue * mult + s.Bonus))
+
+	local orderBonus = 0
+	local profile = DataService.Get(player)
+	if profile then
+		profile.Mailed += 1
+		orderBonus = Orders.OnMailed(profile, s.AnimalId, { Stars = stars, Escapes = s.Escapes, UnderPar = underPar })
+	end
 	local seconds = os.clock() - s.StartTime
 
 	local model = s.BoxModel
@@ -339,11 +375,13 @@ local function mail(s: Session)
 	end
 
 	endSession(s)
-	Economy.AddCoins(player, coins)
+	Economy.AddCoins(player, coins + orderBonus)
 	notify(player, "Receipt", {
 		Animal = animal.DisplayName,
 		Stars = stars,
 		Coins = coins,
+		OrderBonus = orderBonus,
+		Stamp = if stamp then stamp.DisplayName else nil,
 		Line = pick(Gruff.Ratings[stars]),
 		Seconds = seconds,
 	})
@@ -422,7 +460,7 @@ local function onTapePress(s: Session)
 	local tier = Config.Animals.ById[s.AnimalId].Tier
 	local pressesNeeded = cfg.BasePresses + cfg.PressesPerTier * (tier - 1)
 	tape.Lid = math.max(0, tape.Lid - cfg.PressDown)
-	tape.Tape = math.min(100, tape.Tape + 100 / pressesNeeded)
+	tape.Tape = math.min(100, tape.Tape + 100 / pressesNeeded * s.TapeMult) -- Tape Gun adds more per press
 	if tape.Tape >= 100 then
 		mail(s)
 	else
@@ -444,6 +482,7 @@ local function updateTape(s: Session, now: number, dt: number)
 	local tier = Config.Animals.ById[s.AnimalId].Tier
 
 	local push = (cfg.BasePush + cfg.PushPerTier * (tier - 1)) * (1 + cfg.RageGrowth * (now - tape.Start))
+	push *= Config.Boxes.ById[s.BoxId].PushMult -- sturdier boxes are harder to push open
 	tape.Lid += push * dt
 
 	if twists.Pound and now >= tape.NextPound then
@@ -501,6 +540,23 @@ local function onRequestAnimal(player: Player, animalId: unknown)
 		end
 		Economy.Unlock(player, animalId)
 	end
+	local profile = DataService.Get(player)
+	if not profile then
+		return -- still loading their save
+	end
+
+	-- Use up the selected stamp (if they still have one)
+	local stampId: string? = nil
+	local selected = profile.SelectedStamp
+	if selected and (profile.Stamps[selected] or 0) > 0 then
+		stampId = selected
+		profile.Stamps[selected] -= 1
+		if profile.Stamps[selected] <= 0 then
+			profile.Stamps[selected] = nil
+			profile.SelectedStamp = nil
+		end
+		Economy.Sync(player)
+	end
 
 	local s: Session = {
 		Player = player,
@@ -511,10 +567,18 @@ local function onRequestAnimal(player: Player, animalId: unknown)
 		StuffMisses = 0,
 		MaxLid = 0,
 		Bonus = 0,
+		BoxId = profile.EquippedBox,
+		StampId = stampId,
+		GrabHoldMult = 1 - Economy.ToolBonus(player, "Gloves"),
+		GrabDistanceBonus = Economy.ToolBonus(player, "Net"),
+		TapeMult = 1 + Economy.ToolBonus(player, "TapeGun"),
 		CatchState = {},
 	}
 	sessions[player] = s
 	startCatch(s, nil)
+	if stampId then
+		say(player, "Stamp", `{Config.Stamps.ById[stampId].DisplayName} stamp applied to this job!`)
+	end
 end
 
 local function onPenUsed(player: Player)

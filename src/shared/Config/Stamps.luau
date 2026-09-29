@@ -1,8 +1,10 @@
 --!strict
--- Stamps are one-use modifiers slapped on a box before a delivery.
---   PayoutMult  : multiplies the delivery payout
---   DamageMult  : multiplies damage the box takes
---   SpeedMult   : multiplies the carrier's walk speed
+-- Stamps are one-use modifiers. Buy them at the Supply Shop, pick one as your "next job" stamp, and it's
+-- used up when you start boxing your next animal. Risk more, earn more.
+--   PayoutMult     : multiplies the job's payout
+--   MissesAllowed  : replaces how many STUFF misses you get (normally 2)
+--   StartLid       : replaces where the lid starts in TAPE
+--   UnderParMult   : extra payout multiplier if you finish under par time
 
 export type Stamp = {
 	Id: string,
@@ -10,46 +12,35 @@ export type Stamp = {
 	Description: string,
 	Price: number,
 	PayoutMult: number,
-	DamageMult: number,
-	SpeedMult: number,
+	MissesAllowed: number?,
+	StartLid: number?,
+	UnderParMult: number?,
 }
 
 local List: { Stamp } = {
 	{
 		Id = "Fragile",
 		DisplayName = "FRAGILE",
-		Description = "+50% pay, but the box takes +50% damage.",
-		Price = 100,
-		PayoutMult = 1.5,
-		DamageMult = 1.5,
-		SpeedMult = 1,
-	},
-	{
-		Id = "BubbleWrap",
-		DisplayName = "Bubble Wrap",
-		Description = "Box takes 30% less damage.",
+		Description = "+50% pay, but only 1 miss allowed while stuffing.",
 		Price = 150,
-		PayoutMult = 1,
-		DamageMult = 0.7,
-		SpeedMult = 1,
+		PayoutMult = 1.5,
+		MissesAllowed = 1,
 	},
 	{
 		Id = "Express",
 		DisplayName = "EXPRESS",
-		Description = "Walk 20% faster.",
-		Price = 200,
+		Description = "+75% pay if you finish under par time.",
+		Price = 300,
 		PayoutMult = 1,
-		DamageMult = 1,
-		SpeedMult = 1.2,
+		UnderParMult = 1.75,
 	},
 	{
 		Id = "Priority",
 		DisplayName = "PRIORITY",
-		Description = "+100% pay, box takes +100% damage. Gruff approves.",
-		Price = 1000,
+		Description = "Double pay, but the lid starts half open. Gruff approves.",
+		Price = 1500,
 		PayoutMult = 2,
-		DamageMult = 2,
-		SpeedMult = 1,
+		StartLid = 50,
 	},
 }
 

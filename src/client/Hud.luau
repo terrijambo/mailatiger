@@ -6,6 +6,9 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
+local Profile = require(script.Parent.Profile)
+
 local player = Players.LocalPlayer
 
 local Hud = {}
@@ -45,13 +48,35 @@ function Hud.Start()
 		Text = "0 coins",
 	}, gui)
 	round(coinsLabel)
-	task.spawn(function()
-		local coins = player:WaitForChild("leaderstats"):WaitForChild("Coins") :: IntValue
-		local function update()
-			coinsLabel.Text = `{coins.Value} coins`
+
+	-- Status line under the coins: rebirth bonus, next-job stamp, and a warning if progress isn't saving
+	local status = make("TextLabel", {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 50),
+		Size = UDim2.fromOffset(520, 20),
+		BackgroundTransparency = 1,
+		Font = FONT,
+		TextSize = 16,
+		TextColor3 = WHITE,
+		TextStrokeTransparency = 0.4,
+		Text = "",
+	}, gui)
+	Profile.Watch(function()
+		local profile = Profile.Get()
+		coinsLabel.Text = `{profile.Coins} coins`
+		local parts = {}
+		if profile.Rebirths > 0 then
+			local bonus = math.round(profile.Rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth * 100)
+			table.insert(parts, `Rebirth {profile.Rebirths} (+{bonus}% coins)`)
 		end
-		coins.Changed:Connect(update)
-		update()
+		local stamp = profile.SelectedStamp and Config.Stamps.ById[profile.SelectedStamp]
+		if stamp then
+			table.insert(parts, `Next job: {stamp.DisplayName} stamp`)
+		end
+		if player:GetAttribute("TemporaryData") then
+			table.insert(parts, "⚠ Progress isn't saving (DataStores off)")
+		end
+		status.Text = table.concat(parts, "   ·   ")
 	end)
 
 	-- Tip banner (bottom center): what to do right now
@@ -170,10 +195,17 @@ function Hud.Start()
 		elseif kind == "Receipt" then
 			local stars = string.rep("★", data.Stars) .. string.rep("☆", 5 - data.Stars)
 			local time = string.format("%.0f", data.Seconds)
+			local extras = ""
+			if data.Stamp then
+				extras ..= `   {data.Stamp}`
+			end
+			if data.OrderBonus and data.OrderBonus > 0 then
+				extras ..= `   +{data.OrderBonus} order!`
+			end
 			showToast(
 				`Postmaster Gruff  ·  {data.Animal} mailed!`,
 				`"{data.Line}"`,
-				`{stars}   +{data.Coins} coins   ({time}s)`
+				`{stars}   +{data.Coins} coins   ({time}s){extras}`
 			)
 		elseif kind == "Roar" then
 			showToast("ROOOOAR!", "It roared at you! You're frozen in fear for a second.")

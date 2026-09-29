@@ -1,0 +1,85 @@
+--!strict
+-- Gruff's orders board: a few orders like "Mail a Skunk with 4+ stamps" that pay bonus coins.
+-- They only ask for animals you own, so there's always something you can do, and they refresh every
+-- Config.Progression.Orders.RefreshMinutes minutes. Orders are saved with your profile.
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local DataService = require(script.Parent.DataService)
+
+type Profile = DataService.Profile
+type Order = DataService.Order
+
+local Tuning = Config.Progression.Orders
+local CONDITIONS = { "Any", "Stars4", "NoEscape", "UnderPar" }
+
+export type JobResult = {
+	Stars: number,
+	Escapes: number,
+	UnderPar: boolean,
+}
+
+local Orders = {}
+
+-- Makes new orders if it's time (or `force` is true). Returns whether anything changed.
+function Orders.Refresh(profile: Profile, force: boolean?): boolean
+	if not force and os.time() < profile.OrdersRefreshAt then
+		return false
+	end
+
+	local choices = {}
+	for animalId in profile.Owned do
+		local animal = Config.Animals.ById[animalId]
+		if animal and animal.Carriers == 1 then
+			table.insert(choices, animal)
+		end
+	end
+	if #choices == 0 then
+		return false
+	end
+
+	local orders: { Order } = {}
+	for _ = 1, Tuning.Count do
+		local animal = choices[math.random(1, #choices)]
+		local condition = CONDITIONS[math.random(1, #CONDITIONS)]
+		local mult = Tuning.MinRewardMult + math.random() * (Tuning.MaxRewardMult - Tuning.MinRewardMult)
+		if condition ~= "Any" then
+			mult *= Tuning.HardConditionMult
+		end
+		table.insert(orders, {
+			AnimalId = animal.Id,
+			Condition = condition,
+			Reward = math.max(5, math.round(animal.BaseValue * mult)),
+			Done = false,
+		})
+	end
+	profile.Orders = orders
+	profile.OrdersRefreshAt = os.time() + Tuning.RefreshMinutes * 60
+	return true
+end
+
+local function conditionMet(condition: string, result: JobResult): boolean
+	if condition == "Stars4" then
+		return result.Stars >= 4
+	elseif condition == "NoEscape" then
+		return result.Escapes == 0
+	elseif condition == "UnderPar" then
+		return result.UnderPar
+	end
+	return true
+end
+
+-- Call after a job is mailed. Marks matching orders done and returns the total bonus earned.
+function Orders.OnMailed(profile: Profile, animalId: string, result: JobResult): number
+	local total = 0
+	for _, order in profile.Orders do
+		if not order.Done and order.AnimalId == animalId and conditionMet(order.Condition, result) then
+			order.Done = true
+			total += order.Reward
+		end
+	end
+	return total
+end
+
+return Orders

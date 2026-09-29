@@ -200,7 +200,7 @@ local List: { Animal } = {
 		Id = "Yeti",
 		DisplayName = "Yeti",
 		Tier = 6,
-		Price = 1200000,
+		Price = 500000,
 		BaseValue = 100000,
 		Carriers = 1,
 	},

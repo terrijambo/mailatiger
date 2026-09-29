@@ -36,6 +36,13 @@ export type Session = {
 	MaxLid: number,
 	Bonus: number,
 
+	-- Locked in when the job starts, from the player's gear
+	BoxId: string, -- equipped box
+	StampId: string?, -- stamp used on this job (already taken from their inventory)
+	GrabHoldMult: number, -- Gloves
+	GrabDistanceBonus: number, -- Net
+	TapeMult: number, -- Tape Gun
+
 	Critter: Part?, -- the running animal during Catch
 	CatchState: { [string]: any }, -- scratch space for the catch AI
 	BoxModel: Model?, -- the box on the ground during Stuff and Tape

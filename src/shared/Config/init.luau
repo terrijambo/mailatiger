@@ -8,6 +8,8 @@ return {
 	Boxing = require(script.Boxing),
 	Boxes = require(script.Boxes),
 	Stamps = require(script.Stamps),
+	Tools = require(script.Tools),
+	Progression = require(script.Progression),
 	Gruff = require(script.Gruff),
 
 	Dev = {

@@ -56,6 +56,21 @@ All the difficulty numbers live in `src/shared/Config/Boxing.luau`.
 - [ ] **Tiger:** hard! Its roar stuns you, and if the lid bursts during Tape you get **RETURN TO SENDER** and Gruff's hat flies off.
 - [ ] Two players (**Test → Clients and Servers → 2 players**): each player's animal ignores the other player, and you can't grab someone else's.
 
+## Phase 3 checklist: shop, orders, rebirth
+- [ ] **Supply Shop** (blue counter behind the Pen): buy the Wooden Crate. It's equipped, and during Tape the lid starts lower and the box is brown.
+- [ ] Upgrade **Sneakers** and you run faster. Sneak with C, let go, and you're back to your upgraded speed.
+- [ ] Upgrade **Gloves** / **Net**: grabbing is quicker, and works from farther away.
+- [ ] Buy a **FRAGILE** stamp. The coins line says "Next job: FRAGILE". Box an animal and you only get 1 stuff miss, and the receipt shows FRAGILE with higher pay.
+- [ ] **Gruff's Orders** (board right of the Post Office): mail a matching animal and the receipt shows "+X order!". The board then marks it DONE.
+- [ ] **Rebirth** tab: shows the cost. (To test it quickly, temporarily set `Rebirth.BaseCost` to 10 in `Config/Progression.luau`.)
+- [ ] The player list shows Coins and Rebirths.
+
+## Saving (DataStores)
+Progress saves automatically: every 60 seconds, when you leave, and when a server shuts down.
+- **In Studio**, saving only works once the place is published to Roblox **and** you turn on **Game Settings → Security → Enable Studio Access to API Services**. Until then the game still runs, but the HUD shows "⚠ Progress isn't saving".
+- To **wipe everyone's data** (e.g. before launch), change `StoreName` in `Config/Progression.luau` to a new version like `PlayerData_v2`.
+- Economy sheet: `python tools/economy_sheet.py` writes `docs/economy.csv` from the real config numbers. Re-run it whenever you change prices or payouts.
+
 ## Adding your Blender models
 1. Import your model in Studio (**Home → Import 3D**) and name the Model after the animal's Id, e.g. `Hamster`.
 2. In Explorer, create a Folder named `AnimalModels` inside **ReplicatedStorage**, and put the model in it.

@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Profile = require(script.Parent.Profile)
 
 local player = Players.LocalPlayer
 
@@ -33,20 +34,11 @@ local function round(parent: Instance, radius: number?)
 end
 
 local function ownedSet(): { [string]: boolean }
-	local set = {}
-	local raw = player:GetAttribute("OwnedAnimals")
-	if typeof(raw) == "string" then
-		for _, id in string.split(raw, ",") do
-			set[id] = true
-		end
-	end
-	return set
+	return Profile.Get().Owned
 end
 
 local function coins(): number
-	local leaderstats = player:FindFirstChild("leaderstats")
-	local value = leaderstats and leaderstats:FindFirstChild("Coins") :: IntValue?
-	return if value then value.Value else 0
+	return Profile.Get().Coins
 end
 
 function PenMenu.Start()
