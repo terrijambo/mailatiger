@@ -70,11 +70,13 @@ function BoxingScreen.Start()
 	local input = remotes:WaitForChild("BoxingInput") :: RemoteEvent
 	local notify = remotes:WaitForChild("Notify") :: RemoteEvent
 
-	local gui = Ui.make(
-		"ScreenGui",
-		{ Name = "BoxingScreen", ResetOnSpawn = false, Enabled = false },
-		player:WaitForChild("PlayerGui")
-	)
+	local gui = Ui.make("ScreenGui", {
+		Name = "BoxingScreen",
+		ResetOnSpawn = false,
+		Enabled = false,
+		-- Sibling: children always draw on top of their parent (so the seams show ON the box, not behind it)
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	}, player:WaitForChild("PlayerGui"))
 	local backdrop = Ui.make("Frame", {
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.new(0, 0, 0),
@@ -116,8 +118,8 @@ function BoxingScreen.Start()
 	-- animal's lower half. (The server only puts pet spots on the part you can see, see BoxMath.)
 	local scene = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.6),
-		Size = UDim2.fromScale(0.62, 0.7),
+		Position = UDim2.fromScale(0.5, 0.57),
+		Size = UDim2.fromScale(0.62, 0.66),
 		BackgroundTransparency = 1,
 	}, backdrop)
 	Ui.make("UIAspectRatioConstraint", { AspectRatio = 1 }, scene)

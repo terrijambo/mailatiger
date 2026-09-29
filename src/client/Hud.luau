@@ -100,8 +100,10 @@ function Hud.Start()
 		else
 			tip.Text = "Go to the Animal Pen and choose an animal!"
 		end
+		tip.Visible = player:GetAttribute("Stage") ~= "Box" -- the BOX screen has its own instructions
 	end
 	player:GetAttributeChangedSignal("Tip"):Connect(refreshTip)
+	player:GetAttributeChangedSignal("Stage"):Connect(refreshTip)
 	refreshTip()
 
 	-- Gruff popup (top center, below coins)

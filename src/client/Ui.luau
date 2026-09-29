@@ -32,7 +32,12 @@ end
 
 -- A paper-style popup window with a title and a close button. Returns the ScreenGui and the content frame.
 function Ui.window(parentGui: Instance, name: string, title: string): (ScreenGui, Frame)
-	local gui = Ui.make("ScreenGui", { Name = name, ResetOnSpawn = false, Enabled = false }, parentGui)
+	local gui = Ui.make("ScreenGui", {
+		Name = name,
+		ResetOnSpawn = false,
+		Enabled = false,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling, -- children draw on top of their parent
+	}, parentGui)
 	local frame = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
