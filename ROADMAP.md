@@ -134,16 +134,18 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 ## Art Track (runs in parallel from Phase 2 on)
 - [x] Blender → Roblox pipeline test: scripted hamster + cardboard box (`art/`), imported in Studio. Auto-fit (`ModelFit.Fit`) and auto-color (`ModelFit.Paint`, since the importer drops colors) confirmed working on 2026-09-29
 - [ ] Style guide: palette, poly budget per animal (~500–2k tris), flat or gradient-texture shading
-- [ ] Rigging + animations per animal: idle, run, caught (dangling), struggling in the box, bursting out
+- [x] Animations are **code-driven** instead of rigged (see Decisions): hop + lean while running, breathe/bob + head-turn twitches while idle, box rattle and thrashing by anger, happy squish when petted, Gruff bobbing and turning to watch you
 - [x] **All 75 models built in Blender** (`art/`, list in `art/MODEL_LIST.md`): every animal, the box set, Gruff and his hat, the town, props for all five arenas, gameplay props, shop tools and chute upgrades. Animals and boxes are already hooked into the game. Town and arena props replace the graybox parts in a later pass
-- [ ] Import the new models into Studio (`AnimalModels` / `BoxModels` folders) and swap the graybox map parts for the town and arena models
+- [x] Models imported into Studio (all four folders) and **map swap done** (`MapBuilder.luau`): every grey block with a model gets it laid on top. The block stays invisible as the collider, prompt holder and name tag. Fences are lined with fence segments, and there's new scenery (doghouse, flowerbed, trough, rocks, snowmen, water tower, chimney, lampposts, benches, planters, mailbox). Missing models just leave the grey block
+- [x] Props hooked up: Gruff's model + his cap (still gets knocked flying), eggs, a spinning tool display at the shop, a spinning letter over the orders board, and 3D icons in the Pen and Shop menus
 - [ ] Priority: finish the Tier 1 animals first. Everything else stays as placeholders until launch-critical.
 
 ## Phase 6 — Juice, UI & Audio
-- [ ] Final UI kit (Pen menu, shop, receipt screen)
-- [ ] SFX: tape screech, happy purrs while petting, angry growls, animal sounds, Gruff's stamp slam
-- [ ] Camera punch-ins during Tape, particles, box wobble while stuffing
-- [ ] Tutorial / first-time user experience (first 60 seconds matter most)
+- [x] UI polish: your 3D animal on the BOX screen (squishes when petted), 3D model icons in the Pen (locked animals show as dark silhouettes) and Shop, windows pop open, buttons squish, the coin counter rolls up with a floating "+N" and short numbers (12.5K, 3.2M)
+- [x] SFX **slots** for everything (`Config/Sounds.luau`): vine boom, pop, purr, OW, growl, tape rip/peel, stamp thud, escape, roar, spray, freeze, bonk, mail whoosh, coin jingle, ka-ching, click, ding. All silent until you paste in ids (checklist in README)
+- [x] Camera punches (launch, tape done, mail), confetti when you finish a box and when you mail, box rattle by anger
+- [x] **Gruff's walkthrough** (`client/Tutorial.luau`): Pen → catch → box → mail → shop, with a glowing arrow and a bouncing marker. It follows what you actually do (an escape sends you back to catching), can be skipped, and pays a 100-coin bonus the server checks. Saves from before it existed skip it if they've mailed anything
+- [ ] **Playtest checkpoint** (checklist in README)
 
 ## Phase 7 — Monetization
 - [ ] Game passes: 2x coins, VIP box skins, golden tape gun
@@ -186,3 +188,7 @@ _None right now. New questions get added here as they come up, always as a multi
 - **Roster:** real animals through the mid-game (hamster → tiger), then silly ones at late tiers (dragon, alien, a mailman).
 - **Working unattended (2026-09-29):** build everything through launch prep, including monetization code from a plan logged here for your approval. Ambiguous calls get decided and logged in this section. Commit after each working piece, with no check-ins. Things only you can do (sound ids, publishing, API access, game passes, icon) get a checklist.
 - **Tutorial:** Gruff walks new players through it (Pen → catch a hamster → box it → mail it) with an arrow pointing where to go, and it can be skipped.
+- **Map swap (decided 2026-09-29):** models are laid over the grey blocks instead of replacing them, so collisions, prompts and name tags keep working exactly as tested, and a missing model can't break anything. The Post Office now faces the plaza (building behind Gruff, counter and chute in front). If a model faces the wrong way, give it a `YawOffset` attribute (degrees) in Studio.
+- **Animation (decided 2026-09-29):** code-driven, not rigged. The Blender models are one mesh per color (ears are part of "Fur"), so there are no separate limbs to animate. Whole-model motion (hop, lean, bob, twitch, squish) sells it for a low-poly comedy game, and there's nothing to re-export.
+- **Animal models are drawn by each client** following the server's invisible ball, so the animation costs no network traffic. The server only moves the ball.
+- **Tutorial bonus:** 100 coins, only if you actually mailed an animal (the server checks), none for skipping.
