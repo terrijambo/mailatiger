@@ -44,11 +44,26 @@ notify.OnClientEvent:Connect(function(kind, data)
 	end
 end)
 
-local function holdPrompt(prompt)
+-- Holds a prompt for its full duration. With `follow`, the character sticks to that part while holding
+-- (like a player chasing an animal that keeps running).
+local function holdPrompt(prompt, follow)
 	local ok = pcall(function()
 		prompt:InputHoldBegin()
 	end)
+	local stick = nil
+	if follow then
+		stick = game:GetService("RunService").Heartbeat:Connect(function()
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root and follow.Parent then
+				root.CFrame = follow.CFrame * CFrame.new(0, 1, 1.5)
+			end
+		end)
+	end
 	task.wait(prompt.HoldDuration + 0.3)
+	if stick then
+		stick:Disconnect()
+	end
 	pcall(function()
 		prompt:InputHoldEnd()
 	end)
@@ -94,7 +109,7 @@ local function run()
 			root.CFrame = ball.CFrame * CFrame.new(0, 1, 1.5)
 			task.wait(0.15)
 			local prompt = ball:FindFirstChildOfClass("ProximityPrompt")
-			if prompt and not holdPrompt(prompt) then
+			if prompt and not holdPrompt(prompt, ball) then
 				log(false, "InputHoldBegin is not allowed for scripts")
 				break
 			end
@@ -224,7 +239,7 @@ local function run()
 					task.wait(0.15)
 					local prompt = b:FindFirstChildOfClass("ProximityPrompt")
 					if prompt then
-						holdPrompt(prompt)
+						holdPrompt(prompt, b)
 					end
 				end
 			end
@@ -251,7 +266,7 @@ local function run()
 	log(waitFor(function()
 		return player:GetAttribute("Stage") == "Catch"
 	end, 5), "picked a Tiger (sent to the Ice Rink)")
-	if catchMine(40) then
+	if catchMine(90) then -- tigers are hard (and roar at you), so allow lots of tries
 		log(true, "grabbed the tiger")
 		waitFor(function()
 			return lastBoxStart ~= nil and lastBoxStart.AnimalId == "Tiger"
@@ -283,7 +298,7 @@ local function run()
 			return player:GetAttribute("Stage") == "Catch"
 		end, 8), "tiger escaped back into the arena")
 	else
-		log(false, "could not grab the tiger in 40 tries")
+		log(false, "could not grab the tiger in 90 tries")
 	end
 	task.wait(5) -- let the ragdoll finish
 	log(giveUp(), "used the Pen twice to give up on the tiger")
@@ -300,6 +315,63 @@ local function run()
 	log(root.Position.Y > 28, "fell off the roof and was put back up")
 	task.wait(2.5)
 	log(giveUp(), "gave up on the dragon")
+
+	-- 11. Chicken in Chaos Mode: wait for an egg, pick it up, then box and mail it (CHAOS pay)
+	remotes.RequestAnimal:FireServer("Chicken", true)
+	log(waitFor(function()
+		return player:GetAttribute("Stage") == "Catch" and player:GetAttribute("Chaos") == true
+	end, 5), "picked a Chicken in Chaos Mode")
+	local egg = nil
+	waitFor(function()
+		for _, d in Workspace:GetDescendants() do
+			if d.Name == "Egg" and d:IsA("BasePart") then
+				egg = d
+				return true
+			end
+		end
+		return false
+	end, 12)
+	log(egg ~= nil, "the chicken laid an egg")
+	if egg then
+		log(egg:FindFirstChildOfClass("Model") ~= nil, "the egg uses your Egg model")
+		local before = events.Message or 0
+		root.CFrame = egg.CFrame
+		log(waitFor(function()
+			return egg.Parent == nil and (events.Message or 0) > before
+		end, 3), "picked up the egg (bonus coins)")
+	end
+	if catchMine(40) then
+		waitFor(function()
+			return lastBoxStart ~= nil and lastBoxStart.AnimalId == "Chicken"
+		end, 3)
+		local sweet = 1
+		for i, spot in lastBoxStart.Spots do
+			if spot.Kind == "Sweet" then
+				sweet = i
+				break
+			end
+		end
+		for seam = 1, lastBoxStart.SeamCount do
+			for _ = 1, 8 do
+				remotes.BoxingInput:FireServer("Pet", sweet)
+				task.wait(0.1)
+			end
+			remotes.BoxingInput:FireServer("Tape", seam)
+			task.wait(0.4)
+		end
+		local parcels = events.Parcel or 0
+		log(waitFor(function()
+			return (events.Parcel or 0) >= parcels and #profile().Parcels == 1
+		end, 5), "boxed the chicken")
+		local receipts = events.MailReceipt or 0
+		remotes.MailAnywhere:FireServer() -- Rocket chute: mail from right here
+		log(waitFor(function()
+			return (events.MailReceipt or 0) > receipts
+		end, 5), "Rocket-mailed the chicken from the arena")
+	else
+		log(false, "could not grab the chicken")
+	end
+
 	log(true, "events seen: " .. HttpService:JSONEncode(events))
 end
 

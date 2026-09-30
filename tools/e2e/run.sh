@@ -20,7 +20,7 @@ lune run tools/smoke/merge.luau "$TMP/build.rbxl" "$TMP/place_copy.rbxl" "$TMP/m
 	# so the Play server prints a heartbeat to keep run-in-roblox from giving up.
 	echo 'local RunService = game:GetService("RunService")'
 	echo 'if RunService:IsRunning() then'
-	echo '	if RunService:IsServer() then for _ = 1, 90 do task.wait(2) print("heartbeat") end end'
+	echo '	if RunService:IsServer() then for _ = 1, 150 do task.wait(2) print("heartbeat") end end'
 	echo '	return'
 	echo 'end'
 	echo 'local HttpService = game:GetService("HttpService")'

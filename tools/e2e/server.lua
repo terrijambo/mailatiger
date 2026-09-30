@@ -23,7 +23,7 @@ report.OnServerEvent:Connect(function(_player, clientResult)
 end)
 
 local started = os.clock()
-while not result and os.clock() - started < 150 do
+while not result and os.clock() - started < 280 do
 	task.wait(0.5)
 end
 StudioTestService:EndTest({ Server = errors, Client = result or { Steps = { "client never reported (timed out)" } } })
