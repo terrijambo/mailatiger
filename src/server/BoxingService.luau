@@ -1023,9 +1023,11 @@ local function onPlayerAdded(player: Player)
 		end)
 	end)
 
-	task.delay(2, function()
-		if player.Parent then
-			gruffSays(player, Gruff.FirstBox)
+	-- New hires get Gruff's walkthrough (src/client/Tutorial.luau). Everyone else gets grumbled at.
+	task.delay(3, function()
+		local profile = DataService.Get(player)
+		if player.Parent and profile and profile.TutorialDone then
+			gruffSays(player, pick(Gruff.WelcomeBack))
 		end
 	end)
 end

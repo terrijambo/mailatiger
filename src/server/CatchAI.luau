@@ -311,6 +311,7 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 	critter.Anchored = true
 	critter.CanCollide = false
 	critter:SetAttribute("AnimalId", s.AnimalId)
+	critter:SetAttribute("OwnerId", s.Player.UserId) -- the tutorial arrow points at your own animal
 	CollectionService:AddTag(critter, "Critter")
 	MapBuilder.Label(critter, `{s.Player.DisplayName}'s {animal.DisplayName}`, radius + 1.5)
 

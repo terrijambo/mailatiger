@@ -13,6 +13,7 @@ local MailService = require(script.MailService)
 local MapBuilder = require(script.MapBuilder)
 local ShopService = require(script.ShopService)
 local Travel = require(script.Travel)
+local TutorialService = require(script.TutorialService)
 
 local map = MapBuilder.Build()
 Travel.Start(map)
@@ -22,6 +23,7 @@ Economy.Start()
 ShopService.Start(map)
 BoxingService.Start(map)
 MailService.Start(map)
+TutorialService.Start()
 -- ...then we start loading saves.
 DataService.Start()
 -- Leaderboards need to know whether DataStores work, so they start last.

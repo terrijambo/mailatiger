@@ -6,6 +6,7 @@
 --   ShopAction     client -> server   buy/equip/upgrade/rebirth at the Supply Shop (server checks everything)
 --   Shove          client -> server   Chaos Mode shove (server picks the target and checks range/cooldown)
 --   MailAnywhere   client -> server   press M to mail your bag from anywhere (Rocket Chute only; server checks)
+--   Tutorial       client -> server   "Done" or "Skip" for Gruff's walkthrough (server checks the reward)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -25,6 +26,7 @@ local boxingInput = remote("BoxingInput")
 local shopAction = remote("ShopAction")
 local shove = remote("Shove")
 local mailAnywhere = remote("MailAnywhere")
+local tutorial = remote("Tutorial")
 
 folder.Parent = ReplicatedStorage
 
@@ -35,4 +37,5 @@ return {
 	ShopAction = shopAction,
 	Shove = shove,
 	MailAnywhere = mailAnywhere,
+	Tutorial = tutorial,
 }

@@ -14,6 +14,7 @@ local Movement = require(script.Movement)
 local OrdersBoard = require(script.OrdersBoard)
 local PenMenu = require(script.PenMenu)
 local Shop = require(script.Shop)
+local Tutorial = require(script.Tutorial)
 
 Hud.Start()
 PenMenu.Start()
@@ -25,5 +26,6 @@ Movement.Start()
 Animate.Start()
 Audio.Start()
 task.spawn(ChuteVisual.Start) -- waits for the map to load, so it runs on its own
+task.spawn(Tutorial.Start) -- waits for your save to load
 
 print(`[Mail a Tiger] Client started for {Players.LocalPlayer.Name}.`)

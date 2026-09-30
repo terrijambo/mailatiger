@@ -54,6 +54,7 @@ export type Profile = {
 	FiveStampJobs: number,
 	BestTigerSeconds: number, -- 0 = never mailed a tiger
 	RarestIndex: number, -- position in Animals.List of the rarest animal ever mailed (0 = none)
+	TutorialDone: boolean, -- finished or skipped Gruff's walkthrough
 }
 
 local DataService = {}
@@ -85,6 +86,7 @@ local function newProfile(): Profile
 		FiveStampJobs = 0,
 		BestTigerSeconds = 0,
 		RarestIndex = 0,
+		TutorialDone = false,
 	}
 end
 
@@ -94,6 +96,10 @@ local function reconcile(saved: any): Profile
 	if type(saved) == "table" then
 		for key, value in saved do
 			(profile :: any)[key] = value
+		end
+		-- Saves from before the tutorial existed: anyone who has mailed something already knows how to play
+		if saved.TutorialDone == nil and type(saved.Mailed) == "number" and saved.Mailed > 0 then
+			profile.TutorialDone = true
 		end
 	end
 	return profile

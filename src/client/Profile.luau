@@ -26,6 +26,7 @@ export type Data = {
 	OrdersRefreshAt: number,
 	Parcels: { { AnimalId: string, Stars: number, Coins: number } },
 	ChuteTier: string,
+	TutorialDone: boolean?,
 }
 
 local EMPTY: Data = {
