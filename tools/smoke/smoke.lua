@@ -60,5 +60,20 @@ if map then
 		print(string.format("SMOKE Barn at (%.1f, %.1f, %.1f) size (%.1f, %.1f, %.1f)", cf.X, cf.Y, cf.Z, size.X, size.Y, size.Z))
 	end
 end
+-- Load every module (without starting anything) to catch load-time errors
+local failed = {}
+for _, container in { server, game:GetService("StarterPlayer").StarterPlayerScripts:FindFirstChild("Client") } do
+	if container then
+		for _, module in container:GetChildren() do
+			if module:IsA("ModuleScript") then
+				local okLoad, loadErr = pcall(require, module)
+				if not okLoad then
+					table.insert(failed, module.Name .. ": " .. tostring(loadErr))
+				end
+			end
+		end
+	end
+end
+print("SMOKE modules that failed to load: " .. (if #failed == 0 then "none" else table.concat(failed, " | ")))
 print("SMOKE lighting", Lighting.GlobalShadows, Lighting.ClockTime, Lighting:FindFirstChildOfClass("Atmosphere") ~= nil)
 print("SMOKE DONE")
