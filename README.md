@@ -100,8 +100,9 @@ Test with several players: in Studio, **Test tab → Clients and Servers → 2 p
 **Already verified by machine:** an automated playtest (`bash tools/e2e/run.sh`) played the whole loop in Studio with your models: catch, box, mail, shop, codes, settings, tutorial, chute upgrades, a tiger launch with RETURN TO SENDER, the rooftop fall, and a Chaos Mode chicken with eggs. All 65 steps passed with no script errors (and all 21 starter sounds load), at a steady 59 FPS. So this list is mostly about **how things look and feel**, which only you can judge.
 
 Play once with a **fresh save** (saving is off in Studio, so every Play is fresh) and once as usual.
+- [ ] **3 models still to import:** `Mailbox` and `MudPuddle` (into MapModels) and `ButterflyNet` (into PropModels). Also delete the spare `Chimney` from AnimalModels. Then run `lune run tools/check_models.luau MailATiger.rbxl` to confirm. (Until then the mud stays brown blocks and there's no mailbox or net, which is harmless.)
 - [ ] **Town:** the Post Office building now faces the plaza, with Gruff in front of it, his counter, and the chute on the right. Is anything floating, sunk into the ground, or facing backwards? (Fix: add a Number attribute `YawOffset` = `180` to that model in its folder.)
-- [ ] Lampposts, benches, planters, the mailbox and the leaderboard stands are placed sensibly and the scores sit on the leaderboard boards.
+- [ ] Lampposts, benches, planters, the mailbox (once imported) and the leaderboard stands are placed sensibly and the scores sit on the leaderboard boards.
 - [ ] A little letter spins over **Gruff's Orders**, and the tools spin on the table next to the **Supply Shop**.
 - [ ] **Arenas:** fences are made of fence models (pickets, farm rails, bamboo, rink boards) with no big gaps, and there's a gate at each entrance. Barn, hay bales, trees, mud puddles, hockey goals, snowmen, AC units, water tower and chimney all look right, and animals still can't get out.
 - [ ] **Gruff** bobs and turns to watch you when you're close. A tiger breakout still knocks his cap off, and it comes back.
