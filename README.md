@@ -112,7 +112,7 @@ Play once with a **fresh save** (saving is off in Studio, so every Play is fresh
 - [ ] Anything that looks wrong: tell me what and where (a screenshot helps).
 
 ## Sounds
-Every sound effect has a slot in `src/shared/Config/Sounds.luau`, and each stays silent until you give it an id. Roblox can only play sounds uploaded to Roblox:
+Every sound effect and music track has a slot in `src/shared/Config/Sounds.luau`. **Starter sounds are already filled in**: free ones from Roblox's own library, picked by name, not by ear (the vine boom is a cannon for now). Play the game, then swap any you don't like. Roblox can only play sounds uploaded to Roblox:
 1. In Studio, open the **Toolbox → Marketplace → Audio**, search for the sound, and pick one you're allowed to use (or upload your own in the Creator Dashboard).
 2. Right-click it → **Copy Asset ID**.
 3. Paste it into the slot, e.g. `VineBoom = { Id = "rbxassetid://THE_ID", Volume = 2, ... }`.
@@ -121,13 +121,13 @@ Search ideas: **VineBoom** "vine boom", **Pop** "cartoon pop", **Purr** "cat pur
 
 ## Launch checklist (things only you can do)
 In rough order. Each one is a few minutes.
-1. **Sound ids:** fill in `Config/Sounds.luau` (see Sounds above). At least the vine boom, since it's the big clip moment.
+1. **Sounds:** listen to the starter sounds and swap the ones you don't like in `Config/Sounds.luau` (see Sounds above). Most important: a real **vine boom**, since it's the big clip moment. Pick one you're allowed to use.
 2. **Publish:** in Studio, **File → Publish to Roblox**, and create a new experience called *Mail a Tiger*.
 3. **Turn on saving:** **Game Settings → Security → Enable Studio Access to API Services** (this is for testing in Studio; live servers save automatically once published).
 4. **Live save test** (moved here from Phase 3): in a published test, earn coins → leave → rejoin (coins kept). Rejoin twice quickly (no lost progress, maybe a short wait). Parcels in your bag survive a rejoin.
 5. **Robux items** (optional, see ROADMAP → Phase 7 for the plan to approve): Creator Dashboard → your experience → **Monetization** → create each **Pass** and **Developer Product**, then paste each id into `src/shared/Config/Monetization.luau`. Keep the prices the same as the table.
 6. **Private servers** (optional): Monetization → Private Servers → set a price (free or 100 Robux is typical).
-7. **Icon and thumbnails:** Creator Dashboard → your experience → **Places / Configure** → upload a 512×512 icon and 1920×1080 thumbnails. Good shots: the RETURN TO SENDER stamp mid-launch, a player taping an angry tiger, the town with Gruff. (I can set up a camera spot in the game for clean screenshots if you want.)
+7. **Icon and thumbnails:** drafts rendered from your models are in `art/marketing/` (icon.png 512×512, two 1920×1080 thumbnails; re-render with `art/blender_scripts/marketing.py`). Use them or take in-game screenshots, then Creator Dashboard → your experience → **Places / Configure** → upload. Good in-game shots: the RETURN TO SENDER stamp mid-launch, a player taping an angry tiger, the town with Gruff.
 8. **Game settings:** Genre *Simulation* (or *Comedy*), max players 12–16, **Maturity questionnaire** (Creator Dashboard → Experience Questionnaire; the ragdoll launch is cartoon slapstick), and allow **Private Servers** if you did step 6.
 9. **Fresh data for launch:** change `StoreName` in `Config/Progression.luau` to `PlayerData_v2` (wipes test saves) and `StoreVersion` in `Config/Social.luau` to `"v2"` (resets leaderboards).
 10. **Studio free animals** are Studio-only and turn off by themselves in the live game. Nothing to do.

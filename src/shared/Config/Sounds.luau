@@ -1,6 +1,6 @@
 --!strict
 -- Every sound in the game. Roblox only plays audio uploaded to Roblox, so each Id has to be a real asset id
--- like "rbxassetid://1234567890". While an Id is "" that sound is simply silent, and nothing breaks.
+-- like "rbxassetid://1234567890". Set an Id to "" to silence that sound; nothing breaks.
 --
 -- HOW TO FILL ONE IN: in Studio open the Toolbox -> Marketplace -> Audio, search for the sound (e.g.
 -- "vine boom"), pick one you're allowed to use, right-click it -> Copy Asset ID, and paste it below.
@@ -20,37 +20,40 @@ export type Sound = {
 	Heard: string?,
 }
 
+-- STARTER SOUNDS: everything below comes from Roblox's own audio library (uploaded by the official
+-- "Roblox" account), so any game may use it. They're placeholders picked by name, not by ear. Swap any
+-- of them for something better, especially the vine boom (a cannon for now).
 local sounds: { [string]: Sound } = {
 	-- The big clip moment: the animal launches you out of the box
-	VineBoom = { Id = "", Volume = 2, Heard = "Everyone" },
+	VineBoom = { Id = "rbxassetid://3149249837", Volume = 2, Heard = "Everyone" }, -- "Cannon_Explode" (stand-in)
 
 	-- BOX stage
-	Pop = { Id = "", Volume = 0.8 }, -- the animal pops up out of the box
-	Purr = { Id = "", Volume = 0.6, Cooldown = 0.8 }, -- rubbing a ♥ spot (purr, chirp or coo)
-	AngryHit = { Id = "", Volume = 0.9, Cooldown = 0.4 }, -- touched an ✖ spot ("OW!")
-	Growl = { Id = "", Volume = 0.9, Cooldown = 0.5 }, -- the animal thumps the box / gets angry
-	TapeRip = { Id = "", Volume = 0.8 }, -- a strip of tape goes on (that screechy tape sound)
-	TapePeel = { Id = "", Volume = 0.8 }, -- the animal peels a strip off
-	StampThud = { Id = "", Volume = 1 }, -- box finished and stamped: a parcel goes in your bag
+	Pop = { Id = "rbxassetid://15675055424", Volume = 0.8 }, -- the animal pops up out of the box ("Cute Pop")
+	Purr = { Id = "rbxassetid://79205036324023", Volume = 0.5, Cooldown = 1.5 }, -- rubbing a ♥ spot ("BirdHello", a happy chirp)
+	AngryHit = { Id = "rbxassetid://12222046", Volume = 0.9, Cooldown = 0.4 }, -- touched an ✖ spot ("hit")
+	Growl = { Id = "rbxassetid://16480557599", Volume = 0.9, Cooldown = 0.5 }, -- the animal thumps the box ("Joystick Slam")
+	TapeRip = { Id = "rbxassetid://15675037413", Volume = 0.8 }, -- a strip of tape goes on ("Paper Swipe")
+	TapePeel = { Id = "rbxassetid://12222106", Volume = 0.8 }, -- the animal peels a strip off ("Rubber band")
+	StampThud = { Id = "rbxassetid://16480560696", Volume = 1 }, -- box finished and stamped ("Giant Button Press")
 
 	-- CATCH stage and animal twists
-	Escape = { Id = "", Volume = 0.8 }, -- the animal breaks out and runs off
-	Roar = { Id = "", Volume = 1.2 }, -- tiger roar / breakout
-	Spray = { Id = "", Volume = 0.8 }, -- skunk spray
-	Freeze = { Id = "", Volume = 0.8 }, -- frozen by the yeti
-	Bonk = { Id = "", Volume = 0.8, Cooldown = 0.3 }, -- knocked back or shoved
+	Escape = { Id = "rbxassetid://12222124", Volume = 0.8 }, -- the animal breaks out and runs off ("Short spring")
+	Roar = { Id = "rbxassetid://9120031442", Volume = 1.2 }, -- tiger roar / breakout ("Lion Roar")
+	Spray = { Id = "rbxassetid://17208402198", Volume = 0.8 }, -- skunk spray ("Spraypaint")
+	Freeze = { Id = "rbxassetid://12222005", Volume = 0.8 }, -- frozen by the yeti ("glassbreak")
+	Bonk = { Id = "rbxassetid://12222054", Volume = 0.8, Cooldown = 0.3 }, -- knocked back or shoved ("Kerplunk")
 
 	-- Mail, coins and menus
-	MailWhoosh = { Id = "", Volume = 0.9 }, -- parcels fly down the chute
-	CoinJingle = { Id = "", Volume = 0.8 }, -- getting paid
-	Kaching = { Id = "", Volume = 0.8 }, -- buying something
-	Click = { Id = "", Volume = 0.5, Cooldown = 0.05 }, -- opening a menu
-	Ding = { Id = "", Volume = 0.7 }, -- tutorial step done
+	MailWhoosh = { Id = "rbxassetid://15674975792", Volume = 0.9 }, -- parcels fly down the chute ("Whoosh 03")
+	CoinJingle = { Id = "rbxassetid://127645268874265", Volume = 0.8 }, -- getting paid ("CoinTransfer")
+	Kaching = { Id = "rbxassetid://16480570986", Volume = 0.8 }, -- buying something ("Low Bells")
+	Click = { Id = "rbxassetid://15675059323", Volume = 0.5, Cooldown = 0.05 }, -- opening a menu ("Bright Click")
+	Ding = { Id = "rbxassetid://12221990", Volume = 0.7 }, -- tutorial step done ("electronic ping")
 
-	-- Background music (loops). Search "cheerful loop", "funny chase music", "tense ticking" etc.
-	MusicTown = { Id = "", Volume = 0.25 }, -- walking around town
-	MusicArena = { Id = "", Volume = 0.25 }, -- chasing an animal
-	MusicBox = { Id = "", Volume = 0.3 }, -- the BOX stage (something tense and silly)
+	-- Background music (loops)
+	MusicTown = { Id = "rbxassetid://15930255433", Volume = 0.25 }, -- walking around town ("Retro Flute Music")
+	MusicArena = { Id = "rbxassetid://17422163655", Volume = 0.25 }, -- chasing an animal ("Cloud Blitz")
+	MusicBox = { Id = "rbxassetid://16480577096", Volume = 0.3 }, -- the BOX stage ("8-bit Tone Loop")
 }
 
 return sounds
