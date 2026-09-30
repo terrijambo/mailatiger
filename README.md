@@ -97,7 +97,7 @@ Test with several players: in Studio, **Test tab → Clients and Servers → 2 p
 - [ ] **Leaderboards** (west side of the plaza): mail a 5-stamp job and the "Most 5-Stamp Jobs" board updates. It says "(this server only)" until saving is on.
 
 ## Overnight build checklist: new map, animation, tutorial, store
-**Already verified by machine:** an automated playtest (`bash tools/e2e/run.sh`) played the whole loop in Studio with your models: catch, box, mail, shop, codes, settings, tutorial, chute upgrades, a tiger launch with RETURN TO SENDER, the rooftop fall, and a Chaos Mode chicken with eggs. All 63 steps passed with no script errors, at a steady 59 FPS. So this list is mostly about **how things look and feel**, which only you can judge.
+**Already verified by machine:** an automated playtest (`bash tools/e2e/run.sh`) played the whole loop in Studio with your models: catch, box, mail, shop, codes, settings, tutorial, chute upgrades, a tiger launch with RETURN TO SENDER, the rooftop fall, and a Chaos Mode chicken with eggs. All 65 steps passed with no script errors (and all 21 starter sounds load), at a steady 59 FPS. So this list is mostly about **how things look and feel**, which only you can judge.
 
 Play once with a **fresh save** (saving is off in Studio, so every Play is fresh) and once as usual.
 - [ ] **Town:** the Post Office building now faces the plaza, with Gruff in front of it, his counter, and the chute on the right. Is anything floating, sunk into the ground, or facing backwards? (Fix: add a Number attribute `YawOffset` = `180` to that model in its folder.)
@@ -184,7 +184,7 @@ stylua src                     # format everything
 lune run tools/check_models.luau MailATiger.rbxl   # after Ctrl+S in Studio: are all models imported, in the right folders, facing the right way?
 lune run tests/run.luau        # ~550 automatic checks on the Config files and box math. Run after changing any Config file
 bash tools/smoke/run.sh        # builds the real map with your models in a temporary Studio and reports errors (Ctrl+S first)
-bash tools/e2e/run.sh          # automated playtest in a temporary Studio: 63 steps incl. catch, box, mail, shop, tiger launch (~1-2 min, Ctrl+S first)
+bash tools/e2e/run.sh          # automated playtest in a temporary Studio: 65 steps incl. catch, box, mail, shop, tiger launch (~1-2 min, Ctrl+S first)
 ```
 
 Type-check (catches misspelled Roblox API names). The VS Code Luau extension does this live, and every file starts with `--!strict`:

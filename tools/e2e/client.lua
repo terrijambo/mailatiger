@@ -15,8 +15,10 @@ ScriptContext.Error:Connect(function(message, trace)
 	end
 end)
 
+local lastMessage
 local function log(ok, text)
-	table.insert(steps, (if ok then "PASS " else "FAIL ") .. text)
+	-- A failure also shows the last thing the game said (usually why it refused)
+	table.insert(steps, (if ok then "PASS " else "FAIL ") .. text .. (if ok then "" else "   [last message: " .. tostring(lastMessage) .. "]"))
 end
 local function profile()
 	local raw = player:GetAttribute("Profile")
@@ -43,6 +45,8 @@ notify.OnClientEvent:Connect(function(kind, data)
 		lastBoxStart = data
 	elseif kind == "Parcel" then
 		lastParcel = data
+	elseif kind == "Message" then
+		lastMessage = tostring(data.Speaker) .. ": " .. tostring(data.Text)
 	end
 end)
 
@@ -459,6 +463,32 @@ local function run()
 	else
 		log(false, "could not grab the second hamster")
 	end
+
+	-- 13. Every sound id in Config.Sounds actually loads (a private or deleted sound would fail here)
+	local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+	local broken, loaded = {}, 0
+	local ContentProvider = game:GetService("ContentProvider")
+	for name, def in Config.Sounds do
+		if def.Id ~= "" then
+			local sound = Instance.new("Sound")
+			sound.SoundId = def.Id
+			sound.Parent = game:GetService("SoundService")
+			pcall(function()
+				ContentProvider:PreloadAsync({ sound })
+			end)
+			waitFor(function()
+				return sound.IsLoaded
+			end, 4)
+			if sound.IsLoaded and sound.TimeLength > 0 then
+				loaded += 1
+			else
+				table.insert(broken, name)
+			end
+			sound:Destroy()
+		end
+	end
+	log(#broken == 0, "sounds load: " .. loaded .. " ok" .. (if #broken > 0 then ", broken: " .. table.concat(broken, ", ") else ""))
+	log(player:GetAttribute("MusicOff") == true, "music-off setting reached the music player")
 
 	log(true, "events seen: " .. HttpService:JSONEncode(events))
 	log(frames / frameTime > 30, string.format("average %.0f FPS, %d hitches over 0.1 s", frames / frameTime, hitches))
