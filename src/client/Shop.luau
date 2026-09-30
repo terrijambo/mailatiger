@@ -238,7 +238,7 @@ function Shop.Start()
 			rowButton(
 				frame,
 				1,
-				if armed then "SURE? Click!" else "REBIRTH",
+				if armed then "SURE? Again!" else "REBIRTH",
 				if armed then Ui.RED else Ui.ORANGE,
 				function()
 					if os.clock() < rebirthArmedUntil then

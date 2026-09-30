@@ -8,9 +8,16 @@
 --   Ui.label        plain text for inside windows
 --   Ui.outlined     big white text with a dark outline, for the HUD
 --   Ui.modelIcon    a little 3D picture of one of your Blender models
+-- Screens and devices (phones, consoles, computers):
+--   Ui.compact()     true on phones and small windows: the HUD uses its compact layout
+--   Ui.margin()      how far HUD pieces stay from the screen edge (more on TVs, which cut off the edges)
+--   Ui.inputKind()   "Gamepad", "Touch" or "Keyboard" (what the player used last), Ui.onInputKind(fn)
+--   Ui.onResize(fn)  runs fn now and whenever the screen changes size (e.g. a phone rotates)
 
+local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
@@ -98,9 +105,100 @@ function Ui.outlined(parent: Instance, props: { [string]: any }): TextLabel
 	return label
 end
 
+---------------------------------------------------------------------------------------------------
+-- Screens and devices
+
+-- The part of the screen the game's UI can use (the whole screen minus Roblox's top bar)
+function Ui.viewSize(): Vector2
+	local view = workspace.CurrentCamera.ViewportSize
+	return Vector2.new(view.X, view.Y - GuiService:GetGuiInset().Y)
+end
+
+function Ui.compact(): boolean
+	local view = Ui.viewSize()
+	return view.Y < 520 or view.X < 900
+end
+
+function Ui.margin(): number
+	return if GuiService:IsTenFootInterface() then 48 else 14
+end
+
+function Ui.onResize(fn: () -> ())
+	workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fn)
+	fn()
+end
+
+local function kindOf(inputType: Enum.UserInputType): string?
+	if string.sub(inputType.Name, 1, 7) == "Gamepad" then
+		return "Gamepad"
+	elseif inputType == Enum.UserInputType.Touch then
+		return "Touch"
+	elseif inputType == Enum.UserInputType.Keyboard or string.sub(inputType.Name, 1, 5) == "Mouse" then
+		return "Keyboard"
+	end
+	return nil
+end
+
+local currentKind = kindOf(UserInputService:GetLastInputType())
+	or (if UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled then "Touch" else "Keyboard")
+local kindChanged = Instance.new("BindableEvent")
+UserInputService.LastInputTypeChanged:Connect(function(inputType: Enum.UserInputType)
+	local kind = kindOf(inputType)
+	if kind and kind ~= currentKind then
+		currentKind = kind
+		kindChanged:Fire()
+	end
+end)
+
+function Ui.inputKind(): string
+	return currentKind
+end
+
+-- Runs fn now and whenever the player switches between gamepad, touch and keyboard/mouse
+function Ui.onInputKind(fn: () -> ())
+	kindChanged.Event:Connect(fn)
+	fn()
+end
+
+-- Picks the words for how to do something on the player's device, e.g. Ui.hint("hold E", "hold X", "tap and hold")
+function Ui.hint(keyboard: string, gamepad: string, touch: string): string
+	return if currentKind == "Gamepad" then gamepad elseif currentKind == "Touch" then touch else keyboard
+end
+
+-- A small picture of a controller button (the right one for Xbox or PlayStation), shown only while a
+-- gamepad is being used
+function Ui.gamepadGlyph(parent: Instance, keyCode: Enum.KeyCode, props: { [string]: any }): ImageLabel
+	local base: { [string]: any } = {
+		BackgroundTransparency = 1,
+		Image = UserInputService:GetImageForKeyCode(keyCode),
+		ZIndex = 6,
+	}
+	for key, value in props do
+		base[key] = value
+	end
+	local glyph = Ui.make("ImageLabel", base, parent)
+	Ui.onInputKind(function()
+		glyph.Visible = currentKind == "Gamepad"
+	end)
+	return glyph
+end
+
+-- How big windows are drawn: full size on computers and consoles, smaller on phones so more fits
+function Ui.windowScale(): number
+	local view = Ui.viewSize()
+	return math.clamp(math.min(view.Y / 680, view.X / 1000), 0.7, 1)
+end
+
 -- A popup window: colored title bar, cream body, red X. Returns the ScreenGui and the content frame.
--- Content starts about 56 px down (below the title bar).
-function Ui.window(parentGui: Instance, name: string, title: string, color: Color3?): (ScreenGui, Frame)
+-- Content starts about 56 px down (below the title bar). maxSize: the biggest it gets (default 900 x 640).
+-- On phones the whole window is drawn smaller (Ui.windowScale) and fills more of the screen.
+function Ui.window(
+	parentGui: Instance,
+	name: string,
+	title: string,
+	color: Color3?,
+	maxSize: Vector2?
+): (ScreenGui, Frame)
 	local gui = Ui.make("ScreenGui", {
 		Name = name,
 		ResetOnSpawn = false,
@@ -111,12 +209,22 @@ function Ui.window(parentGui: Instance, name: string, title: string, color: Colo
 	local frame = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.52),
-		Size = UDim2.fromScale(0.8, 0.75),
 		BackgroundColor3 = Ui.PAPER,
 	}, gui)
 	Ui.round(frame, 18)
 	Ui.border(frame, 4)
-	Ui.make("UISizeConstraint", { MaxSize = Vector2.new(900, 640) }, frame)
+	local biggest = maxSize or Vector2.new(900, 640)
+	local fit = Ui.make("UIScale", { Scale = 1 }, frame)
+	Ui.onResize(function()
+		local view = Ui.viewSize()
+		local scale = Ui.windowScale()
+		local share = if Ui.compact() then Vector2.new(0.94, 0.9) else Vector2.new(0.8, 0.75)
+		frame.Size = UDim2.fromOffset(
+			math.min(biggest.X, view.X * share.X / scale),
+			math.min(biggest.Y, view.Y * share.Y / scale)
+		)
+		fit.Scale = scale
+	end)
 
 	-- Title bar: rounded on top, square where it meets the body
 	local bar = Ui.make("Frame", {
@@ -170,21 +278,17 @@ function Ui.window(parentGui: Instance, name: string, title: string, color: Colo
 		gui.Enabled = false
 	end)
 	Ui.press(close)
-	Ui.pop(gui, frame)
-	return gui, frame
-end
-
--- Windows pop open with a little bounce instead of just appearing
-function Ui.pop(gui: ScreenGui, frame: GuiObject)
-	local scale = Ui.make("UIScale", { Scale = 1 }, frame)
+	-- Windows pop open with a little bounce instead of just appearing
 	gui:GetPropertyChangedSignal("Enabled"):Connect(function()
 		if gui.Enabled then
-			scale.Scale = 0.85
-			TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-				Scale = 1,
+			local target = Ui.windowScale()
+			fit.Scale = target * 0.85
+			TweenService:Create(fit, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Scale = target,
 			}):Play()
 		end
 	end)
+	return gui, frame
 end
 
 -- Buttons grow a little when you hover and squish while you press them

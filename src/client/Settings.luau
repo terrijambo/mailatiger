@@ -24,11 +24,8 @@ local OPTIONS = {
 function Settings.Start()
 	local playerGui = player:WaitForChild("PlayerGui")
 	local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Setting") :: RemoteEvent
-	local gui, window = Ui.window(playerGui, "Settings", "Settings", Ui.GREY)
-	local size = window:FindFirstChildOfClass("UISizeConstraint")
-	if size then
-		size.MaxSize = Vector2.new(420, 330) -- a small window: three switches and the code box
-	end
+	-- A small window: three switches and the code box
+	local gui, window = Ui.window(playerGui, "Settings", "Settings", Ui.GREY, Vector2.new(420, 330))
 
 	-- What you just clicked, until the server's saved copy catches up
 	local pending: { [string]: boolean } = {}

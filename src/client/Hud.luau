@@ -78,8 +78,8 @@ function Hud.Start()
 		Size = UDim2.fromOffset(260, 150),
 		BackgroundTransparency = 1,
 	}, gui)
-	Ui.autoScale(stack) -- smaller on phones (labels don't block the thumbstick underneath)
-	Ui.make("UIListLayout", {
+	Ui.autoScale(stack) -- smaller on phones
+	local stackLayout = Ui.make("UIListLayout", {
 		Padding = UDim.new(0, 2),
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
@@ -129,6 +129,20 @@ function Hud.Start()
 		ZIndex = 3,
 	})
 	stack.Size = UDim2.fromOffset(300, 240)
+	-- Big screens: bottom-left. Phones: top-left, so the thumbstick (bottom-left) is free; the side buttons
+	-- go under it (SideButtons.luau)
+	Ui.onResize(function()
+		local margin = Ui.margin()
+		if Ui.compact() then
+			stack.AnchorPoint = Vector2.new(0, 0)
+			stack.Position = UDim2.fromOffset(margin, 8)
+			stackLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+		else
+			stack.AnchorPoint = Vector2.new(0, 1)
+			stack.Position = UDim2.new(0, margin, 1, -margin)
+			stackLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+		end
+	end)
 	local function refreshLevel()
 		local data = Profile.Get()
 		local level = data.Level or 1
@@ -309,7 +323,6 @@ function Hud.Start()
 	---------------------------------------------------------------------------------------------------
 	-- Server boost timer (top-left): "🚀 2x COINS 2:41, boosted by Name"
 	local boostPill = Ui.make("Frame", {
-		Position = UDim2.fromOffset(14, 8),
 		Size = UDim2.fromOffset(230, 52),
 		BackgroundColor3 = Color3.fromRGB(255, 190, 40),
 		Visible = false,
@@ -318,6 +331,12 @@ function Hud.Start()
 	Ui.border(boostPill, 3)
 	Ui.gloss(boostPill)
 	Ui.autoScale(boostPill)
+	-- Top-left on big screens; top-right on phones (the stats are top-left there)
+	Ui.onResize(function()
+		local compact = Ui.compact()
+		boostPill.AnchorPoint = Vector2.new(if compact then 1 else 0, 0)
+		boostPill.Position = if compact then UDim2.new(1, -Ui.margin(), 0, 8) else UDim2.fromOffset(Ui.margin(), 8)
+	end)
 	Ui.icon(boostPill, "Hud_ServerBoost", { Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(40, 40) })
 	local boostTime = Ui.outlined(boostPill, {
 		Position = UDim2.fromOffset(52, 2),
@@ -607,7 +626,7 @@ function Hud.Start()
 			local stamp = if data.Stamp then `   {data.Stamp}` else ""
 			showToast(
 				`📦 Taped! {data.Animal} is in your bag ({data.Count}/{data.Capacity})`,
-				"Carry it to the Mail Chute in town and hold E to mail it.",
+				`Carry it to the Mail Chute in town and {Ui.hint("hold E", "hold X", "hold the Mail button")} to mail it.`,
 				`worth {Format.Short(data.Coins)} coins{stamp}`,
 				data.Stars,
 				Ui.GREEN

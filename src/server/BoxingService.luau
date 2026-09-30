@@ -980,7 +980,11 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 		say(player, "Stamp", `{Config.Stamps.ById[stampId].DisplayName} stamp applied to this job!`)
 	end
 	if s.Chaos then
-		say(player, "CHAOS", "Chaos Mode ON: +50% pay, but anyone can spook your animal and shove you (F)!")
+		say(
+			player,
+			"CHAOS",
+			"Chaos Mode ON: +50% pay, but anyone can spook your animal and shove you (F, or B on a controller)!"
+		)
 	end
 end
 

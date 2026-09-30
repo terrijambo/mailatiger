@@ -45,6 +45,8 @@ lune run tests/run.luau        # 708 checks, all passing
 4. **Sound ids:** paste them into `src/shared/Config/Sounds.luau`. Which ones to replace first is in `docs/SOUNDS_TO_REPLACE.md`.
 5. After each batch: run the checks, commit, and tell the owner to press Play in Studio (Rojo syncs it live).
 
+6. **Check phones and consoles** (the layout changed on 2026-09-30 and hasn't been seen in Play yet): in Studio, **Test → Device** (the emulator), try an iPhone in landscape, a small Android phone, a tablet and "Xbox One". Look for overlaps (stats vs side buttons, buttons vs thumbstick/jump), text too small, and windows spilling off screen. Layout code: `Ui.compact()`, `Ui.windowScale()`, `Ui.margin()` in `client/Ui.luau`, and the `Ui.onResize` blocks in `Hud.luau`, `SideButtons.luau`, `BoxingScreen.luau`. Gamepad controls are listed in `ROADMAP.md` (Phase 7 notes). With a controller plugged in, play one full job, including BOX with the hand cursor.
+
 ### B. Owner's steps (give them these; you can't do them)
 1. **Saving:** Studio → File → Game Settings → Security → turn on *Enable Studio Access to API Services*. Test: Play, earn, Stop, Play again, and progress should be kept. When saving works, the free 2M Studio test coins no longer appear.
 2. **Put both passes on sale:** Creator Dashboard → Mail a Tiger → Monetization → Passes → each pass → Sales. VIP Postie 149, Big Mail Bag 99. Both are Offsale right now.

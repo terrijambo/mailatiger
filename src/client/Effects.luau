@@ -141,7 +141,7 @@ function Effects.Start()
 					shove:FireServer()
 				end
 				return Enum.ContextActionResult.Pass
-			end, true, Config.Social.Chaos.ShoveKey, Enum.KeyCode.ButtonX)
+			end, true, Config.Social.Chaos.ShoveKey, Enum.KeyCode.ButtonB) -- (X is the grab prompt)
 			ContextActionService:SetTitle("Shove", "Shove")
 		elseif not anyone and bound then
 			bound = false

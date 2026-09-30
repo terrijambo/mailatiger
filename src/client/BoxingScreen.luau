@@ -4,7 +4,12 @@
 -- Top: the ANGER meter. It keeps rising, and every strip of tape makes it jump. At 100 you get launched.
 --
 -- This screen only reports what you did ("Pet spot 2", "Tape seam 1"). The server decides what it means.
+--
+-- Mouse and touch: press and drag. Gamepad: a hand cursor moves with the left stick; hold A (or R2) to rub
+-- or tape. Pressing near the end dot of an untaped seam snaps the hand onto the dot, so taping with a
+-- stick is a clean straight pull.
 
+local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -131,6 +136,17 @@ function BoxingScreen.Start()
 		BackgroundTransparency = 1,
 	}, backdrop)
 	Ui.make("UIAspectRatioConstraint", { AspectRatio = 1 }, scene)
+	-- Phones: the meter and help go to the very top and the picture gets the rest of the (short) screen
+	Ui.onResize(function()
+		local compact = Ui.compact()
+		meterBack.Position = UDim2.new(0.5, 0, 0, if compact then 4 else 70)
+		meterBack.Size = UDim2.new(0.6, 0, 0, if compact then 28 else 34)
+		help.Position = UDim2.new(0.5, 0, 0, if compact then 34 else 108)
+		help.Size = UDim2.new(if compact then 0.9 else 0.8, 0, 0, if compact then 36 else 24)
+		help.TextSize = if compact then 14 else 16
+		scene.Position = UDim2.fromScale(0.5, if compact then 0.6 else 0.57)
+		scene.Size = UDim2.fromScale(0.62, if compact then 0.76 else 0.66)
+	end)
 
 	local ANIMAL_HOME = UDim2.fromScale(0.5, 0)
 	local ANIMAL_HIDDEN = UDim2.fromScale(0.5, 0.42) -- tucked inside the box, before it pops out
@@ -396,6 +412,9 @@ function BoxingScreen.Start()
 				role == "Tape"
 			then "YOU TAPE: drag from dot to dot along each seam while your crewmate keeps it calm"
 			else "Rub the ♥ spots · Don't touch the ✖ spots · Drag tape from dot to dot along each seam"
+		if Ui.inputKind() == "Gamepad" then
+			help.Text ..= "  ·  Left stick moves the hand, hold A"
+		end
 
 		-- POP! The animal springs up out of the box
 		popping = true
@@ -488,15 +507,7 @@ function BoxingScreen.Start()
 		end
 	end
 
-	UserInputService.InputBegan:Connect(function(inputObject: InputObject)
-		if not gui.Enabled then
-			return
-		end
-		local kind = inputObject.UserInputType
-		if kind ~= Enum.UserInputType.MouseButton1 and kind ~= Enum.UserInputType.Touch then
-			return
-		end
-		local screen = Vector2.new(inputObject.Position.X, inputObject.Position.Y)
+	local function pressAt(screen: Vector2)
 		-- The box is in front of the animal's lower half, so check the box first
 		if inside(boxCard, screen) then
 			if role ~= "Pet" then
@@ -509,20 +520,9 @@ function BoxingScreen.Start()
 				lastPoint = screen
 			end
 		end
-	end)
+	end
 
-	UserInputService.InputChanged:Connect(function(inputObject: InputObject)
-		local kind = inputObject.UserInputType
-		if mode and (kind == Enum.UserInputType.MouseMovement or kind == Enum.UserInputType.Touch) then
-			pointerMoved(Vector2.new(inputObject.Position.X, inputObject.Position.Y))
-		end
-	end)
-
-	UserInputService.InputEnded:Connect(function(inputObject: InputObject)
-		local kind = inputObject.UserInputType
-		if kind ~= Enum.UserInputType.MouseButton1 and kind ~= Enum.UserInputType.Touch then
-			return
-		end
+	local function release()
 		if mode == "Tape" then
 			for index, seam in seams do
 				if not taped[index] and BoxMath.IsTapeStroke(seam, path) then
@@ -537,6 +537,140 @@ function BoxingScreen.Start()
 		end
 		mode = nil
 		path = {}
+	end
+
+	UserInputService.InputBegan:Connect(function(inputObject: InputObject)
+		if not gui.Enabled then
+			return
+		end
+		local kind = inputObject.UserInputType
+		if kind ~= Enum.UserInputType.MouseButton1 and kind ~= Enum.UserInputType.Touch then
+			return
+		end
+		pressAt(Vector2.new(inputObject.Position.X, inputObject.Position.Y))
+	end)
+
+	UserInputService.InputChanged:Connect(function(inputObject: InputObject)
+		local kind = inputObject.UserInputType
+		if mode and (kind == Enum.UserInputType.MouseMovement or kind == Enum.UserInputType.Touch) then
+			pointerMoved(Vector2.new(inputObject.Position.X, inputObject.Position.Y))
+		end
+	end)
+
+	UserInputService.InputEnded:Connect(function(inputObject: InputObject)
+		local kind = inputObject.UserInputType
+		if kind ~= Enum.UserInputType.MouseButton1 and kind ~= Enum.UserInputType.Touch then
+			return
+		end
+		release()
+	end)
+
+	---------------------------------------------------------------------------------------------------
+	-- Gamepad: a hand cursor on the left stick, A or R2 to press
+	local cursor = Ui.make("TextLabel", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Size = UDim2.fromOffset(46, 46),
+		BackgroundColor3 = Ui.WHITE,
+		BackgroundTransparency = 0.2,
+		Font = Ui.FONT,
+		TextScaled = true,
+		Text = "✋",
+		Visible = false,
+		ZIndex = 30,
+	}, backdrop)
+	Ui.round(cursor, 23)
+	Ui.border(cursor, 3)
+	local cursorAt = Vector2.zero -- screen position
+	local stick = Vector2.zero
+	local padBound = false
+
+	local function placeCursor()
+		local origin, size = backdrop.AbsolutePosition, backdrop.AbsoluteSize
+		cursorAt = Vector2.new(
+			math.clamp(cursorAt.X, origin.X, origin.X + size.X),
+			math.clamp(cursorAt.Y, origin.Y, origin.Y + size.Y)
+		)
+		cursor.Position = UDim2.fromOffset(cursorAt.X - origin.X, cursorAt.Y - origin.Y)
+	end
+
+	-- Pressing near an untaped seam's end dot jumps onto the dot
+	local function snapToSeam()
+		if not inside(boxCard, cursorAt) or role == "Pet" then
+			return
+		end
+		local p = toCard(boxCard, cursorAt)
+		local best, bestDistance = nil :: Vector2?, 0.1
+		for index, seam in seams do
+			if not taped[index] then
+				for _, dotAt in { seam.A, seam.B } do
+					local distance = (p - dotAt).Magnitude
+					if distance < bestDistance then
+						best, bestDistance = dotAt, distance
+					end
+				end
+			end
+		end
+		if best then
+			cursorAt = boxCard.AbsolutePosition + best * boxCard.AbsoluteSize
+			placeCursor()
+		end
+	end
+
+	local function onPad(_name: string, state: Enum.UserInputState, inputObject: InputObject)
+		if inputObject.KeyCode == Enum.KeyCode.Thumbstick1 then
+			local raw = Vector2.new(inputObject.Position.X, -inputObject.Position.Y)
+			stick = if raw.Magnitude < 0.15 then Vector2.zero else raw
+		elseif state == Enum.UserInputState.Begin then
+			snapToSeam()
+			pressAt(cursorAt)
+		elseif state == Enum.UserInputState.End then
+			release()
+		end
+		return Enum.ContextActionResult.Sink -- no jumping or walking while boxing
+	end
+
+	local function setGamepad(on: boolean)
+		cursor.Visible = on and Ui.inputKind() == "Gamepad"
+		if on and not padBound then
+			padBound = true
+			ContextActionService:BindActionAtPriority(
+				"BoxGamepad",
+				onPad,
+				false,
+				Enum.ContextActionPriority.High.Value,
+				Enum.KeyCode.Thumbstick1,
+				Enum.KeyCode.ButtonA,
+				Enum.KeyCode.ButtonR2
+			)
+		elseif not on and padBound then
+			padBound = false
+			ContextActionService:UnbindAction("BoxGamepad")
+			stick = Vector2.zero
+		end
+	end
+	Ui.onInputKind(function()
+		cursor.Visible = gui.Enabled and Ui.inputKind() == "Gamepad"
+	end)
+	gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+		if gui.Enabled then
+			-- start over the middle of the animal
+			cursorAt = animalCard.AbsolutePosition + animalCard.AbsoluteSize * Vector2.new(0.5, 0.4)
+			placeCursor()
+		end
+		setGamepad(gui.Enabled)
+	end)
+	RunService.RenderStepped:Connect(function(dt: number)
+		if not padBound or stick == Vector2.zero then
+			return
+		end
+		-- Faster the further you push (fine control near the center)
+		local size = backdrop.AbsoluteSize
+		local speed = math.min(size.X, size.Y) * 0.9 * stick.Magnitude ^ 0.6
+		cursorAt += stick.Unit * speed * dt
+		placeCursor()
+		if mode then
+			pointerMoved(cursorAt)
+		end
 	end)
 
 	-- Show the screen only during the BOX stage

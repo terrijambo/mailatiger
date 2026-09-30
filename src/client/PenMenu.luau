@@ -51,7 +51,7 @@ function PenMenu.Start()
 	local function refreshChaos()
 		chaosButton.Text = if chaos
 			then "🔥 CHAOS MODE: ON  (+50% pay, but anyone can spook your animal and shove you)"
-			else "Chaos Mode: off  (tap for +50% pay, but others can mess with you)"
+			else "Chaos Mode: off  (turn on for +50% pay, but others can mess with you)"
 		chaosButton.BackgroundColor3 = if chaos then Ui.RED else Ui.GREY
 	end
 	chaosButton.Activated:Connect(function()
