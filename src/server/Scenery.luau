@@ -1,6 +1,6 @@
 --!strict
 -- Everything in the world that's just for looks: the island (terrain), the ocean and mountains, the hub's
--- terraces, fountain and info boards, the stone paths out to each zone with their giant entrance banners,
+-- terraces, fountain and info boards, the street grid out to each zone with their giant entrance banners,
 -- and each zone's theme (a house by the Backyard, a farm by the Barn, a waterfall cliff in the Jungle, a snowy
 -- winter zone around the Ice Rink, and a city of skyscrapers around the Rooftop).
 -- Gameplay pieces (arenas, counters, pads) are built in MapBuilder, which calls Scenery.Build with the layout.
@@ -26,7 +26,6 @@ export type Layout = {
 	PlazaMin: Vector3,
 	PlazaMax: Vector3,
 	Zones: { Zone },
-	PathStarts: { [string]: Vector3 }, -- zone id -> where its path leaves the plaza
 }
 
 -- Bright, flat colors in the style of popular simulators (smooth plastic, no gritty textures)
@@ -328,50 +327,141 @@ local function lamppost(parent: Instance, at: Vector3)
 	light.Parent = bulb
 end
 
--- A road between two points: dark asphalt with white dashes down the middle and light sidewalks on both
--- sides (like the streets in popular city sims), plus lampposts along it
-local function path(parent: Instance, from: Vector3, to: Vector3, width: number)
-	local flatFrom = Vector3.new(from.X, 0, from.Z)
-	local flatTo = Vector3.new(to.X, 0, to.Z)
-	local length = (flatTo - flatFrom).Magnitude
-	local direction = (flatTo - flatFrom).Unit
-	local side = Vector3.new(-direction.Z, 0, direction.X)
-	local along = CFrame.lookAt((flatFrom + flatTo) / 2, (flatFrom + flatTo) / 2 + direction)
-	part(parent, {
-		Name = "Path",
-		Size = Vector3.new(width, 0.3, length + width),
-		CFrame = along + Vector3.new(0, -0.05, 0),
-		Color = C.Path,
-	})
-	for _, s in { -1, 1 } do
-		part(parent, {
-			Name = "Sidewalk",
-			Size = Vector3.new(3, 0.5, length + width),
-			CFrame = along + side * s * (width / 2 + 1.5) + Vector3.new(0, 0.05, 0),
-			Color = C.Sidewalk,
-		})
-	end
-	-- White dashes every 10 studs
-	for d = -length / 2 + 5, length / 2 - 5, 10 do
-		part(parent, {
-			Name = "RoadLine",
-			Size = Vector3.new(0.6, 0.05, 4),
-			CFrame = along * CFrame.new(0, 0.12, d),
-			Color = C.Line,
-			CanCollide = false,
-		})
-	end
-	-- Lampposts along both sides every ~40 studs
-	local count = math.floor(length / 40)
-	for i = 1, count do
-		local at = flatFrom + direction * (i * length / (count + 1))
-		lamppost(parent, at + side * (width / 2 + 2) * (if i % 2 == 0 then 1 else -1))
-	end
+---------------------------------------------------------------------------------------------------
+-- Roads: a small street grid, all at right angles (like the towns in popular city sims). The ring road
+-- around the plaza, a boulevard north of town, and streets out to every zone gate. Where two roads meet,
+-- the asphalt joins into one square, sidewalks stop at the corner (or wrap around it), the center dashes
+-- stop, and crosswalks go across the side street. Lamps only ever stand on a sidewalk.
+
+export type Road = { A: Vector3, B: Vector3, Width: number }
+
+local SIDEWALK = 3 -- sidewalk width
+local RING = 22 -- plaza edge to the middle of the ring road
+local RING_WIDTH = 14
+local STREET_WIDTH = 12
+local BOULEVARD_GAP = 30 -- ring road to boulevard (middle to middle)
+-- The avenues up to the far zones run between the Backyard's trees (x up to about 60) and the Barn and
+-- Jungle (the Jungle's cliff starts at x = 95), so nothing overlaps them
+local AVENUE_X = 76
+
+local function makeRoad(ax: number, az: number, bx: number, bz: number, width: number): Road
+	return { A = Vector3.new(ax, 0, az), B = Vector3.new(bx, 0, bz), Width = width }
 end
 
--- White zebra stripes across a road at `at` (the road runs along `roadDirection`)
-local function crosswalk(parent: Instance, at: Vector3, roadDirection: Vector3, roadWidth: number)
-	local frame = CFrame.lookAt(at, at + roadDirection)
+-- The whole street grid for this layout
+local function roadNetwork(layout: Layout): { Road }
+	local min, max = layout.PlazaMin, layout.PlazaMax
+	local x0, x1 = min.X - RING, max.X + RING
+	local z0, z1 = min.Z - RING, max.Z + RING
+	local roads = {
+		makeRoad(x0, z0, x1, z0, RING_WIDTH),
+		makeRoad(x0, z1, x1, z1, RING_WIDTH),
+		makeRoad(x0, z0, x0, z1, RING_WIDTH),
+		makeRoad(x1, z0, x1, z1, RING_WIDTH),
+	}
+	-- The boulevard north of town. Zones whose gates are close to it sit along it; the rest are "far".
+	local boulevardZ = z0 - BOULEVARD_GAP
+	local near: { Zone }, far: { Zone } = {}, {}
+	for _, zone in layout.Zones do
+		local front = zone.Gate.Z + 14 -- roads stop a little in front of the gate
+		table.insert(if front > boulevardZ - 40 then near else far, zone)
+	end
+	local west, east = 0, 0
+	for _, zone in near do
+		west = math.min(west, zone.Gate.X)
+		east = math.max(east, zone.Gate.X)
+	end
+	table.insert(roads, makeRoad(west, boulevardZ, east, boulevardZ, RING_WIDTH))
+	for _, zone in near do
+		local front = zone.Gate.Z + 14
+		if front < boulevardZ - RING_WIDTH / 2 - 4 then -- (a gate right on the boulevard needs no street)
+			table.insert(roads, makeRoad(zone.Gate.X, boulevardZ, zone.Gate.X, front, STREET_WIDTH))
+		end
+	end
+	-- Main street: the ring road straight up to the boulevard, facing the Backyard gate
+	table.insert(roads, makeRoad(0, z0, 0, boulevardZ, STREET_WIDTH))
+	-- Far zones: an avenue from the ring road up past the boulevard, then across and up to the gate
+	for _, zone in far do
+		local avenueX = if zone.Gate.X < 0 then -AVENUE_X else AVENUE_X
+		local front = zone.Gate.Z + 14
+		local turnZ = front + 31
+		table.insert(roads, makeRoad(avenueX, z0, avenueX, turnZ, STREET_WIDTH))
+		table.insert(roads, makeRoad(avenueX, turnZ, zone.Gate.X, turnZ, STREET_WIDTH))
+		table.insert(roads, makeRoad(zone.Gate.X, turnZ, zone.Gate.X, front, STREET_WIDTH))
+	end
+	return roads
+end
+
+local function roadDirection(road: Road): Vector3
+	return (road.B - road.A).Unit
+end
+
+local function roadLength(road: Road): number
+	return (road.B - road.A).Magnitude
+end
+
+-- How far along the road's middle line a point is, or nil if the point isn't on that line
+local function alongRoad(road: Road, point: Vector3): number?
+	local direction = roadDirection(road)
+	local t = (point - road.A):Dot(direction)
+	if t < -0.5 or t > roadLength(road) + 0.5 then
+		return nil
+	end
+	if (road.A + direction * t - point).Magnitude > 0.5 then
+		return nil
+	end
+	return t
+end
+
+-- Where another road meets this one: how far along this road, the other road, which ways the other road
+-- leaves the meeting point, and whether the meeting point is one of the other road's ends
+type Meeting = { T: number, Other: Road, Arms: { Vector3 }, OtherEnds: boolean }
+
+local function meetingsOf(road: Road, roads: { Road }): { Meeting }
+	local list: { Meeting } = {}
+	local direction = roadDirection(road)
+	for _, other in roads do
+		if other ~= road then
+			local point: Vector3? = nil
+			for _, p in { other.A, other.B, road.A, road.B } do
+				if not point and alongRoad(road, p) and alongRoad(other, p) then
+					point = p
+				end
+			end
+			if not point and math.abs(direction:Dot(roadDirection(other))) < 0.01 then
+				-- Crossing in the middle of both
+				local p = if math.abs(direction.X) > 0.5
+					then Vector3.new(other.A.X, 0, road.A.Z)
+					else Vector3.new(road.A.X, 0, other.A.Z)
+				if alongRoad(road, p) and alongRoad(other, p) then
+					point = p
+				end
+			end
+			if point then
+				local otherT = alongRoad(other, point) :: number
+				local otherLength = roadLength(other)
+				local arms = {}
+				if otherT > 0.5 then
+					table.insert(arms, -roadDirection(other))
+				end
+				if otherT < otherLength - 0.5 then
+					table.insert(arms, roadDirection(other))
+				end
+				table.insert(list, {
+					T = alongRoad(road, point) :: number,
+					Other = other,
+					Arms = arms,
+					OtherEnds = otherT < 0.5 or otherT > otherLength - 0.5,
+				})
+			end
+		end
+	end
+	return list
+end
+
+-- White zebra stripes across a road at `at` (the road runs along `along`)
+local function crosswalk(parent: Instance, at: Vector3, along: Vector3, roadWidth: number)
+	local frame = CFrame.lookAt(at, at + along)
 	for i = -3, 3 do
 		part(parent, {
 			Name = "Crosswalk",
@@ -380,6 +470,159 @@ local function crosswalk(parent: Instance, at: Vector3, roadDirection: Vector3, 
 			Color = C.Line,
 			CanCollide = false,
 		})
+	end
+end
+
+-- Is this spot on (or right next to) any road's asphalt or sidewalks?
+local function onAnyRoad(roads: { Road }, point: Vector3, margin: number): boolean
+	for _, road in roads do
+		local t = (point - road.A):Dot(roadDirection(road))
+		local reach = road.Width / 2 + SIDEWALK + margin
+		local length = roadLength(road)
+		if t > -reach and t < length + reach then
+			local closest = road.A + roadDirection(road) * math.clamp(t, 0, length)
+			local offset = point - closest
+			if math.abs(offset.X) < reach and math.abs(offset.Z) < reach then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function buildRoads(parent: Instance, roads: { Road })
+	for _, road in roads do
+		local direction = roadDirection(road)
+		local length = roadLength(road)
+		local side = Vector3.new(-direction.Z, 0, direction.X)
+		local meetings = meetingsOf(road, roads)
+		local function frameAt(t: number, lateral: number, y: number): CFrame
+			local p = road.A + direction * t + side * lateral + Vector3.new(0, y, 0)
+			return CFrame.lookAt(p, p + direction)
+		end
+
+		-- Asphalt. At a corner it runs on to fill the corner square; at a dead end it stops flat.
+		local from, to = 0, length
+		for _, meeting in meetings do
+			if meeting.OtherEnds then
+				if meeting.T < 0.5 then
+					from = -meeting.Other.Width / 2
+				elseif meeting.T > length - 0.5 then
+					to = length + meeting.Other.Width / 2
+				end
+			end
+		end
+		part(parent, {
+			Name = "Road",
+			Size = Vector3.new(road.Width, 0.3, to - from),
+			CFrame = frameAt((from + to) / 2, 0, -0.05),
+			Color = C.Path,
+		})
+
+		-- Crosswalks across this road where it leaves a junction with a road that carries on through it
+		local noDashes: { { number } } = {}
+		local placed: { number } = {}
+		for _, meeting in meetings do
+			local half = meeting.Other.Width / 2
+			if not meeting.OtherEnds then
+				for _, arm in { -1, 1 } do
+					local t = meeting.T + arm * (half + 9.5)
+					local free = t > 8 and t < length - 8
+					for _, other in placed do
+						if math.abs(other - t) < 17 then
+							free = false -- (two junctions close together share one crosswalk)
+						end
+					end
+					if free then
+						table.insert(placed, t)
+						crosswalk(parent, road.A + direction * t, direction, road.Width)
+					end
+				end
+				table.insert(noDashes, { meeting.T - half - 18, meeting.T + half + 18 })
+			else
+				table.insert(noDashes, { meeting.T - half - 3, meeting.T + half + 3 })
+			end
+		end
+
+		-- White center dashes every 10 studs (not inside junctions or over crosswalks)
+		for d = 5, length - 5, 10 do
+			local clear = true
+			for _, zone in noDashes do
+				if d > zone[1] and d < zone[2] then
+					clear = false
+				end
+			end
+			if clear then
+				part(parent, {
+					Name = "RoadLine",
+					Size = Vector3.new(0.6, 0.05, 4),
+					CFrame = frameAt(d, 0, 0.12),
+					Color = C.Line,
+					CanCollide = false,
+				})
+			end
+		end
+
+		-- Sidewalks on both sides, cut where a side street joins and wrapped around outside corners
+		for _, s in { -1, 1 } do
+			local walkFrom, walkTo = 0, length
+			local cuts: { { number } } = {}
+			for _, meeting in meetings do
+				local half = meeting.Other.Width / 2
+				local toThisSide = false
+				for _, arm in meeting.Arms do
+					if arm:Dot(side) * s > 0.5 then
+						toThisSide = true
+					end
+				end
+				if meeting.T < 0.5 then
+					walkFrom = if toThisSide or not meeting.OtherEnds then half else -(half + SIDEWALK)
+				elseif meeting.T > length - 0.5 then
+					walkTo = if toThisSide or not meeting.OtherEnds then length - half else length + half + SIDEWALK
+				elseif toThisSide then
+					table.insert(cuts, { meeting.T - half, meeting.T + half })
+				end
+			end
+			table.sort(cuts, function(a, b)
+				return a[1] < b[1]
+			end)
+			local pieces: { { number } } = {}
+			local start = walkFrom
+			for _, cut in cuts do
+				if cut[1] > start then
+					table.insert(pieces, { start, math.min(cut[1], walkTo) })
+				end
+				start = math.max(start, cut[2])
+			end
+			if walkTo > start then
+				table.insert(pieces, { start, walkTo })
+			end
+			for _, piece in pieces do
+				local pieceLength = piece[2] - piece[1]
+				if pieceLength > 0.5 then
+					part(parent, {
+						Name = "Sidewalk",
+						Size = Vector3.new(SIDEWALK, 0.5, pieceLength),
+						CFrame = frameAt((piece[1] + piece[2]) / 2, s * (road.Width / 2 + SIDEWALK / 2), 0.05),
+						Color = C.Sidewalk,
+					})
+					-- Lampposts along it, staggered between the two sides
+					local first = piece[1] + (if s < 0 then 8 else 28)
+					for t = first, piece[2] - 6, 40 do
+						local spot = road.A + direction * t + side * s * (road.Width / 2 + 1.6)
+						local onOtherRoad = false
+						for _, other in roads do
+							if other ~= road and onAnyRoad({ other }, spot, 1) then
+								onOtherRoad = true
+							end
+						end
+						if not onOtherRoad then
+							lamppost(parent, spot)
+						end
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -406,39 +649,23 @@ local function buildHub(parent: Instance, layout: Layout)
 	folder.Parent = parent
 	local min, max = layout.PlazaMin, layout.PlazaMax
 
-	-- A ring road around the plaza (sidewalks on both sides), with crosswalks where the zone roads leave
-	local ring = 22 -- distance from the plaza edge to the middle of the ring road
-	local roadWidth = 14
-	local ringMin = Vector3.new(min.X - ring, 0, min.Z - ring)
+	-- (The ring road around the plaza is part of the street grid, see buildRoads)
+	local ring = RING
+	local roadWidth = RING_WIDTH
 	local ringMax = Vector3.new(max.X + ring, 0, max.Z + ring)
-	path(
-		folder,
-		Vector3.new(ringMin.X - roadWidth / 2, 0, ringMin.Z),
-		Vector3.new(ringMax.X + roadWidth / 2, 0, ringMin.Z),
-		roadWidth
-	)
-	path(
-		folder,
-		Vector3.new(ringMin.X - roadWidth / 2, 0, ringMax.Z),
-		Vector3.new(ringMax.X + roadWidth / 2, 0, ringMax.Z),
-		roadWidth
-	)
-	path(folder, Vector3.new(ringMin.X, 0, ringMin.Z), Vector3.new(ringMin.X, 0, ringMax.Z), roadWidth)
-	path(folder, Vector3.new(ringMax.X, 0, ringMin.Z), Vector3.new(ringMax.X, 0, ringMax.Z), roadWidth)
-	for _, start in layout.PathStarts do
-		crosswalk(folder, Vector3.new(start.X, 0, ringMin.Z), Vector3.xAxis, roadWidth)
-	end
 	crosswalk(folder, Vector3.new(0, 0, ringMax.Z), Vector3.xAxis, roadWidth) -- toward the beach
-	-- Grass verges between the plaza and the ring road
+	-- Grass verges between the plaza and the ring road's sidewalks (a touch lower than the sidewalks, so
+	-- the two never flicker where they meet)
+	local verge = ring - roadWidth / 2 - SIDEWALK
 	for _, strip in
 		{
-			{ Vector3.new(0, 0, min.Z - 7), Vector3.new(max.X - min.X + 14, 0.5, 14) },
-			{ Vector3.new(0, 0, max.Z + 7), Vector3.new(max.X - min.X + 14, 0.5, 14) },
-			{ Vector3.new(min.X - 7, 0, (min.Z + max.Z) / 2), Vector3.new(14, 0.5, max.Z - min.Z) },
-			{ Vector3.new(max.X + 7, 0, (min.Z + max.Z) / 2), Vector3.new(14, 0.5, max.Z - min.Z) },
+			{ Vector3.new(0, 0, min.Z - verge / 2), Vector3.new(max.X - min.X + verge * 2, 0.44, verge) },
+			{ Vector3.new(0, 0, max.Z + verge / 2), Vector3.new(max.X - min.X + verge * 2, 0.44, verge) },
+			{ Vector3.new(min.X - verge / 2, 0, (min.Z + max.Z) / 2), Vector3.new(verge, 0.44, max.Z - min.Z) },
+			{ Vector3.new(max.X + verge / 2, 0, (min.Z + max.Z) / 2), Vector3.new(verge, 0.44, max.Z - min.Z) },
 		}
 	do
-		box(folder, "Verge", strip[1] + Vector3.new(0, 0.05, 0), strip[2], C.GrassTop)
+		box(folder, "Verge", strip[1] + Vector3.new(0, 0.06, 0), strip[2], C.GrassTop)
 	end
 
 	-- Terraces outside the ring road (two steps), with gaps where the roads leave
@@ -930,26 +1157,10 @@ local THEMES: { [string]: (Instance, Zone) -> () } = {
 
 -- Scatters trees, rocks and flower patches across the open land between the town and the zones, keeping clear
 -- of the plaza, the zones and the paths. Uses a fixed random seed, so every server looks the same.
-local function scatter(parent: Instance, layout: Layout)
+local function scatter(parent: Instance, layout: Layout, roads: { Road })
 	local random = Random.new(20260930)
-	local segments: { { Vector3 } } = {}
-	for _, zone in layout.Zones do
-		local start = layout.PathStarts[zone.Id]
-		if start then
-			table.insert(segments, { start, zone.Gate + Vector3.new(0, 0, 14) })
-		end
-	end
 	local function nearPath(p: Vector3): boolean
-		for _, seg in segments do
-			local a, b = seg[1], seg[2]
-			local ab = Vector3.new(b.X - a.X, 0, b.Z - a.Z)
-			local ap = Vector3.new(p.X - a.X, 0, p.Z - a.Z)
-			local t = math.clamp(ap:Dot(ab) / ab:Dot(ab), 0, 1)
-			if (ap - ab * t).Magnitude < 14 then
-				return true
-			end
-		end
-		return false
+		return onAnyRoad(roads, p, 8) -- (8 studs of grass between a road and any tree or rock)
 	end
 	local function blocked(p: Vector3): boolean
 		local min, max = layout.PlazaMin, layout.PlazaMax
@@ -1106,17 +1317,15 @@ function Scenery.Build(parent: Instance, layout: Layout)
 	local wild = Instance.new("Folder")
 	wild.Name = "Wilderness"
 	wild.Parent = folder
-	scatter(wild, layout)
+	local roads = roadNetwork(layout)
+	scatter(wild, layout, roads)
 	signpost(folder, Vector3.new(26, 0, layout.PlazaMin.Z + 6), layout)
 
-	local paths = Instance.new("Folder")
-	paths.Name = "Paths"
-	paths.Parent = folder
+	local roadFolder = Instance.new("Folder")
+	roadFolder.Name = "Roads"
+	roadFolder.Parent = folder
+	buildRoads(roadFolder, roads)
 	for _, zone in layout.Zones do
-		local start = layout.PathStarts[zone.Id]
-		if start then
-			path(paths, start, zone.Gate + Vector3.new(0, 0, 14), 12)
-		end
 		local zoneFolder = Instance.new("Folder")
 		zoneFolder.Name = zone.Id
 		zoneFolder.Parent = folder

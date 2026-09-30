@@ -689,16 +689,6 @@ local ZONE_ICONS: { [string]: string } = {
 	IceRink = "❄️",
 	Rooftop = "🏙️",
 }
--- Where each zone's path leaves the plaza
--- (on the outer edge of the ring road around the plaza, 29 studs out from the plaza's north edge)
-local PATH_STARTS: { [string]: Vector3 } = {
-	Backyard = Vector3.new(0, 0, -89),
-	Barn = Vector3.new(-50, 0, -89),
-	IceRink = Vector3.new(-80, 0, -89),
-	Jungle = Vector3.new(50, 0, -89),
-	Rooftop = Vector3.new(80, 0, -89),
-}
-
 function MapBuilder.Build(): Map
 	local existing = Workspace:FindFirstChild("GrayboxMap")
 	if existing then
@@ -967,7 +957,7 @@ function MapBuilder.Build(): Map
 			})
 		end
 	end
-	Scenery.Build(map, { PlazaMin = PLAZA_MIN, PlazaMax = PLAZA_MAX, Zones = zones, PathStarts = PATH_STARTS })
+	Scenery.Build(map, { PlazaMin = PLAZA_MIN, PlazaMax = PLAZA_MAX, Zones = zones })
 
 	local townSpot = Vector3.new(0, 3, 66)
 	return {
