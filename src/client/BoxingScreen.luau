@@ -79,6 +79,7 @@ function BoxingScreen.Start()
 
 	local gui = Ui.make("ScreenGui", {
 		Name = "BoxingScreen",
+		DisplayOrder = 5, -- above the HUD and side buttons
 		ResetOnSpawn = false,
 		Enabled = false,
 		-- Sibling: children always draw on top of their parent (so the seams show ON the box, not behind it)

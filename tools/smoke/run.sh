@@ -9,7 +9,16 @@
 # A second Studio window opens for a few seconds and closes by itself. Save in Studio first (Ctrl+S).
 set -e
 cd "$(dirname "$0")/../.."
+# The test opens its own temporary Studio. If your Studio is open too, it can pick up the test's plugin and
+# the run gets unreliable, so this refuses to start until Studio is closed (save your work first).
+if tasklist 2>/dev/null | grep -qi "RobloxStudioBeta.exe"; then
+	echo "Roblox Studio is open. Save and close it, then run this again (the test opens its own copy)."
+	exit 1
+fi
 TMP="$(mktemp -d)"
+# Always remove the test plugin run-in-roblox installs, even if this run is interrupted
+PLUGINS="$LOCALAPPDATA/Roblox/Plugins"
+trap 'rm -f "$PLUGINS"/run_in_roblox-*.rbxmx; rm -rf "$TMP"' EXIT
 cp MailATiger.rbxl "$TMP/place_copy.rbxl"
 rojo build -o "$TMP/build.rbxl"
 lune run tools/smoke/merge.luau "$TMP/build.rbxl" "$TMP/place_copy.rbxl" "$TMP/merged.rbxl"

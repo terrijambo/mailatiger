@@ -11,6 +11,8 @@ for _, name in { "AnimalModels", "BoxModels", "PropModels", "MapModels" } do
 		print("copied", name, #folder:GetChildren())
 	end
 end
--- Keep the user's lighting too, so Look.Apply is tested against it
+-- Mark this as a throwaway test place. The test scripts refuse to run anywhere without this mark, so even if
+-- your own open Studio loads the test plugin, it does nothing to your game.
+built:GetService("Workspace"):SetAttribute("MailATigerTestPlace", true)
 fs.writeFile(process.args[3], roblox.serializePlace(built))
 print("wrote", process.args[3])

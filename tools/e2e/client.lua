@@ -88,6 +88,47 @@ game:GetService("RunService").RenderStepped:Connect(function(dt)
 	end
 end)
 
+-- Layout dump: every visible UI element's screen rectangle, so tools/e2e/draw_ui.py can draw the screen
+local function dumpUi(tag)
+	local gui = player:WaitForChild("PlayerGui")
+	local camera = workspace.CurrentCamera
+	local lines = { string.format("UI %s SCREEN %d %d", tag, math.floor(camera.ViewportSize.X), math.floor(camera.ViewportSize.Y)) }
+	local screens = gui:GetChildren()
+	table.sort(screens, function(a, b)
+		local da = if a:IsA("ScreenGui") then a.DisplayOrder else 0
+		local db = if b:IsA("ScreenGui") then b.DisplayOrder else 0
+		return da < db
+	end)
+	for _, screen in screens do
+		if screen:IsA("ScreenGui") and screen.Enabled then
+			for _, d in screen:GetDescendants() do
+				if d:IsA("GuiObject") and d.Visible and d.AbsoluteSize.X > 2 then
+					local visible = true
+					local p = d.Parent
+					while p and p:IsA("GuiObject") do
+						if not p.Visible then
+							visible = false
+						end
+						p = p.Parent
+					end
+					if visible then
+						local text = ""
+						if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
+							text = string.gsub(string.sub(d.Text, 1, 40), "[%c|]", " ")
+						end
+						local c = d.BackgroundColor3
+						table.insert(lines, string.format("UI %s %s|%s|%d|%d|%d|%d|%d|%d|%d|%.2f|%s", tag, screen.Name, d.ClassName,
+							math.floor(d.AbsolutePosition.X), math.floor(d.AbsolutePosition.Y),
+							math.floor(d.AbsoluteSize.X), math.floor(d.AbsoluteSize.Y),
+							math.floor(c.R * 255), math.floor(c.G * 255), math.floor(c.B * 255), d.BackgroundTransparency, text))
+					end
+				end
+			end
+		end
+	end
+	table.insert(steps, "UIDUMP " .. table.concat(lines, string.char(10)))
+end
+
 local function run()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -101,6 +142,8 @@ local function run()
 		log(gui:WaitForChild(name, 5) ~= nil, "UI " .. name .. " built")
 	end
 	log(gui:WaitForChild("Tutorial", 8) ~= nil, "tutorial started for a new player")
+	log(gui:FindFirstChild("SideButtons") ~= nil and #gui.SideButtons:GetDescendants() > 10, "side buttons built")
+
 	local startCoins = profile().Coins
 	sampling = true
 	log(waitFor(function()
@@ -170,6 +213,7 @@ local function run()
 			end
 		end
 		log(viewportModel, "BOX screen shows the 3D animal")
+		dumpUi("box")
 		local jobBox = #CollectionService:GetTagged("JobBox") > 0
 		log(jobBox, "the box in the arena is tagged for the anger wiggle")
 		for seam = 1, seams do
@@ -197,6 +241,8 @@ local function run()
 	local after = profile()
 	log(after.Mailed == 1 and #after.Parcels == 0, "save: Mailed=1 and the bag is empty")
 	log(after.Coins > startCoins, "got paid (" .. startCoins .. " -> " .. after.Coins .. ")")
+
+	dumpUi("hud")
 
 	-- 5. Shop, codes, settings
 	root.CFrame = map.ShopCounter.CFrame * CFrame.new(0, 2, 5)
@@ -253,13 +299,25 @@ local function run()
 	log(waitFor(function()
 		return gui.PenMenu.Enabled
 	end, 3), "Pen prompt opens the Pen menu")
+	task.wait(0.5)
+	dumpUi("pen")
 	gui.PenMenu.Enabled = false
 	goTo(map.OrdersBoard)
 	holdPrompt(map.OrdersBoard:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
 		return gui.OrdersBoard.Enabled
 	end, 3), "Orders prompt opens Gruff's Orders")
+	task.wait(0.4)
+	dumpUi("orders")
 	gui.OrdersBoard.Enabled = false
+	goTo(map.ShopCounter)
+	holdPrompt(map.ShopCounter:FindFirstChildOfClass("ProximityPrompt"))
+	log(waitFor(function()
+		return gui.Shop.Enabled
+	end, 3), "Shop counter opens the Supply Shop")
+	task.wait(0.4)
+	dumpUi("shop")
+	gui.Shop.Enabled = false
 
 	-- 8. Chute upgrades, in order, up to the Rocket (mail from anywhere)
 	goTo(map.ShopCounter)

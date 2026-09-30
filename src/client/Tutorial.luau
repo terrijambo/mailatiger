@@ -32,15 +32,17 @@ local function buildPanel(): (ScreenGui, TextLabel, TextButton)
 		Enabled = false,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	}, player:WaitForChild("PlayerGui"))
+	-- Bottom center, between the side buttons and clear of the phone thumbstick and jump button
 	local panel = Ui.make("Frame", {
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.6, 0),
-		Size = UDim2.fromOffset(360, 132),
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, -18),
+		Size = UDim2.fromOffset(420, 132),
 		BackgroundColor3 = Ui.PAPER,
 	}, gui)
-	Ui.round(panel, 14)
-	Ui.make("UIStroke", { Thickness = 3, Color = Ui.BROWN }, panel)
-	Ui.make("UISizeConstraint", { MaxSize = Vector2.new(360, 160) }, panel)
+	Ui.round(panel, 16)
+	Ui.border(panel, 3)
+	Ui.autoScale(panel)
+	Ui.make("UISizeConstraint", { MaxSize = Vector2.new(420, 160) }, panel)
 
 	-- Gruff's face: his Blender model if imported, otherwise a name badge
 	local portrait = Ui.make("ViewportFrame", {

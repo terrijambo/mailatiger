@@ -1,5 +1,9 @@
 -- Used by tools/smoke/run.sh (runs inside a temporary Studio, in edit mode).
 -- Smoke test (edit mode): build the real map with the real models by calling the game's own modules.
+-- Safety: only ever run inside the throwaway test place (marked by merge.luau), never in your own game
+if game:GetService("Workspace"):GetAttribute("MailATigerTestPlace") ~= true then
+	return
+end
 local server = game:GetService("ServerScriptService"):FindFirstChild("Server")
 local ok, err = pcall(function()
 	local Look = require(server.Look)

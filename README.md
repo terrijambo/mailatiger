@@ -184,6 +184,7 @@ selene src                     # lint
 stylua src                     # format everything
 lune run tools/check_models.luau MailATiger.rbxl   # after Ctrl+S in Studio: are all models imported, in the right folders, facing the right way?
 lune run tests/run.luau        # ~550 automatic checks on the Config files and box math. Run after changing any Config file
+# The two Studio tests below open their own temporary Studio: save and CLOSE your Studio first
 bash tools/smoke/run.sh        # builds the real map with your models in a temporary Studio and reports errors (Ctrl+S first)
 bash tools/e2e/run.sh          # automated playtest in a temporary Studio: 65 steps incl. catch, box, mail, shop, tiger launch (~1-2 min, Ctrl+S first)
 ```

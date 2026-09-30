@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
@@ -35,7 +36,7 @@ function Shop.Start()
 	local shopAction = remotes:WaitForChild("ShopAction") :: RemoteEvent
 	local notify = remotes:WaitForChild("Notify") :: RemoteEvent
 
-	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "Shop", "Supply Shop")
+	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "Shop", "Supply Shop", Ui.ORANGE)
 
 	local tabBar = Ui.make("Frame", {
 		Position = UDim2.fromOffset(20, 56),
@@ -65,12 +66,11 @@ function Shop.Start()
 	-- One row: a 3D picture (if that model is imported), name + description, then one or two buttons.
 	-- icon = { folder, model name }, e.g. { "BoxModels", "Steel" }
 	local function row(order: number, title: string, description: string, icon: { string }?): Frame
-		local frame = Ui.make("Frame", {
+		local frame = Ui.card(list, {
 			LayoutOrder = order,
 			Size = UDim2.new(1, -12, 0, 70),
 			BackgroundColor3 = Ui.WHITE,
-		}, list)
-		Ui.round(frame)
+		})
 		local left = 14
 		if
 			icon
@@ -267,10 +267,12 @@ function Shop.Start()
 		end
 	end)
 
+	-- The SHOP side button and the shop counter both open it
+	Menus.Register("Shop", gui, redraw)
+
 	notify.OnClientEvent:Connect(function(kind: string)
 		if kind == "OpenShop" then
-			redraw()
-			gui.Enabled = true
+			Menus.Open("Shop")
 		end
 	end)
 end

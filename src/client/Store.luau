@@ -1,5 +1,5 @@
 --!strict
--- The Robux Store: a button on the left of the screen opens a window of game passes and products.
+-- The Robux Store: the STORE side button opens a window of game passes and products.
 -- Only things you've set up on Roblox show up (an Id in src/shared/Config/Monetization.luau that isn't 0).
 -- Buying is handled by Roblox's own purchase popup; the server gives you what you bought.
 
@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
@@ -29,7 +30,7 @@ end
 
 function Store.Start()
 	local playerGui = player:WaitForChild("PlayerGui")
-	local gui, window = Ui.window(playerGui, "Store", "Store")
+	local gui, window = Ui.window(playerGui, "Store", "Store", Ui.GOLD)
 
 	local list = Ui.make("ScrollingFrame", {
 		Position = UDim2.fromOffset(16, 60),
@@ -50,12 +51,11 @@ function Store.Start()
 		color: Color3,
 		onClick: (() -> ())?
 	)
-		local frame = Ui.make("Frame", {
+		local frame = Ui.card(list, {
 			LayoutOrder = order,
 			Size = UDim2.new(1, -12, 0, 64),
 			BackgroundColor3 = Ui.WHITE,
-		}, list)
-		Ui.round(frame)
+		})
 		Ui.label(frame, {
 			Position = UDim2.fromOffset(14, 6),
 			Size = UDim2.new(1, -180, 0, 24),
@@ -146,20 +146,8 @@ function Store.Start()
 		end
 	end
 
-	-- The button that opens it: first in the row of buttons along the top-left, just under Roblox's own
-	-- menu bar, level with the coins (Settings and Invite sit to its right). Nothing else goes there, even on phones
-	local hud = Ui.make("ScreenGui", { Name = "StoreButton", ResetOnSpawn = false }, playerGui)
-	local open = Ui.button(hud, {
-		Position = UDim2.fromOffset(12, 8),
-		Size = UDim2.fromOffset(96, 36),
-		BackgroundColor3 = Color3.fromRGB(80, 180, 90),
-		TextSize = 20,
-		Text = "Store",
-	})
-	open.Activated:Connect(function()
-		redraw()
-		gui.Enabled = not gui.Enabled
-	end)
+	-- Opened by the STORE side button (SideButtons.luau)
+	Menus.Register("Store", gui, redraw)
 
 	-- Keep it current while it's open (after a purchase, a new pass, an unlock...)
 	local function refreshIfOpen()

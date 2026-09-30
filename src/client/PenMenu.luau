@@ -1,13 +1,14 @@
 --!strict
--- The Animal Pen menu: a grid of every animal, with prices, what you own, and what's locked.
--- Opens when the server says so (you used the Pen counter). Picking an animal asks the server, which checks
--- distance, coins and ownership itself.
+-- The Animal Pen menu: a grid of every animal as chunky cards (3D picture, tier, pay and a PLAY / BUY
+-- button). Opens from the PEN side button or the Pen counter. Picking an animal asks the server, which checks
+-- coins and ownership itself, then sends you to that animal's arena.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
@@ -15,91 +16,42 @@ local player = Players.LocalPlayer
 
 local PenMenu = {}
 
-local FONT = Enum.Font.FredokaOne
-local WHITE = Color3.new(1, 1, 1)
 local TIER_NAMES = { "Backyard", "Farm", "Wild", "Apex", "Giants", "Silly" }
+local TIER_COLORS = {
+	Color3.fromRGB(110, 205, 100),
+	Color3.fromRGB(240, 170, 70),
+	Color3.fromRGB(60, 175, 120),
+	Color3.fromRGB(240, 90, 80),
+	Color3.fromRGB(90, 150, 255),
+	Color3.fromRGB(190, 110, 255),
+}
 
-local function make(className: string, props: { [string]: any }, parent: Instance?): any
-	local instance = Instance.new(className)
-	for key, value in props do
-		(instance :: any)[key] = value
-	end
-	if parent then
-		instance.Parent = parent
-	end
-	return instance
-end
-
-local function round(parent: Instance, radius: number?)
-	make("UICorner", { CornerRadius = UDim.new(0, radius or 10) }, parent)
-end
-
-local function ownedSet(): { [string]: boolean }
-	return Profile.Get().Owned
-end
-
-local function coins(): number
-	return Profile.Get().Coins
-end
+type Card = { Button: TextButton, Status: TextButton, Icon: ViewportFrame? }
 
 function PenMenu.Start()
-	local gui =
-		make("ScreenGui", { Name = "PenMenu", ResetOnSpawn = false, Enabled = false }, player:WaitForChild("PlayerGui"))
+	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "PenMenu", "Animal Pen", Ui.GREEN)
 	local requestAnimal = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RequestAnimal") :: RemoteEvent
 	local freeInStudio = Config.Dev.FreeAnimalsInStudio and RunService:IsStudio()
-
-	local window = make("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.fromScale(0.8, 0.75),
-		BackgroundColor3 = Color3.fromRGB(250, 240, 220),
-	}, gui)
-	round(window, 16)
-	make("UIStroke", { Thickness = 4, Color = Color3.fromRGB(120, 70, 40) }, window)
-	make("UISizeConstraint", { MaxSize = Vector2.new(900, 640) }, window)
-	Ui.pop(gui, window)
-
-	make("TextLabel", {
-		Position = UDim2.fromOffset(20, 10),
-		Size = UDim2.new(1, -80, 0, 40),
-		BackgroundTransparency = 1,
-		Font = FONT,
-		TextSize = 30,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = Color3.fromRGB(120, 60, 30),
-		Text = if freeInStudio then "Animal Pen  (Studio: everything is free)" else "Animal Pen",
-	}, window)
-
-	local close = make("TextButton", {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -12, 0, 12),
-		Size = UDim2.fromOffset(40, 40),
-		BackgroundColor3 = Color3.fromRGB(200, 60, 60),
-		Font = FONT,
-		TextSize = 24,
-		TextColor3 = WHITE,
-		Text = "X",
-	}, window)
-	round(close, 20)
-	Ui.press(close)
+	if freeInStudio then
+		local title = window:FindFirstChild("TitleBar") and (window :: any).TitleBar:FindFirstChild("Title")
+		if title then
+			title.Text = "Animal Pen  (Studio: all free)"
+		end
+	end
 
 	-- Chaos Mode toggle: +50% pay, but other players can spook your animal and shove you
 	local chaos = false
-	local chaosButton = make("TextButton", {
-		Position = UDim2.fromOffset(16, 56),
-		Size = UDim2.new(1, -32, 0, 34),
-		BackgroundColor3 = Color3.fromRGB(140, 140, 150),
-		Font = FONT,
-		TextSize = 17,
-		TextColor3 = WHITE,
+	local chaosButton = Ui.button(window, {
+		Position = UDim2.fromOffset(16, 62),
+		Size = UDim2.new(1, -32, 0, 38),
+		TextSize = 18,
 		Text = "",
-	}, window)
-	round(chaosButton, 8)
+	})
 	local function refreshChaos()
 		chaosButton.Text = if chaos
-			then "CHAOS MODE: ON  (+50% pay, but anyone can spook your animal and shove you)"
-			else "Chaos Mode: off  (click to turn on: +50% pay, others can mess with you)"
-		chaosButton.BackgroundColor3 = if chaos then Color3.fromRGB(210, 60, 60) else Color3.fromRGB(140, 140, 150)
+			then "🔥 CHAOS MODE: ON  (+50% pay, but anyone can spook your animal and shove you)"
+			else "Chaos Mode: off  (tap for +50% pay, but others can mess with you)"
+		chaosButton.BackgroundColor3 = if chaos then Ui.RED else Ui.GREY
 	end
 	chaosButton.Activated:Connect(function()
 		chaos = not chaos
@@ -107,133 +59,149 @@ function PenMenu.Start()
 	end)
 	refreshChaos()
 
-	local list = make("ScrollingFrame", {
-		Position = UDim2.fromOffset(16, 98),
-		Size = UDim2.new(1, -32, 1, -114),
+	local list = Ui.make("ScrollingFrame", {
+		Position = UDim2.fromOffset(12, 110),
+		Size = UDim2.new(1, -24, 1, -122),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 8,
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		CanvasSize = UDim2.new(),
 	}, window)
-	make("UIGridLayout", {
-		CellSize = UDim2.fromOffset(160, 120),
-		CellPadding = UDim2.fromOffset(10, 10),
+	Ui.make("UIGridLayout", {
+		CellSize = UDim2.fromOffset(150, 176),
+		CellPadding = UDim2.fromOffset(12, 12),
 		SortOrder = Enum.SortOrder.LayoutOrder,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center,
 	}, list)
+	Ui.make("UIPadding", { PaddingTop = UDim.new(0, 6), PaddingBottom = UDim.new(0, 6) }, list)
 
-	local cards: { [string]: { Button: TextButton, Status: TextLabel, Icon: ViewportFrame? } } = {}
+	local cards: { [string]: Card } = {}
 
 	for index, animal in Config.Animals.List do
-		local button = make("TextButton", {
+		local tierColor = TIER_COLORS[animal.Tier] or Ui.GREY
+		local card = Ui.make("TextButton", {
 			LayoutOrder = index,
-			BackgroundColor3 = WHITE,
-			AutoButtonColor = true,
+			BackgroundColor3 = Ui.WHITE,
+			AutoButtonColor = false,
 			Text = "",
 		}, list)
-		round(button)
+		Ui.round(card, 14)
+		Ui.border(card, 3)
+		Ui.press(card)
+		-- Colored top half behind the picture
+		local top = Ui.make("Frame", {
+			Size = UDim2.new(1, 0, 0, 92),
+			BackgroundColor3 = tierColor,
+		}, card)
+		Ui.round(top, 14)
+		Ui.gloss(top)
 
-		local swatch = make("Frame", {
-			Position = UDim2.fromOffset(6, 6),
-			Size = UDim2.fromOffset(44, 44),
-			BackgroundColor3 = animal.Color or WHITE,
-		}, button)
-		round(swatch, 22)
-		make("UIStroke", { Thickness = 2, Color = Color3.fromRGB(60, 60, 60) }, swatch)
-		-- The animal's 3D model on a soft circle, if imported (the colored dot is the fallback)
-		local icon = Ui.modelIcon(swatch, "AnimalModels", animal.Id, {
-			Position = UDim2.fromOffset(-4, -6),
-			Size = UDim2.fromOffset(52, 52),
+		local icon = Ui.modelIcon(card, "AnimalModels", animal.Id, {
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.new(0.5, 0, 0, 2),
+			Size = UDim2.fromOffset(92, 88),
 			ZIndex = 2,
 		})
-		if icon then
-			swatch.BackgroundColor3 = (animal.Color or WHITE):Lerp(WHITE, 0.6)
+		if not icon then
+			local dot = Ui.make("Frame", {
+				AnchorPoint = Vector2.new(0.5, 0),
+				Position = UDim2.new(0.5, 0, 0, 14),
+				Size = UDim2.fromOffset(62, 62),
+				BackgroundColor3 = animal.Color or Ui.WHITE,
+				ZIndex = 2,
+			}, card)
+			Ui.round(dot, 31)
+			Ui.border(dot, 2)
 		end
-		Ui.press(button)
-
-		make("TextLabel", {
-			Position = UDim2.fromOffset(54, 8),
-			Size = UDim2.new(1, -60, 0, 24),
-			BackgroundTransparency = 1,
-			Font = FONT,
-			TextScaled = true,
+		-- Tier badge in the corner
+		local badge = Ui.outlined(card, {
+			Position = UDim2.fromOffset(6, 4),
+			Size = UDim2.fromOffset(40, 20),
+			TextSize = 18,
 			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = Color3.fromRGB(40, 30, 25),
+			Text = `T{animal.Tier}`,
+			ZIndex = 3,
+		})
+		badge.Font = Ui.TITLE_FONT
+		if animal.Carriers > 1 then
+			Ui.outlined(card, {
+				AnchorPoint = Vector2.new(1, 0),
+				Position = UDim2.new(1, -6, 0, 4),
+				Size = UDim2.fromOffset(60, 20),
+				TextSize = 16,
+				TextXAlignment = Enum.TextXAlignment.Right,
+				Text = `👥{animal.Carriers}`,
+				ZIndex = 3,
+			})
+		end
+
+		Ui.label(card, {
+			Position = UDim2.fromOffset(6, 94),
+			Size = UDim2.new(1, -12, 0, 24),
+			Font = Ui.TITLE_FONT,
+			TextSize = 20,
+			TextXAlignment = Enum.TextXAlignment.Center,
 			Text = animal.DisplayName,
-		}, button)
-		make("TextLabel", {
-			Position = UDim2.fromOffset(54, 32),
-			Size = UDim2.new(1, -60, 0, 16),
-			BackgroundTransparency = 1,
-			Font = FONT,
-			TextSize = 14,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = Color3.fromRGB(120, 110, 100),
-			Text = `Tier {animal.Tier} · {TIER_NAMES[animal.Tier] or ""} · {Config.Arenas.ByTier[animal.Tier].DisplayName}`,
-		}, button)
-		make("TextLabel", {
-			Position = UDim2.fromOffset(10, 54),
-			Size = UDim2.new(1, -20, 0, 18),
-			BackgroundTransparency = 1,
-			Font = FONT,
-			TextSize = 14,
-			TextXAlignment = Enum.TextXAlignment.Left,
-			TextColor3 = Color3.fromRGB(90, 80, 70),
-			Text = `Pays {animal.BaseValue} · Difficulty {string.rep("★", animal.Tier)}`,
-		}, button)
-		local status = make("TextLabel", {
-			Position = UDim2.new(0, 10, 1, -40),
-			Size = UDim2.new(1, -20, 0, 30),
-			BackgroundColor3 = Color3.fromRGB(90, 180, 90),
-			Font = FONT,
-			TextSize = 16,
-			TextColor3 = WHITE,
+		})
+		Ui.label(card, {
+			Position = UDim2.fromOffset(6, 116),
+			Size = UDim2.new(1, -12, 0, 16),
+			TextSize = 13,
+			TextXAlignment = Enum.TextXAlignment.Center,
+			TextColor3 = Color3.fromRGB(110, 100, 95),
+			Text = `{TIER_NAMES[animal.Tier] or ""} · pays {animal.BaseValue}`,
+		})
+		local status = Ui.button(card, {
+			AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 1, -8),
+			Size = UDim2.new(1, -16, 0, 32),
+			TextSize = 18,
 			Text = "",
-		}, button)
-		round(status, 8)
+		})
 
-		button.Activated:Connect(function()
+		local function pick()
 			requestAnimal:FireServer(animal.Id, chaos)
 			gui.Enabled = false
-		end)
-		cards[animal.Id] = { Button = button, Status = status, Icon = icon }
+		end
+		card.Activated:Connect(pick)
+		status.Activated:Connect(pick)
+		cards[animal.Id] = { Button = card, Status = status, Icon = icon }
 	end
 
 	local function refresh()
-		local owned = ownedSet()
-		local myCoins = coins()
+		local data = Profile.Get()
 		for _, animal in Config.Animals.List do
 			local card = cards[animal.Id]
 			local status = card.Status
-			local coop = if animal.Carriers > 1 then ` · co-op {animal.Carriers}p` else ""
+			local owned = data.Owned[animal.Id] == true
+			local affordable = data.Coins >= animal.Price
+			if owned then
+				status.Text = "PLAY"
+				status.BackgroundColor3 = Ui.GREEN
+			elseif freeInStudio then
+				status.Text = "FREE (Studio)"
+				status.BackgroundColor3 = Ui.BLUE
+			elseif affordable then
+				status.Text = `BUY {animal.Price}`
+				status.BackgroundColor3 = Ui.ORANGE
+			else
+				status.Text = `🔒 {animal.Price}`
+				status.BackgroundColor3 = Ui.GREY
+			end
 			-- Animals you can't have yet show as a dark silhouette
 			local icon = card.Icon
 			if icon then
-				local locked = not owned[animal.Id] and not freeInStudio and myCoins < animal.Price
-				icon.ImageColor3 = if locked then Color3.fromRGB(40, 40, 50) else WHITE
-			end
-			if owned[animal.Id] then
-				status.Text = `Owned - Box it!{coop}`
-				status.BackgroundColor3 = Color3.fromRGB(90, 180, 90)
-				card.Button.Active = true
-			elseif freeInStudio then
-				status.Text = `FREE (Studio){coop}`
-				status.BackgroundColor3 = Color3.fromRGB(80, 150, 220)
-				card.Button.Active = true
-			elseif myCoins >= animal.Price then
-				status.Text = `Buy: {animal.Price}{coop}`
-				status.BackgroundColor3 = Color3.fromRGB(230, 160, 40)
-				card.Button.Active = true
-			else
-				status.Text = `{animal.Price} coins{coop}`
-				status.BackgroundColor3 = Color3.fromRGB(170, 90, 80)
-				card.Button.Active = true -- the server will say you can't afford it
+				icon.ImageColor3 = if owned or freeInStudio or affordable then Ui.WHITE else Color3.fromRGB(35, 35, 45)
 			end
 		end
 	end
 
-	close.Activated:Connect(function()
-		gui.Enabled = false
+	Menus.Register("Pen", gui, refresh)
+	Profile.Watch(function()
+		if gui.Enabled then
+			refresh()
+		end
 	end)
 
 	-- Close the menu once you've started boxing an animal
@@ -246,8 +214,7 @@ function PenMenu.Start()
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 	notify.OnClientEvent:Connect(function(kind: string)
 		if kind == "OpenPen" then
-			refresh()
-			gui.Enabled = true
+			Menus.Open("Pen")
 		end
 	end)
 end

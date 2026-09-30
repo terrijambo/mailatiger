@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
@@ -22,7 +23,7 @@ local CONDITION_TEXT = {
 
 function OrdersBoard.Start()
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
-	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "OrdersBoard", "Gruff's Orders")
+	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "OrdersBoard", "Gruff's Orders", Ui.PURPLE)
 
 	local list = Ui.make("Frame", {
 		Position = UDim2.fromOffset(20, 60),
@@ -47,12 +48,11 @@ function OrdersBoard.Start()
 		local profile = Profile.Get()
 		for index, order in profile.Orders do
 			local animal = Config.Animals.ById[order.AnimalId]
-			local frame = Ui.make("Frame", {
+			local frame = Ui.card(list, {
 				LayoutOrder = index,
 				Size = UDim2.new(1, 0, 0, 70),
 				BackgroundColor3 = if order.Done then Color3.fromRGB(220, 245, 220) else Ui.WHITE,
-			}, list)
-			Ui.round(frame)
+			})
 			-- The animal's 3D picture, if its model is imported
 			local left = 14
 			if
@@ -89,6 +89,14 @@ function OrdersBoard.Start()
 		footer.Text = `New orders in about {minutes} min. They only ask for animals you own.`
 	end
 
+	-- The ORDERS side button and the board in town both open it. Opening asks the server for fresh orders
+	-- if the old ones have expired.
+	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
+	Menus.Register("Orders", gui, function()
+		shopAction:FireServer("RefreshOrders")
+		redraw()
+	end)
+
 	Profile.Watch(function()
 		if gui.Enabled then
 			redraw()
@@ -97,8 +105,7 @@ function OrdersBoard.Start()
 
 	notify.OnClientEvent:Connect(function(kind: string)
 		if kind == "OpenOrders" then
-			redraw()
-			gui.Enabled = true
+			Menus.Open("Orders")
 		end
 	end)
 end

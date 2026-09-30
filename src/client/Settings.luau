@@ -1,13 +1,13 @@
 --!strict
--- The Settings button (top-left, next to Store): music, sound effects, and camera shake/zoom on or off.
--- Also the Invite button under it (asks Roblox to show its invite-friends popup).
+-- The Settings window (SETTINGS side button): music, sound effects, and camera shake/zoom on or off, plus
+-- the reward-code box.
 -- Choices are saved with your progress. Other scripts read them from attributes this sets on you:
 -- MusicOff, SfxOff, MotionOff.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local SocialService = game:GetService("SocialService")
 
+local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
@@ -24,7 +24,7 @@ local OPTIONS = {
 function Settings.Start()
 	local playerGui = player:WaitForChild("PlayerGui")
 	local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Setting") :: RemoteEvent
-	local gui, window = Ui.window(playerGui, "Settings", "Settings")
+	local gui, window = Ui.window(playerGui, "Settings", "Settings", Ui.GREY)
 	local size = window:FindFirstChildOfClass("UISizeConstraint")
 	if size then
 		size.MaxSize = Vector2.new(420, 330) -- a small window: three switches and the code box
@@ -119,34 +119,8 @@ function Settings.Start()
 		Settings.Apply()
 	end)
 
-	local hud = Ui.make("ScreenGui", { Name = "SettingsButton", ResetOnSpawn = false }, playerGui)
-	local open = Ui.button(hud, {
-		Position = UDim2.fromOffset(116, 8),
-		Size = UDim2.fromOffset(96, 36),
-		BackgroundColor3 = Ui.GREY,
-		TextSize = 17,
-		Text = "Settings",
-	})
-	open.Activated:Connect(function()
-		gui.Enabled = not gui.Enabled
-	end)
-
-	-- Invite friends (Roblox's own invite popup). Hidden where Roblox doesn't allow invites.
-	local invite = Ui.button(hud, {
-		Position = UDim2.fromOffset(220, 8),
-		Size = UDim2.fromOffset(96, 36),
-		BackgroundColor3 = Ui.BLUE,
-		TextSize = 17,
-		Text = "Invite",
-		Visible = false,
-	})
-	task.spawn(function()
-		local ok, allowed = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)
-		invite.Visible = ok and allowed == true
-	end)
-	invite.Activated:Connect(function()
-		pcall(SocialService.PromptGameInvite, SocialService, player)
-	end)
+	-- Opened by the SETTINGS side button (SideButtons.luau)
+	Menus.Register("Settings", gui)
 end
 
 function Settings.Apply() end -- replaced in Start

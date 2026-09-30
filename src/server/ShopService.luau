@@ -32,7 +32,13 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 
 	-- (The shop works from anywhere: the SHOP button opens it, and the map is too big to walk back each time.
 	-- Coins and everything else are still checked below.)
-	if action == "BuyBox" then
+	if action == "RefreshOrders" then
+		-- Opening Gruff's Orders from the side button: new orders if the old ones ran out
+		if Orders.Refresh(profile) then
+			Economy.Sync(player)
+		end
+		return
+	elseif action == "BuyBox" then
 		local box = Config.Boxes.ById[itemId]
 		if not box or profile.Boxes[itemId] then
 			return

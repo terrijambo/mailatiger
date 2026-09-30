@@ -1,5 +1,12 @@
 --!strict
--- Small helpers for building UI in code, shared by the menus.
+-- The game's UI kit: every menu builds its windows, buttons and labels from these, so they all share one
+-- chunky, colorful look (thick dark outlines, glossy gradients, bold outlined text).
+--   Ui.window       a popup: colored title bar, cream body, red X
+--   Ui.button       a chunky glossy button (set BackgroundColor3 to recolor it any time)
+--   Ui.sideButton   a big square icon button with a label (PEN, SHOP, ...), like the side buttons in popular sims
+--   Ui.label        plain text for inside windows
+--   Ui.outlined     big white text with a dark outline, for the HUD
+--   Ui.modelIcon    a little 3D picture of one of your Blender models
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
@@ -9,15 +16,20 @@ local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Ui = {}
 
 Ui.FONT = Enum.Font.FredokaOne
+Ui.TITLE_FONT = Enum.Font.LuckiestGuy -- big, bold, cartoony: titles and headline numbers
 Ui.WHITE = Color3.new(1, 1, 1)
-Ui.PAPER = Color3.fromRGB(250, 240, 220)
-Ui.INK = Color3.fromRGB(40, 30, 25)
+Ui.PAPER = Color3.fromRGB(252, 247, 236)
+Ui.INK = Color3.fromRGB(40, 32, 30)
+Ui.OUTLINE = Color3.fromRGB(25, 22, 30)
 Ui.BROWN = Color3.fromRGB(120, 70, 40)
-Ui.GREEN = Color3.fromRGB(90, 180, 90)
-Ui.ORANGE = Color3.fromRGB(230, 160, 40)
-Ui.RED = Color3.fromRGB(190, 80, 70)
-Ui.GREY = Color3.fromRGB(140, 140, 150)
-Ui.BLUE = Color3.fromRGB(80, 150, 220)
+Ui.GREEN = Color3.fromRGB(70, 205, 85)
+Ui.ORANGE = Color3.fromRGB(255, 160, 35)
+Ui.RED = Color3.fromRGB(235, 65, 70)
+Ui.GREY = Color3.fromRGB(150, 150, 165)
+Ui.BLUE = Color3.fromRGB(45, 150, 255)
+Ui.PURPLE = Color3.fromRGB(160, 95, 255)
+Ui.PINK = Color3.fromRGB(245, 80, 150)
+Ui.GOLD = Color3.fromRGB(255, 200, 45)
 
 -- Creates an instance, sets its properties, and parents it.
 function Ui.make(className: string, props: { [string]: any }, parent: Instance?): any
@@ -35,45 +47,123 @@ function Ui.round(parent: Instance, radius: number?)
 	Ui.make("UICorner", { CornerRadius = UDim.new(0, radius or 10) }, parent)
 end
 
--- A paper-style popup window with a title and a close button. Returns the ScreenGui and the content frame.
-function Ui.window(parentGui: Instance, name: string, title: string): (ScreenGui, Frame)
+-- A thick dark outline around a frame or button
+function Ui.border(target: Instance, thickness: number?)
+	return Ui.make("UIStroke", {
+		Thickness = thickness or 3,
+		Color = Ui.OUTLINE,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+		LineJoinMode = Enum.LineJoinMode.Round,
+	}, target)
+end
+
+-- A dark outline around text (makes white text readable on anything)
+function Ui.textOutline(target: Instance, thickness: number?)
+	return Ui.make("UIStroke", {
+		Thickness = thickness or 2,
+		Color = Ui.OUTLINE,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual,
+		LineJoinMode = Enum.LineJoinMode.Round,
+	}, target)
+end
+
+-- Glossy shading: lighter at the top, darker at the bottom. It multiplies BackgroundColor3, so the color
+-- can still be changed later (e.g. a button turning green).
+function Ui.gloss(target: Instance)
+	return Ui.make("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.new(1, 1, 1)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(235, 235, 235)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(175, 175, 175)),
+		}),
+	}, target)
+end
+
+-- Big white text with a dark outline, for the HUD
+function Ui.outlined(parent: Instance, props: { [string]: any }): TextLabel
+	local base: { [string]: any } = {
+		BackgroundTransparency = 1,
+		Font = Ui.TITLE_FONT,
+		TextSize = 30,
+		TextColor3 = Ui.WHITE,
+	}
+	for key, value in props do
+		base[key] = value
+	end
+	local label = Ui.make("TextLabel", base, parent)
+	Ui.textOutline(label, if (base.TextSize :: number) >= 28 then 3 else 2)
+	return label
+end
+
+-- A popup window: colored title bar, cream body, red X. Returns the ScreenGui and the content frame.
+-- Content starts about 56 px down (below the title bar).
+function Ui.window(parentGui: Instance, name: string, title: string, color: Color3?): (ScreenGui, Frame)
 	local gui = Ui.make("ScreenGui", {
 		Name = name,
 		ResetOnSpawn = false,
 		Enabled = false,
+		DisplayOrder = 3, -- above the HUD
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling, -- children draw on top of their parent
 	}, parentGui)
 	local frame = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.fromScale(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.52),
 		Size = UDim2.fromScale(0.8, 0.75),
 		BackgroundColor3 = Ui.PAPER,
 	}, gui)
-	Ui.round(frame, 16)
-	Ui.make("UIStroke", { Thickness = 4, Color = Ui.BROWN }, frame)
+	Ui.round(frame, 18)
+	Ui.border(frame, 4)
 	Ui.make("UISizeConstraint", { MaxSize = Vector2.new(900, 640) }, frame)
-	Ui.make("TextLabel", {
-		Name = "Title",
-		Position = UDim2.fromOffset(20, 10),
-		Size = UDim2.new(1, -80, 0, 40),
-		BackgroundTransparency = 1,
-		Font = Ui.FONT,
-		TextSize = 30,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = Ui.BROWN,
-		Text = title,
+
+	-- Title bar: rounded on top, square where it meets the body
+	local bar = Ui.make("Frame", {
+		Name = "TitleBar",
+		Size = UDim2.new(1, 0, 0, 50),
+		BackgroundColor3 = color or Ui.BLUE,
 	}, frame)
+	Ui.round(bar, 18)
+	Ui.gloss(bar)
+	local filler = Ui.make("Frame", {
+		Position = UDim2.new(0, 0, 1, -18),
+		Size = UDim2.new(1, 0, 0, 18),
+		BackgroundColor3 = color or Ui.BLUE,
+		BorderSizePixel = 0,
+	}, bar)
+	Ui.make("UIGradient", {
+		Rotation = 90,
+		Color = ColorSequence.new(Color3.fromRGB(205, 205, 205), Color3.fromRGB(175, 175, 175)),
+	}, filler)
+	Ui.make("Frame", { -- the dark line under the bar
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 3),
+		BackgroundColor3 = Ui.OUTLINE,
+		BorderSizePixel = 0,
+	}, bar)
+	Ui.outlined(bar, {
+		Name = "Title",
+		Position = UDim2.fromOffset(18, 4),
+		Size = UDim2.new(1, -90, 1, -6),
+		TextSize = 32,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Text = title,
+	})
+
 	local close = Ui.make("TextButton", {
-		AnchorPoint = Vector2.new(1, 0),
-		Position = UDim2.new(1, -12, 0, 12),
-		Size = UDim2.fromOffset(40, 40),
-		BackgroundColor3 = Color3.fromRGB(200, 60, 60),
-		Font = Ui.FONT,
-		TextSize = 24,
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, 8, 0, 6),
+		Size = UDim2.fromOffset(48, 48),
+		BackgroundColor3 = Ui.RED,
+		Font = Ui.TITLE_FONT,
+		TextSize = 30,
 		TextColor3 = Ui.WHITE,
 		Text = "X",
+		ZIndex = 5,
 	}, frame)
-	Ui.round(close, 20)
+	Ui.round(close, 12)
+	Ui.border(close, 3)
+	Ui.gloss(close)
+	Ui.textOutline(close, 2)
 	close.Activated:Connect(function()
 		gui.Enabled = false
 	end)
@@ -95,18 +185,24 @@ function Ui.pop(gui: ScreenGui, frame: GuiObject)
 	end)
 end
 
--- Buttons squish a little while you press them
+-- Buttons grow a little when you hover and squish while you press them
 function Ui.press(button: GuiButton)
 	local scale = Ui.make("UIScale", { Scale = 1 }, button)
-	local info = TweenInfo.new(0.08)
-	button.MouseButton1Down:Connect(function()
-		TweenService:Create(scale, info, { Scale = 0.93 }):Play()
-	end)
-	local function release()
-		TweenService:Create(scale, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	local function to(value: number, time: number)
+		TweenService:Create(scale, TweenInfo.new(time, Enum.EasingStyle.Back), { Scale = value }):Play()
 	end
-	button.MouseButton1Up:Connect(release)
-	button.MouseLeave:Connect(release)
+	button.MouseEnter:Connect(function()
+		to(1.05, 0.12)
+	end)
+	button.MouseLeave:Connect(function()
+		to(1, 0.15)
+	end)
+	button.MouseButton1Down:Connect(function()
+		TweenService:Create(scale, TweenInfo.new(0.08), { Scale = 0.92 }):Play()
+	end)
+	button.MouseButton1Up:Connect(function()
+		to(1, 0.15)
+	end)
 end
 
 -- A little 3D picture of one of your Blender models (e.g. "AnimalModels", "Tiger"), turned to face you.
@@ -137,12 +233,12 @@ function Ui.modelIcon(parent: Instance, folderName: string, modelName: string, p
 	return viewport
 end
 
--- A small colored button.
+-- A chunky glossy button with outlined text. Set BackgroundColor3 to recolor it (the gloss keeps working).
 function Ui.button(parent: Instance, props: { [string]: any }): TextButton
 	local base: { [string]: any } = {
 		BackgroundColor3 = Ui.ORANGE,
 		Font = Ui.FONT,
-		TextSize = 16,
+		TextSize = 18,
 		TextColor3 = Ui.WHITE,
 		AutoButtonColor = true,
 	}
@@ -150,12 +246,69 @@ function Ui.button(parent: Instance, props: { [string]: any }): TextButton
 		base[key] = value
 	end
 	local button = Ui.make("TextButton", base, parent)
-	Ui.round(button, 8)
+	Ui.round(button, 10)
+	Ui.border(button, 3)
+	Ui.gloss(button)
+	Ui.textOutline(button, 2)
 	Ui.press(button)
 	return button
 end
 
--- A text label with sensible defaults.
+-- A big square side button: an icon (a 3D model if you've imported it, otherwise an emoji) with a bold
+-- label across the bottom, like PETS / EGGS / SHOP in popular simulators.
+export type SideButtonSpec = {
+	Label: string,
+	Emoji: string,
+	Color: Color3,
+	Model: { string }?, -- { folder, model name }, e.g. { "AnimalModels", "Hamster" }
+	LayoutOrder: number?,
+}
+
+function Ui.sideButton(parent: Instance, spec: SideButtonSpec): TextButton
+	local button = Ui.make("TextButton", {
+		Name = spec.Label,
+		Size = UDim2.fromOffset(78, 78),
+		BackgroundColor3 = spec.Color,
+		Text = "",
+		AutoButtonColor = true,
+		LayoutOrder = spec.LayoutOrder or 0,
+	}, parent)
+	Ui.round(button, 16)
+	Ui.border(button, 3)
+	Ui.gloss(button)
+	Ui.press(button)
+	local icon: GuiObject? = nil
+	local model = spec.Model
+	if model then
+		icon = Ui.modelIcon(button, model[1], model[2], {
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.new(0.5, 0, 0, 2),
+			Size = UDim2.fromOffset(58, 58),
+		})
+	end
+	if not icon then
+		Ui.make("TextLabel", {
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.new(0.5, 0, 0, 6),
+			Size = UDim2.fromOffset(52, 46),
+			BackgroundTransparency = 1,
+			Font = Ui.FONT,
+			TextScaled = true,
+			Text = spec.Emoji,
+		}, button)
+	end
+	Ui.outlined(button, {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.new(0.5, 0, 1, 6),
+		Size = UDim2.new(1, 12, 0, 26),
+		TextSize = 22,
+		Text = spec.Label,
+		ZIndex = 3,
+	})
+	return button
+end
+
+-- A text label with sensible defaults (for inside windows).
 function Ui.label(parent: Instance, props: { [string]: any }): TextLabel
 	local base: { [string]: any } = {
 		BackgroundTransparency = 1,
@@ -169,6 +322,39 @@ function Ui.label(parent: Instance, props: { [string]: any }): TextLabel
 		base[key] = value
 	end
 	return Ui.make("TextLabel", base, parent)
+end
+
+-- Shrinks a HUD element on small screens (phones) and keeps it full size on big ones. The element shrinks
+-- toward its AnchorPoint, so corner-anchored things stay in their corner.
+-- How much HUD elements are shrunk on this screen (1 = full size)
+function Ui.screenScale(): number
+	local size = workspace.CurrentCamera.ViewportSize
+	return math.clamp(math.min(size.Y / 800, size.X / 1300), 0.58, 1)
+end
+
+function Ui.autoScale(target: GuiObject)
+	local scale = Ui.make("UIScale", { Scale = 1 }, target)
+	local camera = workspace.CurrentCamera
+	local function update()
+		scale.Scale = Ui.screenScale()
+	end
+	camera:GetPropertyChangedSignal("ViewportSize"):Connect(update)
+	update()
+	return scale
+end
+
+-- A white rounded card with an outline (a row in a list, a tile in a grid)
+function Ui.card(parent: Instance, props: { [string]: any }): Frame
+	local base: { [string]: any } = {
+		BackgroundColor3 = Ui.WHITE,
+	}
+	for key, value in props do
+		base[key] = value
+	end
+	local card = Ui.make("Frame", base, parent)
+	Ui.round(card, 12)
+	Ui.border(card, 2.5)
+	return card
 end
 
 return Ui
