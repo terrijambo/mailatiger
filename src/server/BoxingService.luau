@@ -441,6 +441,7 @@ local function startBox(s: Session)
 			Start = state.Start,
 			Spots = state.Spots,
 			SeamCount = seamCount,
+			BoxId = s.BoxId,
 			Role = s.Roles[member] or "Both",
 		})
 	end

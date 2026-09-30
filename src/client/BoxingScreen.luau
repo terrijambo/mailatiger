@@ -277,6 +277,7 @@ function BoxingScreen.Start()
 		return p.X >= 0 and p.X <= 1 and p.Y >= 0 and p.Y <= 1
 	end
 
+	local seamColor = DARK
 	local function drawSeams()
 		if seamLayer then
 			seamLayer:Destroy()
@@ -293,10 +294,10 @@ function BoxingScreen.Start()
 				for step = 0, 9 do
 					local a = seam.A:Lerp(seam.B, step / 10)
 					local b = seam.A:Lerp(seam.B, (step + 0.55) / 10)
-					line(layer, a, b, 5, DARK, 2)
+					line(layer, a, b, 5, seamColor, 2)
 				end
-				dot(layer, seam.A, 16, DARK, 2)
-				dot(layer, seam.B, 16, DARK, 2)
+				dot(layer, seam.A, 16, seamColor, 2)
+				dot(layer, seam.B, 16, seamColor, 2)
 			end
 		end
 		boxTitle.Text = `Tape the seams: {done} / {#seams}`
@@ -334,6 +335,12 @@ function BoxingScreen.Start()
 			taped[index] = false
 		end
 		local animal = Config.Animals.ById[data.AnimalId]
+		-- The box on screen matches the box you're using (cardboard, wood, steel, vault)
+		local boxDef = Config.Boxes.ById[data.BoxId or ""]
+		boxCard.BackgroundColor3 = if boxDef then boxDef.Color else CARDBOARD
+		-- Dark boxes (the Vault) get light seams so you can still see where to tape
+		local c = boxCard.BackgroundColor3
+		seamColor = if 0.3 * c.R + 0.59 * c.G + 0.11 * c.B < 0.45 then Color3.fromRGB(235, 235, 240) else DARK
 		animalTitle.Text = `Calm your {if animal then animal.DisplayName else "animal"}`
 		animalBody.BackgroundColor3 = if animal and animal.Color then animal.Color else Color3.new(1, 1, 1)
 
