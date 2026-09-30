@@ -26,6 +26,7 @@ local BoxMath = require(ReplicatedStorage.Shared.BoxMath)
 local BoxingConfig = require(ReplicatedStorage.Shared.Config.Boxing)
 local CatchAI = require(script.Parent.CatchAI)
 local Config = require(ReplicatedStorage.Shared.Config)
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local MailService = require(script.Parent.MailService)
@@ -434,6 +435,7 @@ local function startBox(s: Session)
 	setStage(s, "Box", "Rub the ♥ spots to keep it calm while you drag tape across every seam! Avoid the ✖ spots.")
 	local state = s.Box :: Types.BoxState
 	for _, member in membersOf(s) do
+		Analytics.Onboarding(member, "Caught")
 		notify(member, "BoxStart", {
 			AnimalId = s.AnimalId,
 			Start = state.Start,
@@ -498,6 +500,7 @@ local function escape(s: Session, how: string)
 		else map.Arenas[s.ArenaId].Center
 	s.Escapes += 1
 	notifyAll(s, "Break", {})
+	Analytics.Custom(s.Player, if how == "Launch" then "Launched" else "Escaped")
 	if how == "Launch" and twistsFor(s.AnimalId).Breakout then
 		breakout(s, position)
 	else
@@ -595,6 +598,7 @@ local function finishJob(s: Session)
 	local label = if stamp then stamp.DisplayName elseif s.Chaos then "CHAOS" else nil
 	for _, member in members do
 		local coins = math.max(1, math.round(animal.BaseValue * mult * Economy.PayoutMult(member) + s.Bonus))
+		Analytics.Onboarding(member, "Taped")
 		MailService.AddParcel(member, {
 			AnimalId = s.AnimalId,
 			Stars = stars,
@@ -905,7 +909,7 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 	end
 	if not Economy.Owns(player, animalId) then
 		local free = Config.Dev.FreeAnimalsInStudio and RunService:IsStudio()
-		if not free and not Economy.TrySpend(player, animal.Price) then
+		if not free and not Economy.TrySpend(player, animal.Price, `Animal_{animalId}`) then
 			gruffSays(player, Gruff.TooPoor)
 			return
 		end
@@ -952,6 +956,7 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 		CatchState = {},
 	}
 	sessions[player] = s
+	Analytics.Onboarding(player, "PickedAnimal")
 	Travel.ToArena(player, arenaId) -- off to the arena for this animal's tier
 	startCatch(s, nil)
 	if stampId then

@@ -7,6 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local MapBuilder = require(script.Parent.MapBuilder)
@@ -45,7 +46,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		if not box or profile.Boxes[itemId] then
 			return
 		end
-		if not Economy.TrySpend(player, box.Price) then
+		if not Economy.TrySpend(player, box.Price, `Box_{itemId}`) then
 			reply(player, `The {box.DisplayName} costs {box.Price} coins.`)
 			return
 		end
@@ -67,7 +68,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			return
 		end
 		local price = Config.Tools.PriceFor(tool, level)
-		if not Economy.TrySpend(player, price) then
+		if not Economy.TrySpend(player, price, `Tool_{itemId}_{level + 1}`) then
 			reply(player, `Level {level + 1} {tool.DisplayName} costs {price} coins.`)
 			return
 		end
@@ -78,7 +79,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		if not stamp then
 			return
 		end
-		if not Economy.TrySpend(player, stamp.Price) then
+		if not Economy.TrySpend(player, stamp.Price, `Stamp_{itemId}`) then
 			reply(player, `A {stamp.DisplayName} stamp costs {stamp.Price} coins.`)
 			return
 		end
@@ -98,7 +99,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		if not chute or Config.Mail.ChuteIndex[itemId] ~= current + 1 then
 			return
 		end
-		if not Economy.TrySpend(player, chute.Price) then
+		if not Economy.TrySpend(player, chute.Price, `Chute_{itemId}`) then
 			reply(player, `The {chute.DisplayName} costs {chute.Price} coins.`)
 			return
 		end
@@ -111,6 +112,8 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			return
 		end
 		-- Start over, but keep a permanent coin bonus
+		Analytics.Spend(player, profile.Coins, 0, `Rebirth_{profile.Rebirths + 1}`)
+		Analytics.Custom(player, "Rebirth", profile.Rebirths + 1)
 		profile.Coins = 0
 		profile.Owned = { Hamster = true }
 		profile.Boxes = { Cardboard = true }

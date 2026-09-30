@@ -3,10 +3,12 @@
 -- Every change calls Economy.Sync, which updates leaderstats (the player list) and the "Profile" attribute
 -- the client UI reads.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 
 local Economy = {}
@@ -43,27 +45,35 @@ local function setupPlayer(player: Player)
 
 	-- Studio testing only: free coins when nothing is being saved (see Config.Dev.StudioTestCoins)
 	local profile = DataService.Get(player)
+	-- Brand-new players go into the onboarding funnel (see Analytics.luau)
+	if profile and profile.Mailed == 0 and not profile.TutorialDone then
+		Analytics.StartOnboarding(player)
+	end
 	if profile and RunService:IsStudio() and player:GetAttribute("TemporaryData") == true then
 		profile.Coins = math.max(profile.Coins, Config.Dev.StudioTestCoins)
 	end
 	Economy.Sync(player)
 end
 
-function Economy.AddCoins(player: Player, amount: number)
+-- source: where the coins came from, for analytics (e.g. "MailPayout")
+function Economy.AddCoins(player: Player, amount: number, source: string?)
 	local profile = DataService.Get(player)
 	if profile then
 		profile.Coins += amount
+		Analytics.Earn(player, amount, profile.Coins, source or "Other")
 		Economy.Sync(player)
 	end
 end
 
 -- Takes coins if the player has enough. Returns whether it worked.
-function Economy.TrySpend(player: Player, amount: number): boolean
+-- item: what they bought, for analytics (e.g. "Box_Steel")
+function Economy.TrySpend(player: Player, amount: number, item: string?): boolean
 	local profile = DataService.Get(player)
 	if not profile or profile.Coins < amount then
 		return false
 	end
 	profile.Coins -= amount
+	Analytics.Spend(player, amount, profile.Coins, item or "Other")
 	Economy.Sync(player)
 	return true
 end
@@ -109,6 +119,7 @@ end
 
 function Economy.Start()
 	DataService.Loaded:Connect(setupPlayer)
+	Players.PlayerRemoving:Connect(Analytics.Forget)
 end
 
 return Economy

@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local LeaderboardService = require(script.Parent.LeaderboardService)
@@ -214,7 +215,8 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 
 	local count = #profile.Parcels
 	profile.Parcels = {}
-	Economy.AddCoins(player, total + orderBonus)
+	Economy.AddCoins(player, total + orderBonus, "MailPayout") -- (one update, so the HUD shows one "+N")
+	Analytics.Onboarding(player, "Mailed")
 	refreshCarried(player)
 	LeaderboardService.Submit(player)
 	flyParcels(player, count)

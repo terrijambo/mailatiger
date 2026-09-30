@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local Remotes = require(script.Parent.Remotes)
@@ -21,9 +22,15 @@ function TutorialService.Start()
 			return
 		end
 		profile.TutorialDone = true
+		if action == "Done" then
+			Analytics.Onboarding(player, "TutorialDone")
+		else
+			Analytics.Custom(player, "TutorialSkipped")
+		end
 		-- Checked here, not trusted from the client: the bonus needs a real mailed animal
 		if action == "Done" and profile.Mailed > 0 then
 			profile.Coins += REWARD
+			Analytics.Earn(player, REWARD, profile.Coins, "TutorialBonus")
 			Remotes.Notify:FireClient(
 				player,
 				"Message",

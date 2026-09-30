@@ -12,6 +12,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local Remotes = require(script.Parent.Remotes)
@@ -59,6 +60,7 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 	if jobs then
 		local coins = bestBaseValue(profile) * jobs
 		profile.Coins += coins
+		Analytics.Earn(player, coins, profile.Coins, key, true)
 		say(player, `{coins} coins. Don't let it go to your head.`)
 		return true
 	elseif key == "UnlockNext" then
