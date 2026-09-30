@@ -344,11 +344,23 @@ end
 function Ui.icon(parent: Instance, key: string, props: { [string]: any }): GuiObject
 	local entry = Config.Icons[key]
 	local image = entry and entry.Image or ""
+	-- Otherwise its cell in an uploaded sprite sheet (tools/pack_icons.py, Config/IconSheets.luau)
+	local cell = Config.IconAtlas.Cells[key]
+	local sheet = if cell then Config.IconSheets[cell.Sheet] or "" else ""
 	local object: GuiObject
 	if image ~= "" then
 		object = Ui.make("ImageLabel", {
 			BackgroundTransparency = 1,
 			Image = image,
+			ScaleType = Enum.ScaleType.Fit,
+		}, parent)
+	elseif cell and sheet ~= "" then
+		local size = Config.IconAtlas.Size
+		object = Ui.make("ImageLabel", {
+			BackgroundTransparency = 1,
+			Image = sheet,
+			ImageRectOffset = Vector2.new(cell.X, cell.Y),
+			ImageRectSize = Vector2.new(size, size),
 			ScaleType = Enum.ScaleType.Fit,
 		}, parent)
 	else

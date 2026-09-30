@@ -1,9 +1,12 @@
 --!strict
--- Every 2D image in the UI (buttons, HUD icons, item pictures). Until you paste in an image id, the UI shows
+-- Every 2D image in the UI (buttons, HUD icons, item pictures). Until an image is available, the UI shows
 -- the emoji instead, so nothing ever looks broken. The full list, with sizes and style notes, is in
 -- docs/UI_IMAGES.md.
 --
--- HOW TO ADD ONE: Creator Dashboard -> Development Items -> Decals -> upload your PNG. Open it, copy the
+-- The finished icons (art/ui_icons) are packed into sprite sheets by tools/pack_icons.py; paste the sheets'
+-- ids into IconSheets.luau and every icon lights up. Image below is only for a one-off override.
+--
+-- HOW TO ADD A SINGLE ONE: Creator Dashboard -> Development Items -> Decals -> upload your PNG. Open it, copy the
 -- number from the page address (or right-click the decal in Studio's Toolbox -> Copy Asset ID), and paste
 -- it below as Image = "rbxassetid://THE_NUMBER".
 

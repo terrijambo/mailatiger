@@ -23,6 +23,8 @@ return {
 	Quests = require(script.Quests),
 	Trolls = require(script.Trolls),
 	Icons = require(script.Icons),
+	IconAtlas = require(script.IconAtlas),
+	IconSheets = require(script.IconSheets),
 	Diamonds = require(script.Diamonds),
 
 	Dev = {

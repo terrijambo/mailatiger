@@ -170,6 +170,14 @@ for key in keys do
 	check(Config.Icons[`Store_{key}`] ~= nil, `store item {key} has no Store_{key} icon`)
 end
 
+section("Icon sheets")
+for key, cell in Config.IconAtlas.Cells do
+	check(Config.Icons[key] ~= nil, `art/ui_icons/{key}.png isn't an icon key in Config/Icons.luau (typo in the file name?)`)
+	check(cell.Sheet >= 1 and cell.Sheet <= Config.IconAtlas.SheetCount, `{key} is on sheet {cell.Sheet}, which doesn't exist`)
+	check(cell.X + Config.IconAtlas.Size <= 1024 and cell.Y + Config.IconAtlas.Size <= 1024, `{key} sits outside its sheet`)
+end
+check(#Config.IconSheets >= Config.IconAtlas.SheetCount, "IconSheets.luau needs one line per sheet")
+
 section("Diamonds")
 local Diamonds = Config.Diamonds
 for _, upgrade in Diamonds.List do

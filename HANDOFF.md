@@ -40,7 +40,7 @@ lune run tests/run.luau        # 708 checks, all passing
 
 ### A. Code (yours)
 1. **Run `bash tools/e2e/run.sh`** once the owner closes Studio. Fix anything that fails. New steps to watch: the zone lock refusal, the level-25 jump, the Banana Peel purchase and use, the server boost, the diamond pack, and Golden Paws.
-2. **UI images:** the owner will send image ids. Paste each one into `src/shared/Config/Icons.luau` as `Image = "rbxassetid://ID"`, keeping the key (the emoji stays as a fallback). The keys and what each picture is are in `docs/UI_IMAGES.md`. After pasting, check them in Play: side buttons, HUD, Store, Upgrades, Inventory, Pen and Orders.
+2. **UI images:** DONE as sprite sheets (2026-09-30). The 50 icons are in `art/ui_icons`, packed by `python tools/pack_icons.py` into `art/ui_atlas/icons_sheet_1..4.png`. The owner uploads the 4 sheets and the ids go into `src/shared/Config/IconSheets.luau`; `Ui.icon` then crops each icon from its sheet. Still emoji (no art yet): `Animal_*`, `Zone_*`, `Upgrade_*`. For any single extra image: the owner will send image ids. Paste each one into `src/shared/Config/Icons.luau` as `Image = "rbxassetid://ID"`, keeping the key (the emoji stays as a fallback). The keys and what each picture is are in `docs/UI_IMAGES.md`. After pasting, check them in Play: side buttons, HUD, Store, Upgrades, Inventory, Pen and Orders.
 3. **Badge ids:** paste them into `src/shared/Config/Badges.luau` (0 means off).
 4. **Sound ids:** paste them into `src/shared/Config/Sounds.luau`. Which ones to replace first is in `docs/SOUNDS_TO_REPLACE.md`.
 5. After each batch: run the checks, commit, and tell the owner to press Play in Studio (Rojo syncs it live).
