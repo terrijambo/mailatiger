@@ -10,6 +10,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -25,6 +26,19 @@ local Hud = {}
 local COIN_GREEN = Color3.fromRGB(110, 255, 110)
 local BAG_TAN = Color3.fromRGB(255, 205, 120)
 local BOOST_ORANGE = Color3.fromRGB(255, 170, 60)
+local DIAMOND_BLUE = Color3.fromRGB(120, 230, 255)
+
+-- 185 -> "3:05"
+local function clock(seconds: number): string
+	seconds = math.max(0, math.floor(seconds))
+	return string.format("%d:%02d", seconds // 60, seconds % 60)
+end
+
+-- Seconds left on the server-wide 2x coins boost (0 = none)
+local function boostLeft(): number
+	local untilTime = Workspace:GetAttribute("BoostUntil")
+	return if typeof(untilTime) == "number" then math.max(0, untilTime - Workspace:GetServerTimeNow()) else 0
+end
 
 -- Short numbers (1k, 12.5k, 1M): see src/shared/Format.luau
 Hud.Short = Format.Short
@@ -73,6 +87,22 @@ function Hud.Start()
 	local boostRow, boostLabel = statRow(stack, 1, "Hud_Boost", BOOST_ORANGE)
 	local _, bagLabel = statRow(stack, 2, "Hud_Bag", BAG_TAN)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
+	-- Diamonds (tap to open Diamond Upgrades)
+	local diamondRow, diamondLabel = statRow(stack, 4, "Hud_Diamonds", DIAMOND_BLUE)
+	diamondRow.Size = UDim2.fromOffset(260, 38)
+	diamondLabel.TextSize = 30
+	local diamondButton = Ui.make("TextButton", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Text = "",
+		ZIndex = 5,
+	}, diamondRow)
+	diamondButton.Activated:Connect(function()
+		Menus.Open("Upgrades")
+	end)
+	Profile.Watch(function()
+		diamondLabel.Text = Format.Short(Profile.Get().Diamonds or 0)
+	end)
 
 	-- Level + XP bar (top of the stack)
 	local levelRow, levelLabel = statRow(stack, 0, "Hud_Level", Ui.GOLD)
@@ -98,7 +128,7 @@ function Hud.Start()
 		Text = "",
 		ZIndex = 3,
 	})
-	stack.Size = UDim2.fromOffset(300, 200)
+	stack.Size = UDim2.fromOffset(300, 240)
 	local function refreshLevel()
 		local data = Profile.Get()
 		local level = data.Level or 1
@@ -239,11 +269,14 @@ function Hud.Start()
 		bagLabel.Text = `{#profile.Parcels} / {capacity}`
 		bagLabel.TextColor3 = if #profile.Parcels >= capacity then Color3.fromRGB(255, 100, 90) else BAG_TAN
 
-		-- Total coin boost from rebirths, passes, Premium and the group
+		-- Total coin boost from rebirths, Golden Paws, the server boost, Premium and the group
+		-- (the same math as Economy.PayoutMult on the server)
 		local money = Config.Monetization
 		local mult = 1 + profile.Rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
-		if player:GetAttribute("Pass_DoubleCoins") then
-			mult *= money.DoubleCoinsMult
+		local paws = Config.Diamonds.ById.GoldenPaws
+		mult *= 1 + Config.Diamonds.Bonus(paws, profile.Upgrades.GoldenPaws or 0) / 100
+		if boostLeft() > 0 then
+			mult *= money.BoostMult
 		end
 		if player:GetAttribute("Premium") then
 			mult *= money.PremiumPayoutMult
@@ -269,9 +302,55 @@ function Hud.Start()
 		status.TextColor3 = if player:GetAttribute("Chaos") then Color3.fromRGB(255, 130, 120) else Ui.WHITE
 	end
 	Profile.Watch(refreshStatus)
-	for _, attribute in { "Chaos", "Premium", "InGroup", "Pass_DoubleCoins" } do
+	for _, attribute in { "Chaos", "Premium", "InGroup" } do
 		player:GetAttributeChangedSignal(attribute):Connect(refreshStatus)
 	end
+
+	---------------------------------------------------------------------------------------------------
+	-- Server boost timer (top-left): "🚀 2x COINS 2:41, boosted by Name"
+	local boostPill = Ui.make("Frame", {
+		Position = UDim2.fromOffset(14, 8),
+		Size = UDim2.fromOffset(230, 52),
+		BackgroundColor3 = Color3.fromRGB(255, 190, 40),
+		Visible = false,
+	}, gui)
+	Ui.round(boostPill, 14)
+	Ui.border(boostPill, 3)
+	Ui.gloss(boostPill)
+	Ui.autoScale(boostPill)
+	Ui.icon(boostPill, "Hud_ServerBoost", { Position = UDim2.fromOffset(6, 6), Size = UDim2.fromOffset(40, 40) })
+	local boostTime = Ui.outlined(boostPill, {
+		Position = UDim2.fromOffset(52, 2),
+		Size = UDim2.new(1, -58, 0, 28),
+		TextSize = 24,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Text = "",
+	})
+	local boostBy = Ui.outlined(boostPill, {
+		Position = UDim2.fromOffset(52, 28),
+		Size = UDim2.new(1, -58, 0, 20),
+		Font = Ui.FONT,
+		TextSize = 14,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Text = "",
+	})
+	local wasBoosted = false
+	task.spawn(function()
+		while gui.Parent do
+			local left = boostLeft()
+			boostPill.Visible = left > 0
+			if left > 0 then
+				boostTime.Text = `{Config.Monetization.BoostMult}x COINS  {clock(left)}`
+				local by = Workspace:GetAttribute("BoostBy")
+				boostBy.Text = if typeof(by) == "string" then `thanks to {by}!` else ""
+			end
+			if (left > 0) ~= wasBoosted then
+				wasBoosted = left > 0
+				refreshStatus() -- the +% coins row
+			end
+			task.wait(0.5)
+		end
+	end)
 
 	local function refreshObjective()
 		local text = player:GetAttribute("Tip")
@@ -467,7 +546,7 @@ function Hud.Start()
 		DisplayOrder = 7,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	}, gui.Parent)
-	local function showLevelUp(level: number, coins: number, unlocks: { string })
+	local function showLevelUp(level: number, coins: number, diamonds: number, unlocks: { string })
 		local card = Ui.make("Frame", {
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.4),
@@ -485,7 +564,7 @@ function Hud.Start()
 			Position = UDim2.fromOffset(0, 66),
 			Size = UDim2.new(1, 0, 0, 40),
 			TextSize = 36,
-			Text = `Level {level}   +{Format.Short(coins)} coins`,
+			Text = `Level {level}   +{Format.Short(coins)} coins   +{diamonds} 💎`,
 		})
 		for index, unlock in unlocks do
 			Ui.outlined(card, {
@@ -574,13 +653,42 @@ function Hud.Start()
 				float:Destroy()
 			end)
 		elseif kind == "LevelUp" then
-			showLevelUp(data.Level, data.Coins, data.Unlocks or {})
+			showLevelUp(data.Level, data.Coins, data.Diamonds or 0, data.Unlocks or {})
+		elseif kind == "Diamonds" then
+			-- A floating "+40 💎" by the diamond counter
+			local float = Ui.outlined(diamondRow, {
+				Position = UDim2.fromOffset(120, -4),
+				Size = UDim2.fromOffset(140, 30),
+				TextSize = 28,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextColor3 = DIAMOND_BLUE,
+				Text = `+{Format.Short(data.Amount)} 💎`,
+				ZIndex = 4,
+			})
+			local stroke = float:FindFirstChildOfClass("UIStroke")
+			TweenService
+				:Create(float, TweenInfo.new(1.4), { Position = UDim2.fromOffset(120, -56), TextTransparency = 1 })
+				:Play()
+			if stroke then
+				TweenService:Create(stroke, TweenInfo.new(1.4), { Transparency = 1 }):Play()
+			end
+			task.delay(1.5, function()
+				float:Destroy()
+			end)
+		elseif kind == "ServerBoost" then
+			showToast(
+				"🚀 SERVER BOOST!",
+				`{data.By} gave EVERYONE {data.Mult}x coins! Go mail some animals.`,
+				`{clock(data.Seconds)} left`,
+				nil,
+				Ui.GOLD
+			)
 		elseif kind == "QuestDone" then
 			local nextText = if data.Next then `Next: {data.Next}` else "That was the last one. Legend."
 			showToast(
 				`✅ Quest complete: {data.Text}`,
 				nextText,
-				`+{Format.Short(data.XP)} XP   +{Format.Short(data.Coins)} coins`,
+				`+{Format.Short(data.XP)} XP   +{Format.Short(data.Coins)} coins   +{data.Diamonds or 0} 💎`,
 				nil,
 				Ui.GREEN
 			)

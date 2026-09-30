@@ -2,7 +2,7 @@
 -- The big square buttons down the sides of the screen, like PETS / EGGS / SHOP in popular simulators:
 --   left:  PEN (pick an animal), SHOP (boxes, tools, stamps, chutes, trolls), ORDERS (Gruff's orders and
 --          quests), BAG (your inventory: troll items, mail boxes, stamps, tools, animal collection)
---   right: STORE (Robux), SETTINGS, INVITE (friends)
+--   right: STORE (Robux), UPGRADES (diamond upgrades), SETTINGS, INVITE (friends)
 -- They hide while the BOX screen is up so they don't get in the way.
 
 local Players = game:GetService("Players")
@@ -63,12 +63,19 @@ function SideButtons.Start()
 	add(right, { Label = "STORE", Icon = "Button_Store", Color = Ui.GOLD, LayoutOrder = 1 }, function()
 		Menus.Toggle("Store")
 	end)
-	add(right, { Label = "SETTINGS", Icon = "Button_Settings", Color = Ui.GREY, LayoutOrder = 2 }, function()
+	add(right, { Label = "UPGRADES", Icon = "Button_Upgrades", Color = Ui.BLUE, LayoutOrder = 2 }, function()
+		Menus.Toggle("Upgrades")
+	end)
+	add(right, { Label = "SETTINGS", Icon = "Button_Settings", Color = Ui.GREY, LayoutOrder = 3 }, function()
 		Menus.Toggle("Settings")
 	end)
-	local invite = add(right, { Label = "INVITE", Icon = "Button_Invite", Color = Ui.BLUE, LayoutOrder = 3 }, function()
-		pcall(SocialService.PromptGameInvite, SocialService, player)
-	end)
+	local invite = add(
+		right,
+		{ Label = "INVITE", Icon = "Button_Invite", Color = Ui.GREEN, LayoutOrder = 4 },
+		function()
+			pcall(SocialService.PromptGameInvite, SocialService, player)
+		end
+	)
 	invite.Visible = false
 	task.spawn(function()
 		-- Only where Roblox allows invites

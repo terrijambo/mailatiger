@@ -422,7 +422,11 @@ local function startBox(s: Session)
 	end
 	s.Box = {
 		Start = Workspace:GetServerTimeNow(),
-		Anger = if stamp and stamp.StartAnger then stamp.StartAnger else box.StartAnger, -- PRIORITY starts high
+		Anger = math.max( -- PRIORITY starts high; the Calm Hands diamond upgrade takes some off
+			0,
+			(if stamp and stamp.StartAnger then stamp.StartAnger else box.StartAnger)
+				- Economy.UpgradeBonus(s.Player, "CalmHands")
+		),
 		Spots = makeSpots(s),
 		SeamCount = seamCount,
 		Taped = taped,

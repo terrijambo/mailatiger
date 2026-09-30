@@ -130,11 +130,11 @@ Search ideas: **VineBoom** "vine boom", **Pop** "cartoon pop", **Purr** "cat pur
 
 ## Launch checklist (things only you can do)
 In rough order. Each one is a few minutes.
-1. **Sounds:** listen to the starter sounds and swap the ones you don't like in `Config/Sounds.luau` (see Sounds above). Most important: a real **vine boom**, since it's the big clip moment. Pick one you're allowed to use.
+1. **Sounds:** listen to the starter sounds and swap the ones you don't like in `Config/Sounds.luau` (see Sounds above, and `docs/SOUNDS_TO_REPLACE.md` for which ones most need it). Most important: a real **vine boom**, since it's the big clip moment. Pick one you're allowed to use.
 2. **Publish:** in Studio, **File → Publish to Roblox**, and create a new experience called *Mail a Tiger*.
 3. **Turn on saving:** **Game Settings → Security → Enable Studio Access to API Services** (this is for testing in Studio; live servers save automatically once published).
 4. **Live save test** (moved here from Phase 3): in a published test, earn coins → leave → rejoin (coins kept). Rejoin twice quickly (no lost progress, maybe a short wait). Parcels in your bag survive a rejoin.
-5. **Robux items** (optional, see ROADMAP → Phase 7 for the plan to approve): Creator Dashboard → your experience → **Monetization** → create each **Pass** and **Developer Product**, then paste each id into `src/shared/Config/Monetization.luau`. Keep the prices the same as the table.
+5. **Robux items** (optional, see ROADMAP → Phase 7 for the plan to approve): Creator Dashboard → your experience → **Monetization** → create each **Pass** and **Developer Product**, then paste each id into `src/shared/Config/Monetization.luau`. Keep the prices the same as the table. Until then, Studio shows a purple **TEST** button on each item so you can try it free; the live game shows "Soon". Once an item has its id, Studio shows Roblox's test popup (never charges) and the live game sells it for real.
 6. **Group bonus** (optional): create a Roblox group for the game, then paste its id into `GroupId` in `Config/Monetization.luau`. Members earn +10% coins (Premium members get +10% already, automatically).
 7. **Private servers** (optional): Monetization → Private Servers → set a price (free or 100 Robux is typical).
 8. **Icon and thumbnails:** drafts rendered from your models are in `art/marketing/` (icon.png 512×512, two 1920×1080 thumbnails; re-render with `art/blender_scripts/marketing.py`). Use them or take in-game screenshots, then Creator Dashboard → your experience → **Places / Configure** → upload. Good in-game shots: the RETURN TO SENDER stamp mid-launch, a player taping an angry tiger, the town with Gruff.

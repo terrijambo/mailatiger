@@ -40,7 +40,8 @@ function Orders.Refresh(profile: Profile, force: boolean?): boolean
 	end
 
 	local orders: { Order } = {}
-	for _ = 1, Tuning.Count do
+	local busyDesk = Config.Diamonds.Bonus(Config.Diamonds.ById.BusyDesk, profile.Upgrades.BusyDesk or 0)
+	for _ = 1, Tuning.Count + busyDesk do
 		local animal = choices[math.random(1, #choices)]
 		local condition = CONDITIONS[math.random(1, #CONDITIONS)]
 		local mult = Tuning.MinRewardMult + math.random() * (Tuning.MaxRewardMult - Tuning.MinRewardMult)

@@ -2,20 +2,26 @@
 -- Robux: game passes and developer products (ids in src/shared/Config/Monetization.luau).
 --
 --   Passes are checked when you join (and right after you buy one), then copied onto you as attributes
---   like "Pass_DoubleCoins" = true, so the rest of the game and your UI can read them.
+--   like "Pass_VIP" = true, so the rest of the game and your UI can read them.
 --   Products (coins, stamps, unlocks) are granted in ProcessReceipt. Each purchase id is written into your
 --   save before Roblox is told "granted", so a retry can never pay out twice, and a failed save means
 --   Roblox tries again later instead of charging you for nothing.
+--   The Server Boost sets Workspace attributes BoostUntil (server time it ends) and BoostBy (who bought the
+--   latest one); Economy.PayoutMult doubles everyone's coins while it's running.
+--   StudioBuy: in Studio only, gives an item for free so you can test the Store before creating the items.
 
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local ProgressionService = require(script.Parent.ProgressionService)
 local Remotes = require(script.Parent.Remotes)
 
 local Money = Config.Monetization
@@ -45,9 +51,34 @@ end
 
 -- Gives what a product buys. Returns false if it can't be given right now (e.g. nothing left to unlock),
 -- which tells Roblox not to charge.
+-- Starts (or extends) the 2x coins boost for everyone in this server
+local function startBoost(player: Player)
+	local now = Workspace:GetServerTimeNow()
+	local current = Workspace:GetAttribute("BoostUntil")
+	local from = if typeof(current) == "number" and current > now then current else now
+	local untilTime = math.min(from + Money.BoostSeconds, now + Money.BoostMaxSeconds)
+	Workspace:SetAttribute("BoostUntil", untilTime)
+	Workspace:SetAttribute("BoostBy", player.DisplayName)
+	Remotes.Notify:FireAllClients("ServerBoost", {
+		By = player.DisplayName,
+		Mult = Money.BoostMult,
+		Seconds = math.round(untilTime - now),
+	})
+end
+
 local function grant(player: Player, profile: DataService.Profile, key: string): boolean
 	local jobs = Money.CoinPackJobs[key]
-	if jobs then
+	local diamonds = Money.DiamondPacks[key]
+	if key == "ServerBoost" then
+		startBoost(player)
+		return true
+	elseif diamonds then
+		profile.Diamonds += diamonds
+		Analytics.Custom(player, `Diamonds_{key}`, diamonds)
+		Remotes.Notify:FireClient(player, "Diamonds", { Amount = diamonds, Source = key })
+		say(player, `{diamonds} diamonds! Spend them on DIAMOND UPGRADES. They last forever.`)
+		return true
+	elseif jobs then
 		local coins = Economy.BestBaseValue(player) * jobs -- scales with your best animal
 		profile.Coins += coins
 		Analytics.Earn(player, coins, profile.Coins, key, true)
@@ -55,7 +86,7 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 		return true
 	elseif key == "UnlockNext" then
 		for _, animal in Config.Animals.List do
-			if not profile.Owned[animal.Id] and animal.Tier <= Money.UnlockNextMaxTier then
+			if MonetizationService.CanUnlock(player, animal) then
 				profile.Owned[animal.Id] = true
 				say(player, `Fine. The {animal.DisplayName} is yours. Go box it.`)
 				return true
@@ -72,6 +103,34 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 		return true
 	end
 	return false
+end
+
+-- Can "Skip the Wait" give this animal? Not owned yet, tier 4 or lower, and its zone is open for you
+-- (so you never pay for an animal you can't take out yet)
+function MonetizationService.CanUnlock(player: Player, animal: typeof(Config.Animals.List[1])): boolean
+	local profile = DataService.Get(player)
+	local arena = Config.Arenas.ByTier[animal.Tier]
+	return profile ~= nil
+		and not profile.Owned[animal.Id]
+		and animal.Tier <= Money.UnlockNextMaxTier
+		and (arena == nil or ProgressionService.ZoneOpen(player, arena.Id))
+end
+
+-- Studio only: gives a Store item for free, to test it before it exists on Roblox
+function MonetizationService.StudioBuy(player: Player, key: string)
+	local profile = DataService.Get(player)
+	if not RunService:IsStudio() or not profile then
+		return
+	end
+	local pass = Money.PassByKey[key]
+	if pass then
+		player:SetAttribute(`Pass_{key}`, true)
+		say(player, `[Studio test] {pass.DisplayName}! ...Fancy.`)
+	elseif Money.ProductByKey[key] and grant(player, profile, key) then
+		Economy.Sync(player)
+	elseif Money.ProductByKey[key] then
+		say(player, "[Studio test] Nothing to give right now.")
+	end
 end
 
 local function processReceipt(receipt: { [string]: any }): Enum.ProductPurchaseDecision

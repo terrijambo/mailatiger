@@ -26,8 +26,11 @@ local FOR_EVENT: { [string]: string } = {
 	OpenPen = "Click",
 	OpenShop = "Click",
 	OpenOrders = "Click",
-	LevelUp = "Ding",
-	QuestDone = "Ding",
+	LevelUp = "LevelUp",
+	QuestDone = "QuestDone",
+	Diamonds = "Diamond",
+	ServerBoost = "ServerBoost",
+	UpgradeBought = "Diamond",
 	NewSpecies = "CoinJingle",
 }
 

@@ -283,6 +283,25 @@ local function run()
 	remotes.RedeemCode:FireServer("LAUNCH")
 	task.wait(1)
 	log(profile().Coins == again, "code LAUNCH can't be used twice")
+
+	-- Robux Store (Studio TEST buttons) and diamonds
+	remotes.ShopAction:FireServer("StudioBuy", "ServerBoost")
+	log(waitFor(function()
+		local untilTime = Workspace:GetAttribute("BoostUntil")
+		return type(untilTime) == "number" and untilTime > Workspace:GetServerTimeNow() + 100
+	end, 3), "server boost started (2x coins for everyone)")
+	local gems = profile().Diamonds or 0
+	remotes.ShopAction:FireServer("StudioBuy", "DiamondsSmall")
+	log(waitFor(function()
+		return (profile().Diamonds or 0) >= gems + 40
+	end, 3), "bought 40 diamonds (Studio test)")
+	task.wait(0.3)
+	remotes.ShopAction:FireServer("BuyUpgrade", "GoldenPaws")
+	log(waitFor(function()
+		return ((profile().Upgrades or {}).GoldenPaws or 0) == 1
+	end, 3), "bought Golden Paws with diamonds")
+	gui:WaitForChild("Upgrades", 3)
+	log(gui:FindFirstChild("Upgrades") ~= nil and gui:FindFirstChild("Store") ~= nil, "Upgrades and Store windows exist")
 	remotes.Setting:FireServer("Music", false)
 	log(waitFor(function()
 		local settings = profile().Settings

@@ -153,18 +153,21 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 
 | Item | Type | Robux | What it does |
 |---|---|---|---|
-| Double Coins | pass | 199 | Every job pays 2x coins |
 | Big Mail Bag | pass | 99 | +3 bag slots |
 | VIP Postie | pass | 149 | Golden tape (on screen and on the box) and a golden ★ VIP ★ tag. Cosmetic only |
+| 2x Coins Server Boost | product | 99 | **Everyone** in the server earns 2x coins for 3 minutes. Buying again adds 3 more minutes (up to 60 left). Everyone sees who bought it |
+| Handful / Pouch / Chest of Diamonds | product | 49 / 129 / 349 | 40 / 120 / 400 💎 for Diamond Upgrades |
 | Sack / Crate / Vault of Coins | product | 49 / 129 / 349 | Coins worth 20 / 60 / 200 jobs of your best owned animal, so packs stay useful all game |
-| Skip the Wait | product | 99 | Unlocks the next animal you don't own, tiers 1–4 only (the big late-game animals must be earned). Hidden when there's nothing left to unlock |
+| Skip the Wait | product | 99 | Unlocks the next animal you don't own, tiers 1–4 only (the big late-game animals must be earned), and only in zones you've opened. Hidden when there's nothing left to unlock |
 | Priority Stamp Pack | product | 29 | 5 Priority stamps |
 | Buy Gruff a Coffee | product | 5 | Nothing. Gruff says thanks, grudgingly. A tip jar |
 | Roblox Premium perk | free | – | Premium members earn +10% coins (Roblox pays you for Premium players' playtime) |
 | Group bonus | free | – | +10% coins for members of your Roblox group (off until you set `GroupId`) |
 
 - [x] Code: `server/MonetizationService.luau` (pass checks on join and on purchase, safe ProcessReceipt that writes the purchase id into the save before telling Roblox "granted", so retries never pay twice), `client/Store.luau` (green **Store** button at the top-left, only lists items you've set up), hooks for 2x coins (Economy), bag size (server + client) and VIP tape/tag
-- [x] No random crates. **Nothing affects Chaos Mode fights**: no pass changes shove, spook, speed or anger. Double Coins only changes pay
+- [x] No random crates. **Nothing affects Chaos Mode fights**: no pass or diamond upgrade changes shove, spook, speed, trolls or anger from other players
+- [x] 2026-09-30: Double Coins pass replaced by the **2x Coins Server Boost** (product). Added **Diamonds** 💎 (`Config/Diamonds.luau`): earned by leveling up (+3, +10 more every 5th level), Gruff's quests (+2) and rebirths (+25), or bought with Robux. Spent on 7 permanent **Diamond Upgrades** (UPGRADES button, or tap your 💎 counter), kept through rebirths: Golden Paws (+10% coins/level), Quick Study (+10% XP), Deep Pockets (+1 bag slot), Calm Hands (animals start 3 anger calmer), Pay Raise (+25% paycheck), Busy Desk (+1 side order), Rebirth Toolkit (tools start at level N after a rebirth). All 7 maxed cost about 1,000 💎; a free player reaching level 50 with all quests earns about 330 plus 25 per rebirth
+- [x] Store always lists everything. Items with Id 0 show a purple **TEST** button in Studio (free, to try them) and "Soon" in the live game
 - [ ] **You:** approve or edit the table, then create the passes and products (steps in README → Launch checklist)
 - [ ] **You:** private servers: Creator Dashboard → your game → Monetization → Private Servers (suggest free or 100 Robux)
 

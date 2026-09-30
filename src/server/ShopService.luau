@@ -2,7 +2,8 @@
 -- The Supply Shop (boxes, tools, stamps, chutes, rebirth) and Gruff's orders board.
 -- Clients send ShopAction(action, id). The server checks coins, distance and ownership before changing anything.
 --   BuyBox / EquipBox (box id)   UpgradeTool (tool id)   BuyStamp / SelectStamp (stamp id, "" = none)
---   BuyChute (chute id, must be the next one up)   Rebirth
+--   BuyChute (chute id, must be the next one up)   Rebirth   BuyTroll (troll id)
+--   BuyUpgrade (diamond upgrade id)   StudioBuy (Robux item key, Studio testing only)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -13,6 +14,7 @@ local Badges = require(script.Parent.Badges)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local MapBuilder = require(script.Parent.MapBuilder)
+local MonetizationService = require(script.Parent.MonetizationService)
 local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
 local TrollService = require(script.Parent.TrollService)
@@ -36,6 +38,18 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	-- Coins and everything else are still checked below.)
 	if action == "BuyTroll" then
 		TrollService.Buy(player, itemId)
+		return
+	elseif action == "BuyUpgrade" then
+		local ok, text = Economy.BuyUpgrade(player, itemId)
+		if text ~= "" then
+			Remotes.Notify:FireClient(player, "Message", { Speaker = "Diamond Upgrades", Text = text })
+		end
+		if ok then
+			Remotes.Notify:FireClient(player, "UpgradeBought", { Id = itemId })
+		end
+		return
+	elseif action == "StudioBuy" then
+		MonetizationService.StudioBuy(player, itemId)
 		return
 	elseif action == "RefreshOrders" then
 		-- Opening Gruff's Orders from the side button: new orders if the old ones ran out
@@ -123,12 +137,23 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		profile.EquippedBox = "Cardboard"
 		profile.ChuteTier = "Basic" -- (parcels still in your bag are kept)
 		profile.Tools = {}
+		-- Rebirth Toolkit (diamond upgrade): tools start at a level instead of 0
+		local kit = Economy.UpgradeBonus(player, "RebirthKit")
+		if kit > 0 then
+			for _, tool in Config.Tools.List do
+				profile.Tools[tool.Id] = math.min(kit, tool.MaxLevel)
+			end
+		end
 		profile.Stamps = {}
 		profile.SelectedStamp = nil
 		profile.Rebirths += 1
+		profile.Diamonds += Config.Diamonds.PerRebirth
 		Orders.Refresh(profile, true)
 		local bonus = math.round(profile.Rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth * 100)
-		reply(player, `REBIRTH #{profile.Rebirths}! Every job now pays +{bonus}% coins, forever.`)
+		reply(
+			player,
+			`REBIRTH #{profile.Rebirths}! Every job now pays +{bonus}% coins, forever. +{Config.Diamonds.PerRebirth} 💎`
+		)
 	end
 
 	Economy.Sync(player)

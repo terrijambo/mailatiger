@@ -54,7 +54,10 @@ end
 
 function MailService.Capacity(player: Player): number
 	local bigBag = if player:GetAttribute("Pass_BigBag") == true then Config.Monetization.BigBagSlots else 0
-	return Config.Mail.BagCapacity + Economy.ToolBonus(player, "MailBag") + bigBag
+	return Config.Mail.BagCapacity
+		+ Economy.ToolBonus(player, "MailBag")
+		+ bigBag
+		+ Economy.UpgradeBonus(player, "DeepPockets")
 end
 
 function MailService.Count(player: Player): number

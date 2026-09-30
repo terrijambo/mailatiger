@@ -6,10 +6,12 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
+local Remotes = require(script.Parent.Remotes)
 
 local Economy = {}
 
@@ -134,15 +136,65 @@ function Economy.RebirthCost(rebirths: number): number
 	return math.round(rebirth.BaseCost * rebirth.CostGrowth ^ rebirths)
 end
 
--- Your personal payout multiplier: rebirths, the Double Coins pass, Roblox Premium and the group bonus
+-- Diamond upgrades (Config/Diamonds.luau): your level in one, and its total bonus
+function Economy.UpgradeLevel(player: Player, upgradeId: string): number
+	local profile = DataService.Get(player)
+	return if profile then profile.Upgrades[upgradeId] or 0 else 0
+end
+
+function Economy.UpgradeBonus(player: Player, upgradeId: string): number
+	return Config.Diamonds.Bonus(Config.Diamonds.ById[upgradeId], Economy.UpgradeLevel(player, upgradeId))
+end
+
+-- source: where they came from, e.g. "LevelUp" or "DiamondsSmall" (for analytics)
+function Economy.AddDiamonds(player: Player, amount: number, source: string)
+	local profile = DataService.Get(player)
+	if profile and amount > 0 then
+		profile.Diamonds += amount
+		Analytics.Custom(player, `Diamonds_{source}`, amount)
+		Remotes.Notify:FireClient(player, "Diamonds", { Amount = amount, Source = source })
+		Economy.Sync(player)
+	end
+end
+
+-- Buys the next level of a diamond upgrade. Returns a message for the player.
+function Economy.BuyUpgrade(player: Player, upgradeId: string): (boolean, string)
+	local profile = DataService.Get(player)
+	local upgrade = Config.Diamonds.ById[upgradeId]
+	if not profile or not upgrade then
+		return false, ""
+	end
+	local level = profile.Upgrades[upgradeId] or 0
+	if level >= upgrade.MaxLevel then
+		return false, `{upgrade.DisplayName} is maxed out.`
+	end
+	local cost = Config.Diamonds.Cost(upgrade, level)
+	if profile.Diamonds < cost then
+		return false, `{upgrade.DisplayName} costs {cost} 💎. You have {profile.Diamonds}.`
+	end
+	profile.Diamonds -= cost
+	profile.Upgrades[upgradeId] = level + 1
+	Analytics.Custom(player, `Upgrade_{upgradeId}`, level + 1)
+	Economy.Sync(player)
+	return true, `{upgrade.Emoji} {upgrade.DisplayName} Lv {level + 1}: {Config.Diamonds.Text(upgrade, level + 1)}!`
+end
+
+-- The server-wide 2x coins boost (bought in the Store). Workspace attribute BoostUntil = server time it ends.
+function Economy.BoostActive(): boolean
+	local untilTime = Workspace:GetAttribute("BoostUntil")
+	return typeof(untilTime) == "number" and Workspace:GetServerTimeNow() < untilTime
+end
+
+-- Your payout multiplier: rebirths, Golden Paws, the server boost, Roblox Premium and the group bonus
 -- (MonetizationService sets those attributes)
 function Economy.PayoutMult(player: Player): number
 	local profile = DataService.Get(player)
 	local rebirths = if profile then profile.Rebirths else 0
 	local mult = 1 + rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
+	mult *= 1 + Economy.UpgradeBonus(player, "GoldenPaws") / 100
 	local money = Config.Monetization
-	if player:GetAttribute("Pass_DoubleCoins") == true then
-		mult *= money.DoubleCoinsMult
+	if Economy.BoostActive() then
+		mult *= money.BoostMult
 	end
 	if player:GetAttribute("Premium") == true then
 		mult *= money.PremiumPayoutMult

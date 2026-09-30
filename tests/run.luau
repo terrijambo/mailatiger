@@ -162,6 +162,31 @@ for key in Config.Monetization.CoinPackJobs do
 	check(Config.Monetization.ProductByKey[key] ~= nil, `CoinPackJobs has {key}, which isn't a product`)
 end
 
+for key in Config.Monetization.DiamondPacks do
+	check(Config.Monetization.ProductByKey[key] ~= nil, `DiamondPacks has {key}, which isn't a product`)
+end
+check(Config.Monetization.ProductByKey.ServerBoost ~= nil, "the Server Boost product is missing")
+for key in keys do
+	check(Config.Icons[`Store_{key}`] ~= nil, `store item {key} has no Store_{key} icon`)
+end
+
+section("Diamonds")
+local Diamonds = Config.Diamonds
+for _, upgrade in Diamonds.List do
+	check(Diamonds.ById[upgrade.Id] == upgrade, `diamond upgrade {upgrade.Id} ById`)
+	check(Config.Icons[`Upgrade_{upgrade.Id}`] ~= nil, `diamond upgrade {upgrade.Id} has no icon`)
+	check(string.find(upgrade.Description, "{n}", 1, true) ~= nil, `{upgrade.Id} description needs a {"{n}"}`)
+	local last = 0
+	for level = 0, upgrade.MaxLevel - 1 do
+		local cost = Diamonds.Cost(upgrade, level)
+		check(cost > 0 and cost >= last, `{upgrade.Id} level {level + 1} cost {cost} should be positive and rising`)
+		last = cost
+	end
+	check(not string.find(Diamonds.Text(upgrade, 2), "{", 1, true), `{upgrade.Id} text keeps a placeholder`)
+end
+check(Diamonds.ForLevel(4) == Diamonds.PerLevelUp, "a normal level gives PerLevelUp diamonds")
+check(Diamonds.ForLevel(5) == Diamonds.PerLevelUp + Diamonds.MilestoneBonus, "every 5th level gives the milestone bonus")
+
 section("Reward codes")
 for name, code in Config.Codes do
 	check(name == string.upper(name) and not string.find(name, "%s"), `code "{name}" must be UPPERCASE with no spaces (players' typing is uppercased)`)

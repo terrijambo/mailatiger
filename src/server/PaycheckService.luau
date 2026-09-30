@@ -30,7 +30,8 @@ local function pay(player: Player)
 	profile.PaycheckStreak = if profile.PaycheckDay == day - 1 then profile.PaycheckStreak + 1 else 1
 	profile.PaycheckDay = day
 	local streak = math.min(profile.PaycheckStreak, Tuning.MaxStreak)
-	local coins = Economy.BestBaseValue(player) * Tuning.JobsPerDay * streak
+	local raise = 1 + Economy.UpgradeBonus(player, "PayRaise") / 100 -- diamond upgrade
+	local coins = math.round(Economy.BestBaseValue(player) * Tuning.JobsPerDay * streak * raise)
 	Economy.AddCoins(player, coins, "Paycheck")
 	Analytics.Custom(player, "PaycheckStreak", profile.PaycheckStreak)
 	local tomorrow = if streak < Tuning.MaxStreak

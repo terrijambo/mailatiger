@@ -68,6 +68,9 @@ export type Profile = {
 	OrdersDone: number, -- total side orders completed
 	Species: { [string]: number }, -- animal id -> how many you've mailed (the collection)
 	Trolls: { [string]: boolean }, -- troll items you own
+	-- Diamonds (kept through rebirths)
+	Diamonds: number,
+	Upgrades: { [string]: number }, -- diamond upgrade id -> level (Config/Diamonds.luau)
 }
 
 local DataService = {}
@@ -114,6 +117,8 @@ local function newProfile(): Profile
 		OrdersDone = 0,
 		Species = {},
 		Trolls = {},
+		Diamonds = 0,
+		Upgrades = {},
 	}
 end
 

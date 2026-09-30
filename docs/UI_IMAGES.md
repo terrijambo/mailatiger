@@ -27,7 +27,8 @@ Priority: **A** = seen all the time, do these first. **B** = in menus. **C** = n
 | `Button_Shop` | a striped shop awning / roll of tape | SHOP button |
 | `Button_Orders` | a clipboard with a letter and a red wax seal | ORDERS button (Gruff's orders and quests) |
 | `Button_Inventory` | a backpack stuffed with parcels | INVENTORY button |
-| `Button_Store` | a shiny gem / pile of coins with a gift bow | STORE button (Robux) |
+| `Button_Store` | a shopping bag with a gift bow | STORE button (Robux) |
+| `Button_Upgrades` | a big shiny blue diamond with an up arrow | UPGRADES button (diamond upgrades) |
 | `Button_Settings` | a gear | SETTINGS button |
 | `Button_Invite` | a waving hand / two friends | INVITE button |
 
@@ -40,6 +41,8 @@ Priority: **A** = seen all the time, do these first. **B** = in menus. **C** = n
 | `Hud_Level` | a gold star badge | level and XP bar |
 | `Hud_Quest` | a scroll with an exclamation mark | quest tracker |
 | `Hud_Lock` | a padlock | locked zones and items |
+| `Hud_Diamonds` | a blue diamond | diamond counter |
+| `Hud_ServerBoost` | a rocket | server boost timer |
 | `Gruff_Portrait` | Postmaster Gruff's grumpy face (walrus, mustache, blue cap) in a circle | tutorial panel, Gruff's popups |
 
 ### Troll items (B)
@@ -62,13 +65,25 @@ Priority: **A** = seen all the time, do these first. **B** = in menus. **C** = n
 ### Store (B)
 | Key | Picture |
 |---|---|
-| `Store_DoubleCoins` | coin with "x2" feel (two coins stacked) |
+| `Store_ServerBoost` | a rocket with "2x" coins trailing behind it |
+| `Store_DiamondsSmall`, `Store_DiamondsMedium`, `Store_DiamondsLarge` | a few diamonds, a pouch of diamonds, an open chest of diamonds |
 | `Store_BigBag` | big overstuffed mail bag |
 | `Store_VIP` | gold crown |
 | `Store_CoinsSmall`, `Store_CoinsMedium`, `Store_CoinsLarge` | a sack, a crate and a vault of coins |
 | `Store_UnlockNext` | an open padlock with a paw print |
 | `Store_PriorityStamps` | a stack of orange stamps |
 | `Store_GruffCoffee` | a coffee mug with a walrus mustache |
+
+### Diamond upgrades (B)
+| Key | Picture |
+|---|---|
+| `Upgrade_GoldenPaws` | a golden paw print |
+| `Upgrade_QuickStudy` | a stack of books with a star |
+| `Upgrade_DeepPockets` | jeans with a bulging pocket |
+| `Upgrade_CalmHands` | an open hand with little calm hearts |
+| `Upgrade_PayRaise` | a paycheck envelope with an up arrow |
+| `Upgrade_BusyDesk` | a clipboard with a checklist |
+| `Upgrade_RebirthKit` | a toolbox with a circular "rebirth" arrow |
 
 ### Zones (C)
 | Key | Picture |

@@ -16,6 +16,7 @@ local BoxingService = require(script.Parent.BoxingService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local Remotes = require(script.Parent.Remotes)
+local Sfx = require(ReplicatedStorage.Shared.Sfx)
 
 local Trolls = Config.Trolls
 type Troll = typeof(Trolls.List[1])
@@ -225,6 +226,7 @@ local function use(player: Player, trollId: unknown)
 	mine[trollId] = os.clock()
 	Remotes.Notify:FireClient(player, "TrollUsed", { Id = trollId, Cooldown = troll.Cooldown })
 	effect(player, root, troll)
+	Sfx.Play(`Troll_{trollId}`, root.Position)
 	Analytics.Custom(player, `Troll_{trollId}`)
 end
 

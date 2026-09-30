@@ -23,6 +23,7 @@ return {
 	Quests = require(script.Quests),
 	Trolls = require(script.Trolls),
 	Icons = require(script.Icons),
+	Diamonds = require(script.Diamonds),
 
 	Dev = {
 		-- In Roblox Studio every animal is free, so you can test any of them right away.

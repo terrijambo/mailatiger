@@ -50,6 +50,18 @@ local sounds: { [string]: Sound } = {
 	Click = { Id = "rbxassetid://15675059323", Volume = 0.5, Cooldown = 0.05 }, -- opening a menu ("Bright Click")
 	Ding = { Id = "rbxassetid://12221990", Volume = 0.7 }, -- tutorial step done ("electronic ping")
 
+	-- Progression, Robux and troll items. NEW SLOTS: these borrow another sound (at a different pitch) until
+	-- you pick real ones (docs/SOUNDS_TO_REPLACE.md)
+	LevelUp = { Id = "rbxassetid://12221990", Volume = 1, Pitch = 0.8 }, -- LEVEL UP popup (borrows Ding)
+	QuestDone = { Id = "rbxassetid://127645268874265", Volume = 0.9, Pitch = 1.15 }, -- quest finished (borrows CoinJingle)
+	Diamond = { Id = "rbxassetid://12221990", Volume = 0.7, Pitch = 1.6 }, -- got diamonds (borrows Ding)
+	ServerBoost = { Id = "rbxassetid://16480570986", Volume = 1, Pitch = 1.3 }, -- 2x coins server boost (borrows Kaching)
+	Troll_BananaPeel = { Id = "rbxassetid://12222054", Volume = 1, Pitch = 1.3, Heard = "Everyone" }, -- (borrows Bonk)
+	Troll_StinkBomb = { Id = "rbxassetid://17208402198", Volume = 1, Pitch = 0.7, Heard = "Everyone" }, -- (borrows Spray)
+	Troll_GluePuddle = { Id = "rbxassetid://12222106", Volume = 1, Pitch = 0.6, Heard = "Everyone" }, -- (borrows TapePeel)
+	Troll_TapeBomb = { Id = "rbxassetid://3149249837", Volume = 1, Pitch = 1.3, Heard = "Everyone" }, -- (borrows VineBoom)
+	Troll_AirHorn = { Id = "rbxassetid://9120031442", Volume = 1.2, Pitch = 1.8, Heard = "Everyone" }, -- (borrows Roar)
+
 	-- Background music (loops)
 	MusicTown = { Id = "rbxassetid://15930255433", Volume = 0.25 }, -- walking around town ("Retro Flute Music")
 	MusicArena = { Id = "rbxassetid://17422163655", Volume = 0.25 }, -- chasing an animal ("Cloud Blitz")

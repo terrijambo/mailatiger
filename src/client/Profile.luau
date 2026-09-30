@@ -35,6 +35,8 @@ export type Data = {
 	OrdersDone: number,
 	Species: { [string]: number },
 	Trolls: { [string]: boolean },
+	Diamonds: number,
+	Upgrades: { [string]: number },
 }
 
 local EMPTY: Data = {
@@ -58,6 +60,8 @@ local EMPTY: Data = {
 	OrdersDone = 0,
 	Species = {},
 	Trolls = {},
+	Diamonds = 0,
+	Upgrades = {},
 }
 
 function Profile.Get(): Data
@@ -79,7 +83,8 @@ end
 function Profile.BagCapacity(data: Data): number
 	local mail = Config.Mail
 	local bigBag = if player:GetAttribute("Pass_BigBag") == true then Config.Monetization.BigBagSlots else 0
-	return mail.BagCapacity + (data.Tools.MailBag or 0) * Config.Tools.ById.MailBag.PerLevel + bigBag
+	local pockets = Config.Diamonds.Bonus(Config.Diamonds.ById.DeepPockets, data.Upgrades.DeepPockets or 0)
+	return mail.BagCapacity + (data.Tools.MailBag or 0) * Config.Tools.ById.MailBag.PerLevel + bigBag + pockets
 end
 
 -- Calls `callback` now and whenever your progress changes.

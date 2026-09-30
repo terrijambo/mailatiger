@@ -19,7 +19,8 @@ local icons: { [string]: Icon } = {
 	Button_Shop = icon("🛒"),
 	Button_Orders = icon("📜"),
 	Button_Inventory = icon("🎒"),
-	Button_Store = icon("💎"),
+	Button_Store = icon("🛍️"),
+	Button_Upgrades = icon("💎"),
 	Button_Settings = icon("⚙️"),
 	Button_Invite = icon("👋"),
 
@@ -30,6 +31,8 @@ local icons: { [string]: Icon } = {
 	Hud_Level = icon("⭐"),
 	Hud_Quest = icon("❗"),
 	Hud_Lock = icon("🔒"),
+	Hud_Diamonds = icon("💎"),
+	Hud_ServerBoost = icon("🚀"),
 
 	-- Mail boxes
 	Box_Cardboard = icon("📦"),
@@ -63,7 +66,10 @@ local icons: { [string]: Icon } = {
 	Troll_AirHorn = icon("📯"),
 
 	-- Store (Robux)
-	Store_DoubleCoins = icon("💰"),
+	Store_ServerBoost = icon("🚀"),
+	Store_DiamondsSmall = icon("💎"),
+	Store_DiamondsMedium = icon("💠"),
+	Store_DiamondsLarge = icon("👑"),
 	Store_BigBag = icon("🎒"),
 	Store_VIP = icon("👑"),
 	Store_CoinsSmall = icon("🪙"),
@@ -72,6 +78,15 @@ local icons: { [string]: Icon } = {
 	Store_UnlockNext = icon("🔓"),
 	Store_PriorityStamps = icon("🔥"),
 	Store_GruffCoffee = icon("☕"),
+
+	-- Diamond upgrades
+	Upgrade_GoldenPaws = icon("🐾"),
+	Upgrade_QuickStudy = icon("📚"),
+	Upgrade_DeepPockets = icon("👖"),
+	Upgrade_CalmHands = icon("🫳"),
+	Upgrade_PayRaise = icon("💵"),
+	Upgrade_BusyDesk = icon("📋"),
+	Upgrade_RebirthKit = icon("🧰"),
 
 	-- Zones
 	Zone_Backyard = icon("🏡"),

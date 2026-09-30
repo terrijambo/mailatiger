@@ -8,6 +8,10 @@
 --
 -- Rules (see ROADMAP -> Phase 7): no random crates, and nothing that makes you stronger against other
 -- players in Chaos Mode. Passes save time or look cool.
+--
+-- TESTING IN STUDIO: items with Id 0 show a "TEST" button in the Store that gives you the item for free
+-- (Studio only, so you can try everything before creating it on Roblox). Once an item has a real Id,
+-- Studio shows Roblox's own test purchase popup instead (it never charges you in Studio).
 
 export type Pass = {
 	Key: string,
@@ -27,13 +31,6 @@ export type Product = {
 
 local passes: { Pass } = {
 	{
-		Key = "DoubleCoins",
-		Id = 0,
-		Price = 199,
-		DisplayName = "Double Coins",
-		Description = "Every job pays 2x coins. Forever.",
-	},
-	{
 		Key = "BigBag",
 		Id = 0,
 		Price = 99,
@@ -50,6 +47,34 @@ local passes: { Pass } = {
 }
 
 local products: { Product } = {
+	{
+		Key = "ServerBoost",
+		Id = 0,
+		Price = 99,
+		DisplayName = "2x Coins Server Boost",
+		Description = "EVERYONE in the server earns 2x coins for 3 minutes. Stacks.",
+	},
+	{
+		Key = "DiamondsSmall",
+		Id = 0,
+		Price = 49,
+		DisplayName = "Handful of Diamonds",
+		Description = "40 diamonds, for Diamond Upgrades.",
+	},
+	{
+		Key = "DiamondsMedium",
+		Id = 0,
+		Price = 129,
+		DisplayName = "Pouch of Diamonds",
+		Description = "120 diamonds (+20% extra).",
+	},
+	{
+		Key = "DiamondsLarge",
+		Id = 0,
+		Price = 349,
+		DisplayName = "Chest of Diamonds",
+		Description = "400 diamonds (+40% extra).",
+	},
 	{
 		Key = "CoinsSmall",
 		Id = 0,
@@ -76,7 +101,7 @@ local products: { Product } = {
 		Id = 0,
 		Price = 99,
 		DisplayName = "Skip the Wait",
-		Description = "Unlocks the next animal you don't own yet (up to tier 4).",
+		Description = "Unlocks the next animal you don't own yet, in a zone you've opened (up to tier 4).",
 	},
 	{
 		Key = "PriorityStamps",
@@ -109,7 +134,13 @@ return {
 	Products = products,
 	ProductByKey = productByKey,
 
-	DoubleCoinsMult = 2,
+	-- Server Boost: everyone in the server gets this coin multiplier. Each purchase adds BoostSeconds
+	-- (buying during a boost extends it), up to BoostMaxSeconds of time left.
+	BoostMult = 2,
+	BoostSeconds = 180,
+	BoostMaxSeconds = 3600,
+	-- Diamond packs: how many diamonds each gives
+	DiamondPacks = { DiamondsSmall = 40, DiamondsMedium = 120, DiamondsLarge = 400 },
 	-- Roblox Premium members earn a little more (Roblox also pays you for Premium players' playtime)
 	PremiumPayoutMult = 1.1,
 	-- Join-the-group bonus. Create a group on Roblox, paste its id here (0 = off). Players in it earn more.
