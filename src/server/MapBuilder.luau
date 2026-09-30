@@ -354,7 +354,7 @@ local function buildBackyard(parent: Instance, returnPads: { BasePart }): Arena
 		FloorMaterial = Enum.Material.Grass,
 		FenceColor = COLORS.Wood,
 		FenceModel = "PicketFence",
-		FenceStep = 6,
+		FenceStep = 9, -- segment lengths make each fence about 3 studs tall (sizes: art/blender_scripts)
 	}, returnPads)
 	local folder = parent:FindFirstChild("Backyard") :: Folder
 	for _, at in { { -15, -25, 2.5 }, { 12, -12, 2 }, { 18, -30, 2.5 } } do
@@ -390,13 +390,13 @@ local function buildBarn(parent: Instance, returnPads: { BasePart }): Arena
 		FloorMaterial = Enum.Material.Ground,
 		FenceColor = COLORS.BarnRed,
 		FenceModel = "FarmFence",
-		FenceStep = 7,
+		FenceStep = 8,
 	}, returnPads)
 	local folder = parent:FindFirstChild("Barn") :: Folder
 	-- The barn itself, behind the arena
 	local wall = block(folder, "BarnWall", Vector3.new(-135, 0, -64), Vector3.new(-85, 16, -52), COLORS.BarnRed)
 	local roof = block(folder, "BarnRoof", Vector3.new(-137, 16, -66), Vector3.new(-83, 18, -50), COLORS.Stone)
-	local barn = dress(folder, "Barn", spot(-110, 0, -70), 34, { wall, roof }, { Solid = true })
+	local barn = dress(folder, "Barn", spot(-110, 0, -70), 28, { wall, roof }, { Solid = true })
 	if barn then
 		ModelFit.Align(barn, Vector3.zAxis, -52) -- its front sits just behind the back fence
 	end
@@ -431,7 +431,7 @@ local function buildJungle(parent: Instance, returnPads: { BasePart }): Arena
 		FloorMaterial = Enum.Material.LeafyGrass,
 		FenceColor = COLORS.Bark,
 		FenceModel = "BambooFence",
-		FenceStep = 6,
+		FenceStep = 8,
 	}, returnPads)
 	local folder = parent:FindFirstChild("Jungle") :: Folder
 	for index, at in { { 82, -40 }, { 95, -20 }, { 110, -38 }, { 125, -15 }, { 132, -42 }, { 100, -8 }, { 118, -28 } } do
@@ -475,8 +475,18 @@ local function buildJungle(parent: Instance, returnPads: { BasePart }): Arena
 				Material = Enum.Material.Mud,
 			}
 		)
-		local facing = if sx >= sz then Vector3.zAxis else Vector3.xAxis
-		dress(folder, "MudPuddle", spot(x, 0.02, z, facing), math.max(sx, sz), { mud })
+		-- The puddle model is round, so a long strip gets a row of puddles
+		local long, short = math.max(sx, sz), math.min(sx, sz)
+		local count = math.max(1, math.round(long / short))
+		local axis = if sx >= sz then Vector3.xAxis else Vector3.zAxis
+		local step = long / count
+		for i = 0, count - 1 do
+			local at = Vector3.new(x, 0.02, z) + axis * (-long / 2 + step * (i + 0.5))
+			local turn = CFrame.Angles(0, i * 2.1, 0)
+			if not dress(folder, "MudPuddle", spot(at.X, at.Y, at.Z) * turn, math.max(step, short) * 1.1, { mud }) then
+				break
+			end
+		end
 	end
 	return arena
 end
@@ -493,7 +503,7 @@ local function buildIceRink(parent: Instance, returnPads: { BasePart }): Arena
 		FloorMaterial = Enum.Material.Ice, -- the client makes you slide on Ice
 		FenceColor = COLORS.White,
 		FenceModel = "RinkBoard",
-		FenceStep = 10,
+		FenceStep = 9,
 	}, returnPads)
 	local folder = parent:FindFirstChild("IceRink") :: Folder
 	for _, at in { { -30, -125 }, { 30, -125 } } do
@@ -590,7 +600,8 @@ local function buildGruff(map: Instance, floor: CFrame): (BasePart, BasePart)
 		CFrame = CFrame.lookAt(hatSpot, hatSpot + floor.LookVector),
 		Color = COLORS.PostBlue,
 	})
-	local hatModel = ModelFit.Spawn("PropModels", "GruffHat", hat.CFrame * CFrame.new(0, -0.5, 0), 3.2, hat)
+	-- 2.5 wide: the cap was modeled for Gruff at Blender size, and he's scaled up ~1.75x here
+	local hatModel = ModelFit.Spawn("PropModels", "GruffHat", hat.CFrame * CFrame.new(0, -0.5, 0), 2.5, hat)
 	if hatModel then
 		hat.Transparency = 1
 		-- Weld the model to the cap part only now that both are in the world (see CatchAI for why)
@@ -649,15 +660,17 @@ function MapBuilder.Build(): Map
 	local building = block(map, "PostOfficeBuilding", Vector3.new(8, 0, 2), Vector3.new(28, 12, 12.5), COLORS.PostRed)
 	local roof = block(map, "PostOfficeRoof", Vector3.new(7, 12, 1), Vector3.new(29, 13, 13.5), COLORS.PostBlue)
 	MapBuilder.Label(building, "POST OFFICE", 8, COLORS.Yellow)
-	local office = dress(map, "PostOffice", spot(18, 0, 7), 21, { building, roof }, { Solid = true })
+	-- The building model is deep (16 studs at this size), so it's 18 wide and its front is at z = 14.3,
+	-- which keeps its back just clear of the Backyard fence.
+	local office = dress(map, "PostOffice", spot(18, 0, 7), 18, { building, roof }, { Solid = true })
 	if office then
-		ModelFit.Align(office, Vector3.zAxis, 13) -- its front door sits right behind Gruff
+		ModelFit.Align(office, Vector3.zAxis, 14.3) -- its front door sits right behind Gruff
 	end
-	block(map, "PostOfficeFloor", Vector3.new(8, 0, 12.5), Vector3.new(28, 0.3, 23), COLORS.Stone)
-	local gruff, gruffHat = buildGruff(map, spot(16, 0.3, 16))
-	local postCounter = block(map, "Counter", Vector3.new(11, 0.3, 19), Vector3.new(21, 3.8, 21), COLORS.Wood)
-	dress(map, "PostCounter", spot(16, 0.3, 20), 10.5, { postCounter })
-	local chute = block(map, "MailChute", Vector3.new(23, 0.3, 18), Vector3.new(27, 5, 22), COLORS.Chute)
+	block(map, "PostOfficeFloor", Vector3.new(8, 0, 12.5), Vector3.new(28, 0.3, 24), COLORS.Stone)
+	local gruff, gruffHat = buildGruff(map, spot(16, 0.3, 17))
+	local postCounter = block(map, "Counter", Vector3.new(11, 0.3, 20), Vector3.new(21, 3.8, 22), COLORS.Wood)
+	dress(map, "PostCounter", spot(16, 0.3, 21), 10.5, { postCounter })
+	local chute = block(map, "MailChute", Vector3.new(23, 0.3, 19), Vector3.new(27, 5, 23), COLORS.Chute)
 	MapBuilder.Label(chute, "MAIL CHUTE", 3.5, COLORS.Yellow)
 	-- Hold E here to mail your bag. (Each player's client shortens the hold and swaps in their chute's model.)
 	local chutePrompt = prompt(chute, "Mail Parcels", "Mail Chute", Config.Mail.ChuteById.Basic.HoldTime)
@@ -683,7 +696,7 @@ function MapBuilder.Build(): Map
 	local displayTable = block(map, "DisplayTable", Vector3.new(-8.5, 0, 20), Vector3.new(-0.5, 2.6, 22), COLORS.Wood)
 	for index, name in SHOP_DISPLAY do
 		local x = -8.5 + (index - 0.5) * (8 / #SHOP_DISPLAY)
-		local item = ModelFit.Spawn("PropModels", name, spot(x, 2.6, 21), 1.15, displayTable)
+		local item = ModelFit.Spawn("PropModels", name, spot(x, 2.6, 21), 1.25, displayTable)
 		if item then
 			item:SetAttribute("Spin", true)
 		end
@@ -740,7 +753,7 @@ function MapBuilder.Build(): Map
 		local z = 34 + (index - 1) * 10
 		local face =
 			block(map, `Leaderboard_{id}`, Vector3.new(-42, 0, z - 4.5), Vector3.new(-41, 11, z + 4.5), COLORS.PostBlue)
-		local stand = dress(map, "LeaderboardStand", spot(-42.5, 0, z, Vector3.xAxis), 10.5, { face })
+		local stand = dress(map, "LeaderboardStand", spot(-42.5, 0, z, Vector3.xAxis), 9.5, { face })
 		if stand then
 			ModelFit.Align(stand, Vector3.xAxis, -41.1)
 			-- Shrink the (invisible) score part to fit exactly on the stand's dark board. The numbers come
