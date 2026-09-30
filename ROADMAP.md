@@ -186,6 +186,8 @@ Things added beyond the plan while you were away:
 - [x] **Starter sounds**: every slot has a free sound from Roblox's own library (placeholders picked by name, so give them a listen)
 - [x] **Draft icon + thumbnails** rendered from your models (`art/marketing/`)
 - [x] **Model checker** (`tools/check_models.luau`): reads your saved place and lists missing, misplaced or backwards models
+- [x] **Automated playtest** (`tools/e2e/run.sh`): opens a temporary Studio, and a test player picks a Hamster, catches it, pets and tapes it, mails it, buys a stamp, upgrades Sneakers, redeems a code and changes a setting, using the real code and your models. **All 26 steps passed on 2026-09-29, with no script errors**
+- [x] **Studio smoke test** (`tools/smoke/run.sh`): builds the real map with your models and loads every module
 - [x] **Automatic tests** (`tests/run.luau`, ~550 checks): Config consistency and box math, runs in seconds without Studio
 - [x] Layout pass using the real model sizes (post office depth, fence heights, barn size, mud puddles, cap size, leaderboard board)
 
