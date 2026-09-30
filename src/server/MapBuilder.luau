@@ -58,26 +58,36 @@ export type Map = {
 	Leaderboards: { [string]: BasePart }, -- board id -> the part whose +X (Right) face shows the board
 }
 
+-- Bright, flat colors (the look of popular simulators: smooth plastic, no gritty textures)
 local COLORS = {
-	Grass = Color3.fromRGB(106, 170, 84),
-	DarkGrass = Color3.fromRGB(70, 130, 60),
-	Dirt = Color3.fromRGB(150, 115, 80),
-	Stone = Color3.fromRGB(190, 190, 180),
-	Wood = Color3.fromRGB(160, 110, 70),
-	Yellow = Color3.fromRGB(240, 210, 80),
-	PostRed = Color3.fromRGB(200, 60, 60),
-	PostBlue = Color3.fromRGB(60, 90, 170),
-	Chute = Color3.fromRGB(45, 45, 55),
-	Walrus = Color3.fromRGB(130, 110, 100),
-	Hay = Color3.fromRGB(230, 200, 100),
-	BarnRed = Color3.fromRGB(170, 50, 45),
-	Bark = Color3.fromRGB(100, 70, 45),
-	Leaves = Color3.fromRGB(50, 150, 60),
-	Mud = Color3.fromRGB(90, 65, 45),
-	Ice = Color3.fromRGB(200, 235, 255),
-	White = Color3.fromRGB(245, 245, 245),
-	Concrete = Color3.fromRGB(150, 150, 155),
-	Metal = Color3.fromRGB(170, 175, 180),
+	Grass = Color3.fromRGB(122, 204, 92),
+	DarkGrass = Color3.fromRGB(88, 178, 74),
+	Dirt = Color3.fromRGB(214, 168, 112),
+	Stone = Color3.fromRGB(236, 200, 170), -- plaza paving (peach)
+	Wood = Color3.fromRGB(196, 136, 84),
+	Yellow = Color3.fromRGB(255, 220, 90),
+	PostRed = Color3.fromRGB(226, 72, 66),
+	PostBlue = Color3.fromRGB(70, 120, 225),
+	Chute = Color3.fromRGB(60, 62, 75),
+	Walrus = Color3.fromRGB(150, 125, 110),
+	Hay = Color3.fromRGB(252, 214, 104),
+	BarnRed = Color3.fromRGB(214, 66, 58),
+	Bark = Color3.fromRGB(150, 100, 64),
+	Leaves = Color3.fromRGB(96, 196, 84),
+	Mud = Color3.fromRGB(140, 96, 64),
+	Ice = Color3.fromRGB(214, 242, 255),
+	White = Color3.fromRGB(250, 250, 250),
+	Concrete = Color3.fromRGB(186, 190, 202),
+	Metal = Color3.fromRGB(196, 200, 212),
+}
+
+-- Everything is smooth plastic except materials that matter: Ice (you slide), Mud (slows you),
+-- Neon (glows) and Glass (see-through)
+local KEEP_MATERIAL = {
+	[Enum.Material.Ice] = true,
+	[Enum.Material.Mud] = true,
+	[Enum.Material.Neon] = true,
+	[Enum.Material.Glass] = true,
 }
 
 local function part(parent: Instance, props: { [string]: any }): Part
@@ -87,6 +97,9 @@ local function part(parent: Instance, props: { [string]: any }): Part
 	p.BottomSurface = Enum.SurfaceType.Smooth
 	for key, value in props do
 		(p :: any)[key] = value
+	end
+	if not KEEP_MATERIAL[p.Material] then
+		p.Material = Enum.Material.SmoothPlastic
 	end
 	p.Parent = parent
 	return p
@@ -173,12 +186,14 @@ local function dressFence(parent: Instance, name: string, fence: BasePart, step:
 	fence.Transparency = 1
 end
 
+-- A small floating name tag: white text with a dark outline (like "Tiny House $15K" in popular sims).
+-- It only shows when you're fairly close, so the town isn't a wall of text.
 function MapBuilder.Label(adornee: BasePart, text: string, height: number, color: Color3?)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "Label"
-	gui.Size = UDim2.fromOffset(240, 44)
+	gui.Size = UDim2.fromOffset(190, 30)
 	gui.StudsOffset = Vector3.new(0, height, 0)
-	gui.MaxDistance = 120
+	gui.MaxDistance = 70
 
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)
@@ -186,9 +201,12 @@ function MapBuilder.Label(adornee: BasePart, text: string, height: number, color
 	label.Text = text
 	label.TextScaled = true
 	label.Font = Enum.Font.FredokaOne
-	label.TextColor3 = color or Color3.new(1, 1, 1)
-	label.TextStrokeTransparency = 0
+	label.TextColor3 = if color and color ~= COLORS.Yellow then color else Color3.new(1, 1, 1)
 	label.Parent = gui
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2
+	stroke.Color = Color3.fromRGB(25, 22, 30)
+	stroke.Parent = label
 
 	gui.Parent = adornee
 end
@@ -236,7 +254,7 @@ local function buildArena(parent: Instance, spec: ArenaSpec, returnPads: { BaseP
 		folder,
 		"Floor",
 		Vector3.new(spec.MinX, y - 0.5, spec.MinZ),
-		Vector3.new(spec.MaxX, y + 0.02, spec.MaxZ),
+		Vector3.new(spec.MaxX, y + 0.1, spec.MaxZ),
 		spec.FloorColor,
 		{
 			Material = spec.FloorMaterial,
@@ -281,7 +299,6 @@ local function buildArena(parent: Instance, spec: ArenaSpec, returnPads: { BaseP
 			Vector3.new(center.X + 5, y + 8.5, z1 + 1),
 			def.Color
 		)
-		MapBuilder.Label(sign, string.upper(def.DisplayName), 2, COLORS.Yellow)
 		dress(folder, "ArenaGate", spot(center.X, y, z1 + 0.5), 12.5, { leftPost, rightPost, sign })
 		-- Land just outside the gate, facing in
 		local landing = Vector3.new(center.X, y + 3, z1 + 6)
@@ -667,12 +684,13 @@ local ZONE_ICONS: { [string]: string } = {
 	Rooftop = "🏙️",
 }
 -- Where each zone's path leaves the plaza
+-- (on the outer edge of the ring road around the plaza, 29 studs out from the plaza's north edge)
 local PATH_STARTS: { [string]: Vector3 } = {
-	Backyard = Vector3.new(0, 0, -60),
-	Barn = Vector3.new(-50, 0, -60),
-	IceRink = Vector3.new(-80, 0, -60),
-	Jungle = Vector3.new(50, 0, -60),
-	Rooftop = Vector3.new(80, 0, -60),
+	Backyard = Vector3.new(0, 0, -89),
+	Barn = Vector3.new(-50, 0, -89),
+	IceRink = Vector3.new(-80, 0, -89),
+	Jungle = Vector3.new(50, 0, -89),
+	Rooftop = Vector3.new(80, 0, -89),
 }
 
 function MapBuilder.Build(): Map
@@ -685,9 +703,7 @@ function MapBuilder.Build(): Map
 	map.Parent = Workspace
 
 	-- Hub town plaza + spawn (the island itself is terrain, made in Scenery.luau)
-	block(map, "Plaza", PLAZA_MIN, PLAZA_MAX + Vector3.new(0, 0.05, 0), COLORS.Stone, {
-		Material = Enum.Material.Cobblestone,
-	})
+	block(map, "Plaza", PLAZA_MIN - Vector3.new(0, 0.2, 0), PLAZA_MAX + Vector3.new(0, 0.1, 0), COLORS.Stone)
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(6, 1, 6)
@@ -702,7 +718,7 @@ function MapBuilder.Build(): Map
 	local building =
 		block(map, "PostOfficeBuilding", Vector3.new(-10, 0, -44), Vector3.new(10, 12, -30), COLORS.PostRed)
 	local roof = block(map, "PostOfficeRoof", Vector3.new(-11, 12, -45), Vector3.new(11, 13, -29), COLORS.PostBlue)
-	MapBuilder.Label(building, "POST OFFICE", 8, COLORS.Yellow)
+	-- (no floating name: the giant MAIL A TIGER sign sits over the Post Office)
 	-- The building model is deep (14 studs at this size), so it's 18 wide with its front at z = -30
 	local office = dress(map, "PostOffice", spot(0, 0, -37), 18, { building, roof }, { Solid = true })
 	if office then
@@ -806,8 +822,8 @@ function MapBuilder.Build(): Map
 			Color = def.Color,
 			Material = Enum.Material.Neon,
 		})
-		local tiers = table.concat(def.Tiers, " & ")
-		MapBuilder.Label(pad, `{def.DisplayName} (tier {tiers})`, 3, COLORS.Yellow)
+		local tiers = table.concat(def.Tiers, "&")
+		MapBuilder.Label(pad, `{string.upper(def.DisplayName)} · T{tiers}`, 2.5, COLORS.Yellow)
 		tint(dress(map, "TravelPad", spot(x, 0, 18), 7, { pad }), "Center", def.Color)
 		travelPads[def.Id] = pad
 	end

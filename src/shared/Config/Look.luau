@@ -8,26 +8,26 @@
 return {
 	Apply = true,
 
-	ClockTime = 14.2, -- early afternoon: warm light, shadows that aren't too long
+	ClockTime = 13.2, -- early afternoon: bright light, short shadows
 	GeographicLatitude = 35,
-	Brightness = 2.6,
+	Brightness = 3,
 	GlobalShadows = true,
-	Ambient = Color3.fromRGB(95, 95, 110), -- light in shadowed/indoor spots
-	OutdoorAmbient = Color3.fromRGB(140, 140, 155), -- light in outdoor shadows
-	EnvironmentDiffuseScale = 0.6,
-	EnvironmentSpecularScale = 0.25,
+	Ambient = Color3.fromRGB(135, 135, 150), -- light in shadowed/indoor spots (bright, cartoony shadows)
+	OutdoorAmbient = Color3.fromRGB(175, 175, 190), -- light in outdoor shadows
+	EnvironmentDiffuseScale = 1,
+	EnvironmentSpecularScale = 0.4,
 
-	-- Soft haze in the distance (makes the arenas feel far away and the sky feel big)
+	-- A light haze in the distance (just enough to make the mountains feel far away)
 	Atmosphere = {
-		Density = 0.28,
-		Offset = 0.2,
+		Density = 0.14,
+		Offset = 0.1,
 		Color = Color3.fromRGB(199, 222, 255),
 		Decay = Color3.fromRGB(106, 120, 140),
-		Glare = 0.2,
-		Haze = 1.4,
+		Glare = 0,
+		Haze = 0.4,
 	},
 
-	-- A touch more color
-	Saturation = 0.12,
-	Contrast = 0.06,
+	-- Vivid color (the bright, saturated look of popular simulators)
+	Saturation = 0.22,
+	Contrast = 0.08,
 }

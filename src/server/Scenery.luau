@@ -29,23 +29,44 @@ export type Layout = {
 	PathStarts: { [string]: Vector3 }, -- zone id -> where its path leaves the plaza
 }
 
+-- Bright, flat colors in the style of popular simulators (smooth plastic, no gritty textures)
 local C = {
-	Grass = Color3.fromRGB(106, 180, 84),
-	GrassTop = Color3.fromRGB(96, 190, 70),
-	Brick = Color3.fromRGB(184, 72, 60),
-	Stone = Color3.fromRGB(200, 196, 186),
-	Path = Color3.fromRGB(176, 168, 150),
-	Wood = Color3.fromRGB(150, 100, 62),
-	White = Color3.fromRGB(245, 245, 245),
-	Roof = Color3.fromRGB(80, 90, 120),
-	Water = Color3.fromRGB(90, 170, 230),
-	Leaves = Color3.fromRGB(60, 160, 70),
-	Pine = Color3.fromRGB(40, 110, 70),
-	Bark = Color3.fromRGB(110, 75, 50),
-	Snow = Color3.fromRGB(240, 246, 255),
-	Glass = Color3.fromRGB(150, 200, 235),
-	Dark = Color3.fromRGB(30, 30, 40),
+	Grass = Color3.fromRGB(122, 204, 92),
+	GrassTop = Color3.fromRGB(112, 214, 86),
+	Brick = Color3.fromRGB(214, 124, 88), -- terrace sides
+	Stone = Color3.fromRGB(238, 238, 244),
+	Path = Color3.fromRGB(78, 80, 92), -- roads
+	Sidewalk = Color3.fromRGB(214, 216, 224),
+	Line = Color3.fromRGB(250, 250, 250),
+	Wood = Color3.fromRGB(196, 136, 84),
+	White = Color3.fromRGB(250, 250, 250),
+	Roof = Color3.fromRGB(80, 120, 220),
+	Water = Color3.fromRGB(96, 196, 255),
+	Leaves = Color3.fromRGB(96, 196, 84),
+	Pine = Color3.fromRGB(64, 160, 96),
+	Bark = Color3.fromRGB(150, 100, 64),
+	Snow = Color3.fromRGB(246, 250, 255),
+	Glass = Color3.fromRGB(170, 220, 250),
+	Dark = Color3.fromRGB(40, 42, 54),
 	Gold = Color3.fromRGB(255, 205, 60),
+	Hedge = Color3.fromRGB(140, 218, 106),
+	Sand = Color3.fromRGB(248, 226, 172),
+}
+
+-- Leafy greens for trees, picked by position so the world doesn't look copy-pasted
+local LEAF_COLORS = {
+	Color3.fromRGB(96, 196, 84),
+	Color3.fromRGB(120, 210, 90),
+	Color3.fromRGB(80, 180, 90),
+	Color3.fromRGB(140, 214, 96),
+}
+
+-- Everything is smooth plastic except materials that matter to the look: Neon (glows), Glass
+-- (see-through), Ice (shiny)
+local KEEP_MATERIAL = {
+	[Enum.Material.Neon] = true,
+	[Enum.Material.Glass] = true,
+	[Enum.Material.Ice] = true,
 }
 
 local function part(parent: Instance, props: { [string]: any }): BasePart
@@ -58,6 +79,9 @@ local function part(parent: Instance, props: { [string]: any }): BasePart
 		if key ~= "ClassName" then
 			(p :: any)[key] = value
 		end
+	end
+	if not KEEP_MATERIAL[p.Material] then
+		p.Material = Enum.Material.SmoothPlastic
 	end
 	p.Parent = parent
 	return p
@@ -136,7 +160,7 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Terrain: island, beach, ocean, mountains
 
-local function buildTerrain(layout: Layout)
+local function buildTerrain(_layout: Layout)
 	local terrain = Workspace.Terrain
 	-- Water looks nicer a bit clearer and wavier than the default
 	terrain.WaterColor = C.Water
@@ -144,14 +168,20 @@ local function buildTerrain(layout: Layout)
 	terrain.WaterWaveSize = 0.2
 	terrain.WaterWaveSpeed = 8
 
-	-- Ocean everywhere, then the island on top of it
-	terrain:FillBlock(CFrame.new(0, -14, -150), Vector3.new(2400, 20, 2400), Enum.Material.Water)
-	local minX, maxX, minZ, maxZ = -300, 300, -470, 170
-	local width, depth = maxX - minX, maxZ - minZ
-	local middle = Vector3.new((minX + maxX) / 2, 0, (minZ + maxZ) / 2)
-	-- Sand shelf a bit wider than the island (the beach), then grass on top
-	terrain:FillBlock(CFrame.new(middle.X, -6, middle.Z), Vector3.new(width + 60, 12, depth + 60), Enum.Material.Sand)
-	terrain:FillBlock(CFrame.new(middle.X, -4, middle.Z), Vector3.new(width, 8, depth), Enum.Material.Grass)
+	-- Ocean everywhere (the island itself is flat smooth parts: see buildGround)
+	terrain:FillBlock(CFrame.new(0, -16, -150), Vector3.new(2400, 20, 2400), Enum.Material.Water)
+	-- Brighter terrain colors for the mountains on the horizon
+	terrain:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(150, 150, 162))
+	terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(112, 196, 90))
+	terrain:SetMaterialColor(Enum.Material.Snow, Color3.fromRGB(248, 250, 255))
+	-- Puffy clouds
+	if not terrain:FindFirstChildOfClass("Clouds") then
+		local clouds = Instance.new("Clouds")
+		clouds.Cover = 0.55
+		clouds.Density = 0.65
+		clouds.Color = Color3.new(1, 1, 1)
+		clouds.Parent = terrain
+	end
 
 	-- Mountains on the horizon (big lumps of rock, snow-capped on the winter side)
 	type Mountain = { X: number, Z: number, R: number, Snowy: boolean }
@@ -175,31 +205,46 @@ local function buildTerrain(layout: Layout)
 			terrain:FillBall(Vector3.new(x, r * 0.35, z), r * 0.32, Enum.Material.Snow)
 		end
 	end
+end
 
-	-- Themed ground under each zone (a little wider than the arena)
-	local zoneGround: { [string]: Enum.Material } = {
-		Barn = Enum.Material.Ground,
-		Jungle = Enum.Material.LeafyGrass,
-		IceRink = Enum.Material.Snow,
-		Rooftop = Enum.Material.Asphalt,
+-- The island: flat smooth ground at exactly y = 0 (terrain bulges above its fill line, which buried the
+-- plaza and half-sank the props), a sandy beach step around it, and flat colored ground under each zone.
+local function buildGround(parent: Instance, layout: Layout)
+	local folder = Instance.new("Folder")
+	folder.Name = "Ground"
+	folder.Parent = parent
+	box(folder, "Island", Vector3.new(0, -2, -150), Vector3.new(600, 4, 640), C.Grass)
+	box(folder, "Beach", Vector3.new(0, -2.4, -150), Vector3.new(680, 3.2, 720), C.Sand)
+
+	local zoneGround: { [string]: Color3 } = {
+		Barn = Color3.fromRGB(222, 180, 122),
+		Jungle = Color3.fromRGB(86, 172, 76),
+		IceRink = C.Snow,
+		Rooftop = Color3.fromRGB(96, 98, 110),
 	}
 	for _, zone in layout.Zones do
-		local material = zoneGround[zone.Id]
-		if material then
+		local color = zoneGround[zone.Id]
+		if color then
 			local pad = if zone.Id == "Rooftop" or zone.Id == "IceRink" then 55 else 35
-			terrain:FillBlock(
-				CFrame.new(zone.Center.X, -2, zone.Center.Z),
-				Vector3.new(zone.HalfX * 2 + pad * 2, 4, zone.HalfZ * 2 + pad * 2),
-				material
+			box(
+				folder,
+				"ZoneGround",
+				Vector3.new(zone.Center.X, -0.08, zone.Center.Z),
+				Vector3.new(zone.HalfX * 2 + pad * 2, 0.24, zone.HalfZ * 2 + pad * 2),
+				color
 			)
 		end
-	end
-	-- Snowy hills around the winter zone
-	for _, zone in layout.Zones do
+		-- Snowy hills (smooth white domes) around the winter zone
 		if zone.Id == "IceRink" then
 			local c = zone.Center
 			for _, h in { { -80, -40, 28 }, { -70, 30, 22 }, { 70, -45, 30 }, { 90, 20, 20 }, { 0, -85, 34 } } do
-				terrain:FillBall(Vector3.new(c.X + h[1], -h[3] * 0.4, c.Z + h[2]), h[3], Enum.Material.Snow)
+				part(folder, {
+					Name = "SnowHill",
+					Shape = Enum.PartType.Ball,
+					Size = Vector3.one * h[3] * 2,
+					Position = Vector3.new(c.X + h[1], -h[3] * 0.45, c.Z + h[2]),
+					Color = C.Snow,
+				})
 			end
 		end
 	end
@@ -208,32 +253,26 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Little building blocks for scenery
 
+-- A round, blobby cartoon tree: a short trunk and a cluster of leafy balls
 local function tree(parent: Instance, at: Vector3, height: number, leaves: Color3?)
 	local h = height
-	box(
-		parent,
-		"Trunk",
-		at + Vector3.new(0, h * 0.35, 0),
-		Vector3.new(h * 0.12, h * 0.7, h * 0.12),
-		C.Bark,
-		Enum.Material.Wood
-	)
-	part(parent, {
-		Name = "Leaves",
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.one * h * 0.6,
-		Position = at + Vector3.new(0, h * 0.78, 0),
-		Color = leaves or C.Leaves,
-		Material = Enum.Material.Grass,
-	})
-	part(parent, {
-		Name = "Leaves",
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.one * h * 0.42,
-		Position = at + Vector3.new(h * 0.22, h * 0.62, h * 0.1),
-		Color = (leaves or C.Leaves):Lerp(Color3.new(1, 1, 0.6), 0.12),
-		Material = Enum.Material.Grass,
-	})
+	local green = leaves or LEAF_COLORS[(math.floor(at.X * 7 + at.Z * 3) % #LEAF_COLORS) + 1]
+	box(parent, "Trunk", at + Vector3.new(0, h * 0.3, 0), Vector3.new(h * 0.13, h * 0.6, h * 0.13), C.Bark)
+	local blobs = {
+		{ 0, 0.72, 0, 0.62 },
+		{ 0.22, 0.6, 0.12, 0.44 },
+		{ -0.2, 0.62, -0.1, 0.42 },
+		{ 0.05, 0.9, -0.05, 0.4 },
+	}
+	for index, b in blobs do
+		part(parent, {
+			Name = "Leaves",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.one * h * b[4],
+			Position = at + Vector3.new(h * b[1], h * b[2], h * b[3]),
+			Color = green:Lerp(Color3.new(1, 1, 0.7), (index - 1) * 0.05),
+		})
+	end
 end
 
 -- A low-poly pine: stacked discs getting smaller, with snow on top if snowy
@@ -257,7 +296,6 @@ local function pine(parent: Instance, at: Vector3, height: number, snowy: boolea
 			Size = Vector3.new(h * 0.16, radius * 2, radius * 2),
 			CFrame = CFrame.new(at + Vector3.new(0, y, 0)) * CFrame.Angles(0, 0, math.rad(90)),
 			Color = if snowy and i == 3 then C.Snow else C.Pine,
-			Material = if snowy and i == 3 then Enum.Material.Snow else Enum.Material.Grass,
 		})
 	end
 end
@@ -279,21 +317,40 @@ local function lamppost(parent: Instance, at: Vector3)
 	light.Parent = bulb
 end
 
--- A flat stone path between two points (a single long part, turned to face along the path)
+-- A road between two points: dark asphalt with white dashes down the middle and light sidewalks on both
+-- sides (like the streets in popular city sims), plus lampposts along it
 local function path(parent: Instance, from: Vector3, to: Vector3, width: number)
-	local flatFrom = Vector3.new(from.X, 0.06, from.Z)
-	local flatTo = Vector3.new(to.X, 0.06, to.Z)
+	local flatFrom = Vector3.new(from.X, 0, from.Z)
+	local flatTo = Vector3.new(to.X, 0, to.Z)
 	local length = (flatTo - flatFrom).Magnitude
-	part(parent, {
-		Name = "Path",
-		Size = Vector3.new(width, 0.12, length + width),
-		CFrame = CFrame.lookAt((flatFrom + flatTo) / 2, flatTo),
-		Color = C.Path,
-		Material = Enum.Material.Cobblestone,
-	})
-	-- Lampposts along both sides every ~40 studs
 	local direction = (flatTo - flatFrom).Unit
 	local side = Vector3.new(-direction.Z, 0, direction.X)
+	local along = CFrame.lookAt((flatFrom + flatTo) / 2, (flatFrom + flatTo) / 2 + direction)
+	part(parent, {
+		Name = "Path",
+		Size = Vector3.new(width, 0.3, length + width),
+		CFrame = along + Vector3.new(0, -0.05, 0),
+		Color = C.Path,
+	})
+	for _, s in { -1, 1 } do
+		part(parent, {
+			Name = "Sidewalk",
+			Size = Vector3.new(3, 0.5, length + width),
+			CFrame = along + side * s * (width / 2 + 1.5) + Vector3.new(0, 0.05, 0),
+			Color = C.Sidewalk,
+		})
+	end
+	-- White dashes every 10 studs
+	for d = -length / 2 + 5, length / 2 - 5, 10 do
+		part(parent, {
+			Name = "RoadLine",
+			Size = Vector3.new(0.6, 0.05, 4),
+			CFrame = along * CFrame.new(0, 0.12, d),
+			Color = C.Line,
+			CanCollide = false,
+		})
+	end
+	-- Lampposts along both sides every ~40 studs
 	local count = math.floor(length / 40)
 	for i = 1, count do
 		local at = flatFrom + direction * (i * length / (count + 1))
@@ -301,25 +358,31 @@ local function path(parent: Instance, from: Vector3, to: Vector3, width: number)
 	end
 end
 
+-- White zebra stripes across a road at `at` (the road runs along `roadDirection`)
+local function crosswalk(parent: Instance, at: Vector3, roadDirection: Vector3, roadWidth: number)
+	local frame = CFrame.lookAt(at, at + roadDirection)
+	for i = -3, 3 do
+		part(parent, {
+			Name = "Crosswalk",
+			Size = Vector3.new(roadWidth - 2, 0.05, 1.4),
+			CFrame = frame * CFrame.new(0, 0.12, i * 2.6),
+			Color = C.Line,
+			CanCollide = false,
+		})
+	end
+end
+
 -- A raised grassy block with brick-red sides (the stepped terraces around the hub)
 local function terrace(parent: Instance, min: Vector3, max: Vector3)
 	local size = max - min
 	local center = (min + max) / 2
-	box(
-		parent,
-		"TerraceSide",
-		center - Vector3.new(0, 0.5, 0),
-		size - Vector3.new(0, 1, 0),
-		C.Brick,
-		Enum.Material.Brick
-	)
+	box(parent, "TerraceSide", center - Vector3.new(0, 0.5, 0), size - Vector3.new(0, 1, 0), C.Brick)
 	box(
 		parent,
 		"TerraceTop",
 		Vector3.new(center.X, max.Y - 0.5, center.Z),
 		Vector3.new(size.X + 0.4, 1, size.Z + 0.4),
-		C.GrassTop,
-		Enum.Material.Grass
+		C.GrassTop
 	)
 end
 
@@ -332,17 +395,53 @@ local function buildHub(parent: Instance, layout: Layout)
 	folder.Parent = parent
 	local min, max = layout.PlazaMin, layout.PlazaMax
 
-	-- Terraces around the plaza (two steps), with gaps where the paths leave
+	-- A ring road around the plaza (sidewalks on both sides), with crosswalks where the zone roads leave
+	local ring = 22 -- distance from the plaza edge to the middle of the ring road
+	local roadWidth = 14
+	local ringMin = Vector3.new(min.X - ring, 0, min.Z - ring)
+	local ringMax = Vector3.new(max.X + ring, 0, max.Z + ring)
+	path(
+		folder,
+		Vector3.new(ringMin.X - roadWidth / 2, 0, ringMin.Z),
+		Vector3.new(ringMax.X + roadWidth / 2, 0, ringMin.Z),
+		roadWidth
+	)
+	path(
+		folder,
+		Vector3.new(ringMin.X - roadWidth / 2, 0, ringMax.Z),
+		Vector3.new(ringMax.X + roadWidth / 2, 0, ringMax.Z),
+		roadWidth
+	)
+	path(folder, Vector3.new(ringMin.X, 0, ringMin.Z), Vector3.new(ringMin.X, 0, ringMax.Z), roadWidth)
+	path(folder, Vector3.new(ringMax.X, 0, ringMin.Z), Vector3.new(ringMax.X, 0, ringMax.Z), roadWidth)
+	for _, start in layout.PathStarts do
+		crosswalk(folder, Vector3.new(start.X, 0, ringMin.Z), Vector3.xAxis, roadWidth)
+	end
+	crosswalk(folder, Vector3.new(0, 0, ringMax.Z), Vector3.xAxis, roadWidth) -- toward the beach
+	-- Grass verges between the plaza and the ring road
+	for _, strip in
+		{
+			{ Vector3.new(0, 0, min.Z - 7), Vector3.new(max.X - min.X + 14, 0.5, 14) },
+			{ Vector3.new(0, 0, max.Z + 7), Vector3.new(max.X - min.X + 14, 0.5, 14) },
+			{ Vector3.new(min.X - 7, 0, (min.Z + max.Z) / 2), Vector3.new(14, 0.5, max.Z - min.Z) },
+			{ Vector3.new(max.X + 7, 0, (min.Z + max.Z) / 2), Vector3.new(14, 0.5, max.Z - min.Z) },
+		}
+	do
+		box(folder, "Verge", strip[1] + Vector3.new(0, 0.05, 0), strip[2], C.GrassTop)
+	end
+
+	-- Terraces outside the ring road (two steps), with gaps where the roads leave
+	local out = ring + roadWidth / 2 + 6
 	local steps = {
 		-- west side
-		{ Vector3.new(min.X - 30, 0, min.Z + 20), Vector3.new(min.X - 4, 4, max.Z - 10) },
-		{ Vector3.new(min.X - 44, 0, min.Z + 30), Vector3.new(min.X - 26, 9, max.Z - 20) },
+		{ Vector3.new(min.X - out - 26, 0, min.Z + 20), Vector3.new(min.X - out, 4, max.Z - 10) },
+		{ Vector3.new(min.X - out - 40, 0, min.Z + 30), Vector3.new(min.X - out - 22, 9, max.Z - 20) },
 		-- east side
-		{ Vector3.new(max.X + 4, 0, min.Z + 20), Vector3.new(max.X + 30, 4, max.Z - 10) },
-		{ Vector3.new(max.X + 26, 0, min.Z + 30), Vector3.new(max.X + 44, 9, max.Z - 20) },
-		-- south, behind the spawn (split for the beach walk)
-		{ Vector3.new(min.X + 10, 0, max.Z + 6), Vector3.new(-14, 5, max.Z + 26) },
-		{ Vector3.new(14, 0, max.Z + 6), Vector3.new(max.X - 10, 5, max.Z + 26) },
+		{ Vector3.new(max.X + out, 0, min.Z + 20), Vector3.new(max.X + out + 26, 4, max.Z - 10) },
+		{ Vector3.new(max.X + out + 22, 0, min.Z + 30), Vector3.new(max.X + out + 40, 9, max.Z - 20) },
+		-- south, behind the spawn (split for the beach road)
+		{ Vector3.new(min.X + 10, 0, max.Z + out), Vector3.new(-14, 5, max.Z + out + 20) },
+		{ Vector3.new(14, 0, max.Z + out), Vector3.new(max.X - 10, 5, max.Z + out + 20) },
 	}
 	for _, s in steps do
 		terrace(folder, s[1], s[2])
@@ -362,8 +461,7 @@ local function buildHub(parent: Instance, layout: Layout)
 		Shape = Enum.PartType.Cylinder,
 		Size = Vector3.new(2, 22, 22),
 		CFrame = CFrame.new(fountainAt + Vector3.new(0, 1, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = C.Stone,
-		Material = Enum.Material.Marble,
+		Color = C.White,
 	})
 	part(folder, {
 		Name = "FountainWater",
@@ -375,14 +473,7 @@ local function buildHub(parent: Instance, layout: Layout)
 		Transparency = 0.3,
 		CanCollide = false,
 	})
-	box(
-		folder,
-		"FountainPillar",
-		fountainAt + Vector3.new(0, 4, 0),
-		Vector3.new(2.5, 6, 2.5),
-		C.Stone,
-		Enum.Material.Marble
-	)
+	box(folder, "FountainPillar", fountainAt + Vector3.new(0, 4, 0), Vector3.new(2.5, 6, 2.5), C.White)
 	local spout = part(folder, {
 		Name = "FountainTop",
 		Shape = Enum.PartType.Ball,
@@ -402,6 +493,27 @@ local function buildHub(parent: Instance, layout: Layout)
 	spray.Rate = 60
 	spray.Transparency = NumberSequence.new(0.2, 0.9)
 	spray.Parent = spout
+
+	-- Lawn beds on the plaza: raised grass with a low hedge around it and a couple of small trees
+	local function bed(center: Vector3, size: Vector2)
+		box(folder, "Lawn", center + Vector3.new(0, 0.35, 0), Vector3.new(size.X, 0.7, size.Y), C.GrassTop)
+		for _, edge in
+			{
+				{ Vector3.new(0, 0, -size.Y / 2), Vector3.new(size.X, 1.6, 1.4) },
+				{ Vector3.new(0, 0, size.Y / 2), Vector3.new(size.X, 1.6, 1.4) },
+				{ Vector3.new(-size.X / 2, 0, 0), Vector3.new(1.4, 1.6, size.Y) },
+				{ Vector3.new(size.X / 2, 0, 0), Vector3.new(1.4, 1.6, size.Y) },
+			}
+		do
+			box(folder, "Hedge", center + edge[1] + Vector3.new(0, 0.8, 0), edge[2], C.Hedge)
+		end
+		tree(folder, center + Vector3.new(-size.X / 4, 0.7, 0), 12)
+		tree(folder, center + Vector3.new(size.X / 4, 0.7, 2), 10)
+	end
+	bed(Vector3.new(-58, 0, 62), Vector2.new(26, 22))
+	bed(Vector3.new(58, 0, 62), Vector2.new(26, 22))
+	bed(Vector3.new(-26, 0, -50), Vector2.new(20, 12))
+	bed(Vector3.new(26, 0, -50), Vector2.new(20, 12))
 
 	-- Plaza lampposts around the edge
 	for _, x in { min.X + 6, max.X - 6 } do
@@ -642,16 +754,17 @@ local function jungleTheme(parent: Instance, zone: Zone)
 	local c = zone.Center
 	local back = c.Z - zone.HalfZ - 26
 	-- A rock cliff with a waterfall behind the jungle
-	Workspace.Terrain:FillBlock(
-		CFrame.new(c.X, 18, back - 8),
-		Vector3.new(zone.HalfX * 2 + 60, 44, 16),
-		Enum.Material.Rock
+	box(
+		parent,
+		"Cliff",
+		Vector3.new(c.X, 20, back - 8),
+		Vector3.new(zone.HalfX * 2 + 60, 40, 16),
+		Color3.fromRGB(150, 150, 162)
 	)
-	Workspace.Terrain:FillBlock(
-		CFrame.new(c.X, 42, back - 8),
-		Vector3.new(zone.HalfX * 2 + 60, 4, 16),
-		Enum.Material.LeafyGrass
-	)
+	box(parent, "CliffTop", Vector3.new(c.X, 40.6, back - 8), Vector3.new(zone.HalfX * 2 + 61, 1.2, 17), C.GrassTop)
+	for index, x in { -40, -15, 18, 42 } do
+		tree(parent, Vector3.new(c.X + x, 41.2, back - 8 + (index % 2) * 3), 16)
+	end
 	part(parent, {
 		Name = "Waterfall",
 		Size = Vector3.new(14, 40, 1),
@@ -836,8 +949,8 @@ local function scatter(parent: Instance, layout: Layout)
 	end
 	local function blocked(p: Vector3): boolean
 		local min, max = layout.PlazaMin, layout.PlazaMax
-		if p.X > min.X - 50 and p.X < max.X + 50 and p.Z > min.Z - 10 and p.Z < max.Z + 30 then
-			return true -- the plaza and its terraces
+		if p.X > min.X - 80 and p.X < max.X + 80 and p.Z > min.Z - 40 and p.Z < max.Z + 70 then
+			return true -- the plaza, its ring road and terraces
 		end
 		for _, zone in layout.Zones do
 			local pad = if zone.Id == "Rooftop" then 75 else 45
@@ -897,6 +1010,37 @@ local function scatter(parent: Instance, layout: Layout)
 	end
 end
 
+-- A palm tree: a gently curved trunk and a crown of drooping fronds
+local function palm(parent: Instance, at: Vector3, height: number, lean: number)
+	local h = height
+	local top = at
+	for i = 0, 3 do
+		local segment = h / 4
+		local tilt = lean * (i + 1) * 0.08
+		local cf = CFrame.new(top) * CFrame.Angles(0, 0, tilt) * CFrame.new(0, segment / 2, 0)
+		part(parent, {
+			Name = "PalmTrunk",
+			Size = Vector3.new(1.3 - i * 0.12, segment + 0.3, 1.3 - i * 0.12),
+			CFrame = cf,
+			Color = Color3.fromRGB(176, 128, 82),
+		})
+		top = (cf * CFrame.new(0, segment / 2, 0)).Position
+	end
+	for i = 0, 5 do
+		local angle = i / 6 * math.pi * 2
+		part(parent, {
+			Name = "Frond",
+			Size = Vector3.new(1.6, 0.3, 8),
+			CFrame = CFrame.new(top)
+				* CFrame.Angles(0, angle, 0)
+				* CFrame.Angles(math.rad(-20), 0, 0)
+				* CFrame.new(0, 0, -3.6),
+			Color = Color3.fromRGB(86, 190, 80),
+			CanCollide = false,
+		})
+	end
+end
+
 -- A wooden signpost where the paths leave town, with an arrow sign for each zone
 local function signpost(parent: Instance, at: Vector3, layout: Layout)
 	box(parent, "SignpostPole", at + Vector3.new(0, 6, 0), Vector3.new(1, 12, 1), C.Wood, Enum.Material.Wood)
@@ -938,7 +1082,22 @@ function Scenery.Build(parent: Instance, layout: Layout)
 	folder.Parent = parent
 
 	buildTerrain(layout)
+	buildGround(folder, layout)
 	buildHub(folder, layout)
+	-- Palm trees along the south beach
+	local beach = Instance.new("Folder")
+	beach.Name = "Beach"
+	beach.Parent = folder
+	for i = -5, 5 do
+		if math.abs(i) > 0 then
+			palm(
+				beach,
+				Vector3.new(i * 48 + (i % 2) * 9, -0.8, 184 + (i % 3) * 5),
+				16 + (i % 3) * 3,
+				if i % 2 == 0 then 1 else -1
+			)
+		end
+	end
 	local wild = Instance.new("Folder")
 	wild.Name = "Wilderness"
 	wild.Parent = folder
