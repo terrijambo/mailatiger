@@ -171,6 +171,7 @@ rojo build -o MailATiger.rbxl  # build a fresh place file (REPLACES the .rbxl: a
 selene src                     # lint
 stylua src                     # format everything
 lune run tools/check_models.luau MailATiger.rbxl   # after Ctrl+S in Studio: are all models imported, in the right folders, facing the right way?
+lune run tests/run.luau        # ~550 automatic checks on the Config files and box math. Run after changing any Config file
 ```
 
 Type-check (catches misspelled Roblox API names). The VS Code Luau extension does this live, and every file starts with `--!strict`:
