@@ -124,26 +124,37 @@ local function signText(
 	frame.BackgroundColor3 = background or C.Dark
 	frame.BackgroundTransparency = if background then 0 else 1
 	frame.Parent = gui
+	if background then
+		-- A light frame just inside the edge, so signs look finished
+		local border = Instance.new("UIStroke")
+		border.Thickness = 10
+		border.Color = Color3.new(1, 1, 1)
+		border.Transparency = 0.2
+		border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		border.Parent = frame
+	end
 	local title = Instance.new("TextLabel")
 	title.BackgroundTransparency = 1
-	title.Size = UDim2.fromScale(0.94, if subtitle then 0.68 else 0.9)
-	title.Position = UDim2.fromScale(0.03, 0.05)
+	title.Size = UDim2.fromScale(0.9, if subtitle then 0.56 else 0.8)
+	title.Position = UDim2.fromScale(0.05, if subtitle then 0.08 else 0.1)
 	title.Font = Enum.Font.LuckiestGuy
 	title.TextScaled = true
+	title.TextWrapped = false -- one line, shrunk to fit (instead of wrapping into a jumble)
 	title.TextColor3 = color
 	title.Text = text
 	title.Name = "Title"
 	title.Parent = frame
 	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 6
+	stroke.Thickness = 4
 	stroke.Color = Color3.new(0, 0, 0)
 	stroke.Transparency = 0.1
 	stroke.Parent = title
 	if subtitle then
 		local sub = Instance.new("TextLabel")
 		sub.BackgroundTransparency = 1
-		sub.Size = UDim2.fromScale(0.9, 0.24)
-		sub.Position = UDim2.fromScale(0.05, 0.72)
+		sub.Size = UDim2.fromScale(0.86, 0.22)
+		sub.Position = UDim2.fromScale(0.07, 0.68)
+		sub.TextWrapped = false
 		sub.Font = Enum.Font.FredokaOne
 		sub.TextScaled = true
 		sub.TextColor3 = Color3.new(1, 1, 1)
@@ -524,32 +535,25 @@ local function buildHub(parent: Instance, layout: Layout)
 
 	-- Info boards near the spawn (big, readable, like the boards in popular simulators)
 	local function board(name: string, at: Vector3, facing: Vector3, size: Vector2, color: Color3): BasePart
-		box(
-			folder,
-			name .. "Post",
-			at + Vector3.new(-size.X / 2 + 0.6, size.Y / 2 + 1, 0),
-			Vector3.new(0.8, size.Y + 2, 0.8),
-			C.Dark,
-			Enum.Material.Metal
-		)
-		box(
-			folder,
-			name .. "Post",
-			at + Vector3.new(size.X / 2 - 0.6, size.Y / 2 + 1, 0),
-			Vector3.new(0.8, size.Y + 2, 0.8),
-			C.Dark,
-			Enum.Material.Metal
-		)
+		-- The board faces `facing`; its posts hang off its own left and right edges (so they line up at any angle)
+		local center = at + Vector3.new(0, size.Y / 2 + 2, 0)
+		local faceCFrame = CFrame.lookAt(center, center + Vector3.new(facing.X, 0, facing.Z))
 		local face = part(folder, {
 			Name = name,
 			Size = Vector3.new(size.X, size.Y, 0.6),
-			CFrame = CFrame.lookAt(
-				at + Vector3.new(0, size.Y / 2 + 2, 0),
-				at + Vector3.new(0, size.Y / 2 + 2, 0) + facing
-			),
+			CFrame = faceCFrame,
 			Color = color,
-			Material = Enum.Material.SmoothPlastic,
 		})
+		local postHeight = size.Y + 2.4
+		for _, side in { -1, 1 } do
+			local edge = faceCFrame * CFrame.new(side * (size.X / 2 + 0.4), 0, 0.2)
+			part(folder, {
+				Name = name .. "Post",
+				Size = Vector3.new(0.8, postHeight, 0.8),
+				CFrame = CFrame.new(edge.Position.X, postHeight / 2, edge.Position.Z) * faceCFrame.Rotation,
+				Color = C.Dark,
+			})
+		end
 		return face
 	end
 
@@ -1069,6 +1073,7 @@ local function signpost(parent: Instance, at: Vector3, layout: Layout)
 			label.TextScaled = true
 			label.TextColor3 = Color3.new(1, 1, 1)
 			label.TextStrokeTransparency = 0
+			label.TextWrapped = false
 			label.Text = `{zone.Icon} {string.upper(zone.Name)}`
 			label.Parent = gui
 			gui.Parent = arrow
