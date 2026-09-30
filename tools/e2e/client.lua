@@ -70,6 +70,18 @@ local function holdPrompt(prompt, follow)
 	return ok
 end
 
+-- Frame-rate sampling once the game has loaded: average FPS, and how many frames hitched (> 0.1 s)
+local frames, frameTime, hitches, sampling = 0, 0, 0, false
+game:GetService("RunService").RenderStepped:Connect(function(dt)
+	if sampling then
+		frames += 1
+		frameTime += dt
+		if dt > 0.1 then
+			hitches += 1
+		end
+	end
+end)
+
 local function run()
 	local character = player.Character or player.CharacterAdded:Wait()
 	local root = character:WaitForChild("HumanoidRootPart")
@@ -84,6 +96,7 @@ local function run()
 	end
 	log(gui:WaitForChild("Tutorial", 8) ~= nil, "tutorial started for a new player")
 	local startCoins = profile().Coins
+	sampling = true
 
 	-- 1. Pick a Hamster at the Pen
 	root.CFrame = map.PenCounter.CFrame * CFrame.new(0, 2, 5)
@@ -394,6 +407,7 @@ local function run()
 	end
 
 	log(true, "events seen: " .. HttpService:JSONEncode(events))
+	log(frames / frameTime > 30, string.format("average %.0f FPS, %d hitches over 0.1 s", frames / frameTime, hitches))
 end
 
 local ok, err = pcall(run)
