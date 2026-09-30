@@ -97,6 +97,8 @@ Test with several players: in Studio, **Test tab → Clients and Servers → 2 p
 - [ ] **Leaderboards** (west side of the plaza): mail a 5-stamp job and the "Most 5-Stamp Jobs" board updates. It says "(this server only)" until saving is on.
 
 ## Overnight build checklist: new map, animation, tutorial, store
+**Already verified by machine:** an automated playtest (`bash tools/e2e/run.sh`) played the whole loop in Studio with your models: catch, box, mail, shop, codes, settings, tutorial, chute upgrades, a tiger launch with RETURN TO SENDER, and the rooftop fall. All 49 steps passed with no script errors. So this list is mostly about **how things look and feel**, which only you can judge.
+
 Play once with a **fresh save** (saving is off in Studio, so every Play is fresh) and once as usual.
 - [ ] **Town:** the Post Office building now faces the plaza, with Gruff in front of it, his counter, and the chute on the right. Is anything floating, sunk into the ground, or facing backwards? (Fix: add a Number attribute `YawOffset` = `180` to that model in its folder.)
 - [ ] Lampposts, benches, planters, the mailbox and the leaderboard stands are placed sensibly and the scores sit on the leaderboard boards.
