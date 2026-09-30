@@ -73,6 +73,11 @@ local function update(dt: number)
 	if humanoid.FloorMaterial == Enum.Material.Mud then
 		speed *= Config.Arenas.MudSpeedMult
 	end
+	-- Troll items (stink clouds, glue) slow you down for a moment
+	local slowdown = player:GetAttribute("SpeedMult")
+	if typeof(slowdown) == "number" then
+		speed *= slowdown
+	end
 	if frozen then
 		speed = 0
 	end

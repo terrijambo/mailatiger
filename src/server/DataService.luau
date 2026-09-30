@@ -60,6 +60,14 @@ export type Profile = {
 	PaycheckStreak: number, -- days in a row
 	Settings: { [string]: boolean }, -- Music, Sfx, Motion (camera shake/zoom). Missing = on
 	Codes: { [string]: boolean }, -- reward codes already redeemed
+	-- Progression (kept through rebirths)
+	Level: number,
+	XP: number, -- progress toward the next level
+	Quest: number, -- which of Gruff's main quests you're on (Config/Quests.luau)
+	QuestProgress: number, -- count toward the current quest (for "mail N" / "complete N orders" quests)
+	OrdersDone: number, -- total side orders completed
+	Species: { [string]: number }, -- animal id -> how many you've mailed (the collection)
+	Trolls: { [string]: boolean }, -- troll items you own
 }
 
 local DataService = {}
@@ -99,6 +107,13 @@ local function newProfile(): Profile
 		PaycheckStreak = 0,
 		Settings = {},
 		Codes = {},
+		Level = 1,
+		XP = 0,
+		Quest = 1,
+		QuestProgress = 0,
+		OrdersDone = 0,
+		Species = {},
+		Trolls = {},
 	}
 end
 
@@ -108,6 +123,19 @@ local function reconcile(saved: any): Profile
 	if type(saved) == "table" then
 		for key, value in saved do
 			(profile :: any)[key] = value
+		end
+		-- Saves from before levels existed: start at a level that keeps open every zone you already own
+		-- animals in (so nobody gets locked out of what they were playing)
+		if saved.Level == nil and type(saved.Owned) == "table" then
+			local level = 1
+			for animalId in saved.Owned do
+				local animal = Config.Animals.ById[animalId]
+				local arena = animal and Config.Arenas.ByTier[animal.Tier]
+				if arena then
+					level = math.max(level, Config.Levels.ZoneLevels[arena.Id] or 1)
+				end
+			end
+			profile.Level = level
 		end
 		-- Saves from before the tutorial existed: anyone who has mailed something already knows how to play
 		if saved.TutorialDone == nil and type(saved.Mailed) == "number" and saved.Mailed > 0 then

@@ -4,6 +4,7 @@
 --   Ui.window       a popup: colored title bar, cream body, red X
 --   Ui.button       a chunky glossy button (set BackgroundColor3 to recolor it any time)
 --   Ui.sideButton   a big square icon button with a label (PEN, SHOP, ...), like the side buttons in popular sims
+--   Ui.icon         a 2D icon from Config/Icons.luau (your image, or an emoji until you add one)
 --   Ui.label        plain text for inside windows
 --   Ui.outlined     big white text with a dark outline, for the HUD
 --   Ui.modelIcon    a little 3D picture of one of your Blender models
@@ -11,6 +12,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 
 local Ui = {}
@@ -233,6 +235,32 @@ function Ui.modelIcon(parent: Instance, folderName: string, modelName: string, p
 	return viewport
 end
 
+-- A 2D icon from Config/Icons.luau (e.g. "Button_Pen", "Animal_Tiger"): your uploaded image if you've set
+-- its id, otherwise its emoji. `props` sets Size, Position and so on.
+function Ui.icon(parent: Instance, key: string, props: { [string]: any }): GuiObject
+	local entry = Config.Icons[key]
+	local image = entry and entry.Image or ""
+	local object: GuiObject
+	if image ~= "" then
+		object = Ui.make("ImageLabel", {
+			BackgroundTransparency = 1,
+			Image = image,
+			ScaleType = Enum.ScaleType.Fit,
+		}, parent)
+	else
+		object = Ui.make("TextLabel", {
+			BackgroundTransparency = 1,
+			Font = Ui.FONT,
+			TextScaled = true,
+			Text = if entry then entry.Emoji else "❔",
+		}, parent)
+	end
+	for key2, value in props do
+		(object :: any)[key2] = value
+	end
+	return object
+end
+
 -- A chunky glossy button with outlined text. Set BackgroundColor3 to recolor it (the gloss keeps working).
 function Ui.button(parent: Instance, props: { [string]: any }): TextButton
 	local base: { [string]: any } = {
@@ -258,9 +286,8 @@ end
 -- label across the bottom, like PETS / EGGS / SHOP in popular simulators.
 export type SideButtonSpec = {
 	Label: string,
-	Emoji: string,
+	Icon: string, -- a key in Config/Icons.luau (e.g. "Button_Pen")
 	Color: Color3,
-	Model: { string }?, -- { folder, model name }, e.g. { "AnimalModels", "Hamster" }
 	LayoutOrder: number?,
 }
 
@@ -277,26 +304,11 @@ function Ui.sideButton(parent: Instance, spec: SideButtonSpec): TextButton
 	Ui.border(button, 3)
 	Ui.gloss(button)
 	Ui.press(button)
-	local icon: GuiObject? = nil
-	local model = spec.Model
-	if model then
-		icon = Ui.modelIcon(button, model[1], model[2], {
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.new(0.5, 0, 0, 2),
-			Size = UDim2.fromOffset(58, 58),
-		})
-	end
-	if not icon then
-		Ui.make("TextLabel", {
-			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.new(0.5, 0, 0, 6),
-			Size = UDim2.fromOffset(52, 46),
-			BackgroundTransparency = 1,
-			Font = Ui.FONT,
-			TextScaled = true,
-			Text = spec.Emoji,
-		}, button)
-	end
+	Ui.icon(button, spec.Icon, {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 5),
+		Size = UDim2.fromOffset(54, 50),
+	})
 	Ui.outlined(button, {
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, 6),

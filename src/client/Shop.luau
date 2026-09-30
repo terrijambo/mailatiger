@@ -16,16 +16,7 @@ local player = Players.LocalPlayer
 
 local Shop = {}
 
-local TABS = { "Boxes", "Tools", "Stamps", "Chutes", "Rebirth" }
-
--- Which PropModels picture goes with each tool
-local TOOL_MODELS: { [string]: string } = {
-	Gloves = "GrabbingGloves",
-	Sneakers = "Sneakers",
-	TapeGun = "TapeGun",
-	Net = "ButterflyNet",
-	MailBag = "Parcel",
-}
+local TABS = { "Boxes", "Tools", "Stamps", "Chutes", "Trolls", "Rebirth" }
 
 local function rebirthCost(rebirths: number): number
 	local rebirth = Config.Progression.Rebirth
@@ -64,23 +55,20 @@ function Shop.Start()
 	local tabButtons: { [string]: TextButton } = {}
 	local rebirthArmedUntil = 0
 
-	-- One row: a 3D picture (if that model is imported), name + description, then one or two buttons.
-	-- icon = { folder, model name }, e.g. { "BoxModels", "Steel" }
-	local function row(order: number, title: string, description: string, icon: { string }?): Frame
+	-- One row: an icon (a key in Config/Icons.luau), name + description, then one or two buttons
+	local function row(order: number, title: string, description: string, icon: string?): Frame
 		local frame = Ui.card(list, {
 			LayoutOrder = order,
 			Size = UDim2.new(1, -12, 0, 70),
 			BackgroundColor3 = Ui.WHITE,
 		})
 		local left = 14
-		if
-			icon
-			and Ui.modelIcon(frame, icon[1], icon[2], {
-				Position = UDim2.fromOffset(6, 3),
-				Size = UDim2.fromOffset(64, 64),
+		if icon then
+			Ui.icon(frame, icon, {
+				Position = UDim2.fromOffset(10, 9),
+				Size = UDim2.fromOffset(52, 52),
 			})
-		then
-			left = 76
+			left = 72
 		end
 		Ui.label(frame, {
 			Position = UDim2.fromOffset(left, 8),
@@ -130,7 +118,7 @@ function Shop.Start()
 					index,
 					box.DisplayName,
 					`Animals start at {box.StartAnger} anger · get angry {math.round(box.AngerMult * 100)}% as fast`,
-					{ "BoxModels", box.Id }
+					`Box_{box.Id}`
 				)
 				if profile.EquippedBox == box.Id then
 					rowButton(frame, 1, "Equipped", Ui.GREEN, nil)
@@ -152,7 +140,7 @@ function Shop.Start()
 					index,
 					`{tool.DisplayName}  (Lv {level}/{tool.MaxLevel}){now}`,
 					tool.Description,
-					{ "PropModels", TOOL_MODELS[tool.Id] or "" }
+					`Tool_{tool.Id}`
 				)
 				if level >= tool.MaxLevel then
 					rowButton(frame, 1, "MAXED", Ui.GREEN, nil)
@@ -179,12 +167,8 @@ function Shop.Start()
 			end
 			for index, stamp in Config.Stamps.List do
 				local count = profile.Stamps[stamp.Id] or 0
-				local frame = row(
-					index,
-					`{stamp.DisplayName}  (you have {count})`,
-					stamp.Description,
-					{ "PropModels", "RubberStamp" }
-				)
+				local frame =
+					row(index, `{stamp.DisplayName}  (you have {count})`, stamp.Description, `Stamp_{stamp.Id}`)
 				rowButton(frame, 1, `Buy: {Format.Short(stamp.Price)}`, Ui.ORANGE, function()
 					shopAction:FireServer("BuyStamp", stamp.Id)
 				end)
@@ -205,7 +189,7 @@ function Shop.Start()
 					index,
 					`{chute.DisplayName}  (+{pay}% pay, {chute.HoldTime}s to mail)`,
 					chute.Description,
-					{ "PropModels", chute.Model }
+					`Chute_{chute.Id}`
 				)
 				if index == current then
 					rowButton(frame, 1, "Installed", Ui.GREEN, nil)
@@ -217,6 +201,27 @@ function Shop.Start()
 					end)
 				else
 					rowButton(frame, 1, "Locked", Ui.GREY, nil)
+				end
+			end
+		elseif currentTab == "Trolls" then
+			-- Troll items: unlock by level, buy once, use from the hotbar. Only affect Chaos Mode players.
+			for index, troll in Config.Trolls.List do
+				local owned = profile.Trolls and profile.Trolls[troll.Id]
+				local locked = (profile.Level or 1) < troll.Level
+				local frame = row(
+					index,
+					`{troll.DisplayName}  (Level {troll.Level}, {troll.Cooldown}s cooldown)`,
+					troll.Description,
+					`Troll_{troll.Id}`
+				)
+				if owned then
+					rowButton(frame, 1, "Owned ✓", Ui.GREEN, nil)
+				elseif locked then
+					rowButton(frame, 1, `🔒 Level {troll.Level}`, Ui.GREY, nil)
+				else
+					rowButton(frame, 1, `Buy: {Format.Short(troll.Price)}`, Ui.ORANGE, function()
+						shopAction:FireServer("BuyTroll", troll.Id)
+					end)
 				end
 			end
 		elseif currentTab == "Rebirth" then
@@ -257,7 +262,7 @@ function Shop.Start()
 	for index, name in TABS do
 		local button = Ui.button(tabBar, {
 			LayoutOrder = index,
-			Size = UDim2.fromOffset(120, 36),
+			Size = UDim2.fromOffset(104, 36),
 			TextSize = 18,
 			Text = name,
 		})

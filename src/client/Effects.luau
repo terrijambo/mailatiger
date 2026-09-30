@@ -182,6 +182,16 @@ function Effects.Start()
 			shakeCamera(2, 0.4)
 			fovPunch(22, 0.9)
 			Ragdoll.Launch(data.Velocity, data.Seconds)
+		elseif kind == "LevelUp" then
+			local at = myPosition()
+			if at then
+				confetti(at + Vector3.new(0, 3, 0), 90)
+			end
+			fovPunch(10, 0.8)
+		elseif kind == "Slip" then
+			-- Slipped on a banana peel: a little flop
+			shakeCamera(0.8, 0.2)
+			Ragdoll.Launch(Vector3.new(0, 18, 0), data.Seconds)
 		elseif kind == "Parcel" then
 			-- Taped and stamped! A little celebration, bigger for better ratings
 			local at = myPosition()

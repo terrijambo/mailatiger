@@ -26,6 +26,9 @@ local FOR_EVENT: { [string]: string } = {
 	OpenPen = "Click",
 	OpenShop = "Click",
 	OpenOrders = "Click",
+	LevelUp = "Ding",
+	QuestDone = "Ding",
+	NewSpecies = "CoinJingle",
 }
 
 function Audio.Start()

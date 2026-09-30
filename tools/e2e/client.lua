@@ -241,6 +241,13 @@ local function run()
 	local after = profile()
 	log(after.Mailed == 1 and #after.Parcels == 0, "save: Mailed=1 and the bag is empty")
 	log(after.Coins > startCoins, "got paid (" .. startCoins .. " -> " .. after.Coins .. ")")
+	log(waitFor(function()
+		return (profile().XP or 0) > 0 or (profile().Level or 1) > 1
+	end, 3), "mailing gave XP")
+	log(waitFor(function()
+		return (profile().Quest or 1) >= 2
+	end, 3), "first quest (mail a Hamster) completed")
+	log(((profile().Species or {}).Hamster or 0) == 1, "the Hamster is in the collection")
 
 	dumpUi("hud")
 
@@ -375,7 +382,26 @@ local function run()
 			return player:GetAttribute("Stage") == ""
 		end, 3)
 	end
+	-- Zone locks: a low-level player can't take a Tiger yet
 	goTo(map.PenCounter)
+	remotes.RequestAnimal:FireServer("Tiger", false)
+	task.wait(1)
+	log(player:GetAttribute("Stage") == "" and string.find(lastMessage or "", "Level", 1, true) ~= nil, "Tiger refused while its zone is locked")
+	-- The test place lets the test jump to a high level (E2EServer), to try the later zones and troll items
+	ReplicatedStorage:WaitForChild("E2ESetLevel"):FireServer(25)
+	log(waitFor(function()
+		return (profile().Level or 1) >= 25
+	end, 3), "test player set to level 25")
+	remotes.ShopAction:FireServer("BuyTroll", "BananaPeel")
+	log(waitFor(function()
+		return (profile().Trolls or {}).BananaPeel == true
+	end, 3), "bought a Banana Peel")
+	log(gui:WaitForChild("TrollBar", 3) ~= nil and gui.TrollBar.Enabled, "troll hotbar shows up")
+	local used = events.TrollUsed or 0
+	remotes.Troll:FireServer("BananaPeel")
+	log(waitFor(function()
+		return (events.TrollUsed or 0) > used
+	end, 3), "used the Banana Peel")
 	remotes.RequestAnimal:FireServer("Tiger", false)
 	log(waitFor(function()
 		return player:GetAttribute("Stage") == "Catch"

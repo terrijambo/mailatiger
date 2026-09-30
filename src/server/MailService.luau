@@ -21,6 +21,7 @@ local MapBuilder = require(script.Parent.MapBuilder)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Orders = require(script.Parent.Orders)
+local ProgressionService = require(script.Parent.ProgressionService)
 local Remotes = require(script.Parent.Remotes)
 
 type Parcel = DataService.Parcel
@@ -189,14 +190,17 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 
 	local total, orderBonus, best = 0, 0, 1
 	local lines = {}
+	local progress: { { AnimalId: string, Stars: number, Orders: number } } = {} -- XP and quests, after paying
 	for _, parcel in profile.Parcels do
 		local pay = math.max(1, math.round(parcel.Coins * chute.PayMult))
 		total += pay
-		orderBonus += Orders.OnMailed(profile, parcel.AnimalId, {
+		local bonus, completed = Orders.OnMailed(profile, parcel.AnimalId, {
 			Stars = parcel.Stars,
 			Escapes = parcel.Escapes,
 			UnderPar = parcel.UnderPar,
 		})
+		orderBonus += bonus
+		table.insert(progress, { AnimalId = parcel.AnimalId, Stars = parcel.Stars, Orders = completed })
 		-- Leaderboard stats
 		profile.Mailed += 1
 		if parcel.Stars == 5 then
@@ -234,6 +238,15 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	local count = #profile.Parcels
 	profile.Parcels = {}
 	Economy.AddCoins(player, total + orderBonus, "MailPayout") -- (one update, so the HUD shows one "+N")
+	-- XP, the collection and quests, once the coins have landed
+	task.defer(function()
+		for _, entry in progress do
+			ProgressionService.OnParcelMailed(player, entry.AnimalId, entry.Stars)
+			for _ = 1, entry.Orders do
+				ProgressionService.OnOrderDone(player, entry.AnimalId)
+			end
+		end
+	end)
 	Analytics.Onboarding(player, "Mailed")
 	refreshCarried(player)
 	LeaderboardService.Submit(player)

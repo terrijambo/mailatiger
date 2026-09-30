@@ -28,6 +28,13 @@ export type Data = {
 	ChuteTier: string,
 	TutorialDone: boolean?,
 	Settings: { [string]: boolean }?,
+	Level: number,
+	XP: number,
+	Quest: number,
+	QuestProgress: number,
+	OrdersDone: number,
+	Species: { [string]: number },
+	Trolls: { [string]: boolean },
 }
 
 local EMPTY: Data = {
@@ -44,6 +51,13 @@ local EMPTY: Data = {
 	Mailed = 0,
 	Orders = {},
 	OrdersRefreshAt = 0,
+	Level = 1,
+	XP = 0,
+	Quest = 1,
+	QuestProgress = 0,
+	OrdersDone = 0,
+	Species = {},
+	Trolls = {},
 }
 
 function Profile.Get(): Data

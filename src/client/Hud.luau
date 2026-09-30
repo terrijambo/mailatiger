@@ -15,6 +15,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
+local QuestText = require(script.Parent.QuestText)
 local Ui = require(script.Parent.Ui)
 
 local player = Players.LocalPlayer
@@ -29,19 +30,14 @@ local BOOST_ORANGE = Color3.fromRGB(255, 170, 60)
 Hud.Short = Format.Short
 
 -- One row of the stats stack: an emoji icon and a big outlined value
+-- (icon is a key in Config/Icons.luau)
 local function statRow(parent: Instance, order: number, icon: string, color: Color3): (Frame, TextLabel)
 	local row = Ui.make("Frame", {
 		LayoutOrder = order,
 		Size = UDim2.fromOffset(260, 44),
 		BackgroundTransparency = 1,
 	}, parent)
-	Ui.make("TextLabel", {
-		Size = UDim2.fromOffset(44, 44),
-		BackgroundTransparency = 1,
-		Font = Ui.FONT,
-		TextScaled = true,
-		Text = icon,
-	}, row)
+	Ui.icon(row, icon, { Size = UDim2.fromOffset(44, 44) })
 	local value = Ui.outlined(row, {
 		Position = UDim2.fromOffset(52, 0),
 		Size = UDim2.new(1, -52, 1, 0),
@@ -74,9 +70,47 @@ function Hud.Start()
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
 	}, stack)
-	local boostRow, boostLabel = statRow(stack, 1, "⚡", BOOST_ORANGE)
-	local _, bagLabel = statRow(stack, 2, "📦", BAG_TAN)
-	local coinRow, coinsLabel = statRow(stack, 3, "💰", COIN_GREEN)
+	local boostRow, boostLabel = statRow(stack, 1, "Hud_Boost", BOOST_ORANGE)
+	local _, bagLabel = statRow(stack, 2, "Hud_Bag", BAG_TAN)
+	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
+
+	-- Level + XP bar (top of the stack)
+	local levelRow, levelLabel = statRow(stack, 0, "Hud_Level", Ui.GOLD)
+	levelLabel.Size = UDim2.fromOffset(90, 44)
+	local xpBack = Ui.make("Frame", {
+		Position = UDim2.fromOffset(136, 12),
+		Size = UDim2.fromOffset(150, 20),
+		BackgroundColor3 = Color3.fromRGB(30, 30, 40),
+		BackgroundTransparency = 0.2,
+	}, levelRow)
+	Ui.round(xpBack, 10)
+	Ui.border(xpBack, 2)
+	local xpFill = Ui.make("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		BackgroundColor3 = Color3.fromRGB(80, 200, 255),
+	}, xpBack)
+	Ui.round(xpFill, 10)
+	Ui.gloss(xpFill)
+	local xpText = Ui.outlined(xpBack, {
+		Size = UDim2.fromScale(1, 1),
+		Font = Ui.FONT,
+		TextSize = 14,
+		Text = "",
+		ZIndex = 3,
+	})
+	stack.Size = UDim2.fromOffset(300, 200)
+	local function refreshLevel()
+		local data = Profile.Get()
+		local level = data.Level or 1
+		local need = Config.Levels.XPToNext(level)
+		levelLabel.Text = `Lv {level}`
+		local fraction = if level >= Config.Levels.MaxLevel then 1 else math.clamp((data.XP or 0) / need, 0, 1)
+		TweenService:Create(xpFill, TweenInfo.new(0.4), { Size = UDim2.fromScale(fraction, 1) }):Play()
+		xpText.Text = if level >= Config.Levels.MaxLevel
+			then "MAX"
+			else `{Format.Short(data.XP or 0)} / {Format.Short(need)} XP`
+	end
+	Profile.Watch(refreshLevel)
 
 	-- The coin counter rolls up to its new value, bounces, and floats a "+123" when you get paid
 	local shownCoins = Instance.new("NumberValue")
@@ -151,9 +185,46 @@ function Hud.Start()
 		Text = "",
 	})
 	Ui.make("UITextSizeConstraint", { MaxTextSize = 38 }, objective)
-	local status = Ui.outlined(gui, {
+	-- Quest tracker: Gruff's current main quest, under the banner
+	local questPill = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 64),
+		Size = UDim2.fromOffset(460, 30),
+		BackgroundColor3 = Color3.fromRGB(40, 30, 20),
+		BackgroundTransparency = 0.3,
+	}, gui)
+	Ui.round(questPill, 15)
+	Ui.autoScale(questPill)
+	local questFill = Ui.make("Frame", {
+		Size = UDim2.fromScale(0, 1),
+		BackgroundColor3 = Color3.fromRGB(255, 190, 60),
+		BackgroundTransparency = 0.55,
+	}, questPill)
+	Ui.round(questFill, 15)
+	Ui.icon(questPill, "Hud_Quest", { Position = UDim2.fromOffset(6, 2), Size = UDim2.fromOffset(26, 26), ZIndex = 2 })
+	local questLabel = Ui.outlined(questPill, {
+		Position = UDim2.fromOffset(38, 0),
+		Size = UDim2.new(1, -46, 1, 0),
+		Font = Ui.FONT,
+		TextSize = 17,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		Text = "",
+		ZIndex = 2,
+	})
+	local function refreshQuest()
+		local quest = QuestText.Current()
+		questLabel.Text = if quest.Done
+			then quest.Text
+			else `QUEST: {quest.Text}{if quest.Progress ~= "" then "  ·  " .. quest.Progress else ""}`
+		questFill.Size = UDim2.fromScale(quest.Fraction, 1)
+		questPill.Visible = player:GetAttribute("Stage") ~= "Box"
+	end
+	Profile.Watch(refreshQuest)
+	player:GetAttributeChangedSignal("Stage"):Connect(refreshQuest)
+
+	local status = Ui.outlined(gui, {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 98),
 		Size = UDim2.fromOffset(640, 22),
 		Font = Ui.FONT,
 		TextSize = 17,
@@ -231,7 +302,7 @@ function Hud.Start()
 	}, gui.Parent)
 	local toast = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 94),
+		Position = UDim2.new(0.5, 0, 0, 124),
 		Size = UDim2.fromOffset(470, 124),
 		BackgroundColor3 = Ui.PAPER,
 		Visible = false,
@@ -241,7 +312,7 @@ function Hud.Start()
 		-- In the corner while the BOX screen or a menu window is up, so it never covers what you're using
 		local corner = player:GetAttribute("Stage") == "Box" or Menus.AnyOpen()
 		toast.AnchorPoint = if corner then Vector2.new(1, 1) else Vector2.new(0.5, 0)
-		toast.Position = if corner then UDim2.new(1, -14, 1, -14) else UDim2.new(0.5, 0, 0, 94)
+		toast.Position = if corner then UDim2.new(1, -14, 1, -14) else UDim2.new(0.5, 0, 0, 124)
 	end
 	player:GetAttributeChangedSignal("Stage"):Connect(placeToast)
 	placeToast()
@@ -389,6 +460,56 @@ function Hud.Start()
 		end)
 	end
 
+	-- LEVEL UP: a big burst in the middle of the screen with what just unlocked
+	local levelLayer = Ui.make("ScreenGui", {
+		Name = "LevelUp",
+		ResetOnSpawn = false,
+		DisplayOrder = 7,
+		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	}, gui.Parent)
+	local function showLevelUp(level: number, coins: number, unlocks: { string })
+		local card = Ui.make("Frame", {
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.fromScale(0.5, 0.4),
+			Size = UDim2.fromOffset(420, 150 + #unlocks * 28),
+			BackgroundTransparency = 1,
+		}, levelLayer)
+		local sizer = Ui.autoScale(card)
+		Ui.outlined(card, {
+			Size = UDim2.new(1, 0, 0, 70),
+			TextSize = 64,
+			TextColor3 = Ui.GOLD,
+			Text = "LEVEL UP!",
+		})
+		Ui.outlined(card, {
+			Position = UDim2.fromOffset(0, 66),
+			Size = UDim2.new(1, 0, 0, 40),
+			TextSize = 36,
+			Text = `Level {level}   +{Format.Short(coins)} coins`,
+		})
+		for index, unlock in unlocks do
+			Ui.outlined(card, {
+				Position = UDim2.fromOffset(0, 104 + index * 28),
+				Size = UDim2.new(1, 0, 0, 28),
+				Font = Ui.FONT,
+				TextSize = 22,
+				TextColor3 = Color3.fromRGB(150, 255, 150),
+				Text = `NEW: {unlock}`,
+			})
+		end
+		local full = Ui.screenScale()
+		sizer.Scale = full * 0.3
+		TweenService
+			:Create(sizer, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = full })
+			:Play()
+		task.delay(3.5, function()
+			local fade = TweenService:Create(sizer, TweenInfo.new(0.3), { Scale = full * 0.01 })
+			fade:Play()
+			fade.Completed:Wait()
+			card:Destroy()
+		end)
+	end
+
 	local SPEAKER_COLORS: { [string]: Color3 } = {
 		["Postmaster Gruff"] = Ui.BLUE,
 		["Supply Shop"] = Ui.ORANGE,
@@ -431,6 +552,46 @@ function Hud.Start()
 			showToast("Pssssht!", "You got sprayed. Oh no. OH NO.", nil, nil, Ui.GREEN)
 		elseif kind == "Breakout" then
 			slamStamp("RETURN TO SENDER")
+		elseif kind == "XP" then
+			-- A floating "+36 XP" by the level bar
+			local float = Ui.outlined(levelRow, {
+				Position = UDim2.fromOffset(150, -4),
+				Size = UDim2.fromOffset(140, 28),
+				TextSize = 24,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				TextColor3 = Color3.fromRGB(120, 220, 255),
+				Text = `+{Format.Short(data.Amount)} XP`,
+				ZIndex = 4,
+			})
+			local stroke = float:FindFirstChildOfClass("UIStroke")
+			TweenService
+				:Create(float, TweenInfo.new(1.2), { Position = UDim2.fromOffset(150, -50), TextTransparency = 1 })
+				:Play()
+			if stroke then
+				TweenService:Create(stroke, TweenInfo.new(1.2), { Transparency = 1 }):Play()
+			end
+			task.delay(1.3, function()
+				float:Destroy()
+			end)
+		elseif kind == "LevelUp" then
+			showLevelUp(data.Level, data.Coins, data.Unlocks or {})
+		elseif kind == "QuestDone" then
+			local nextText = if data.Next then `Next: {data.Next}` else "That was the last one. Legend."
+			showToast(
+				`✅ Quest complete: {data.Text}`,
+				nextText,
+				`+{Format.Short(data.XP)} XP   +{Format.Short(data.Coins)} coins`,
+				nil,
+				Ui.GREEN
+			)
+		elseif kind == "NewSpecies" then
+			showToast(
+				`📚 New animal mailed: {data.Animal}!`,
+				"It's in your collection (BAG, then Animals).",
+				`+{Format.Short(data.XP)} XP`,
+				nil,
+				Ui.PURPLE
+			)
 		end
 	end)
 end

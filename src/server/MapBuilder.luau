@@ -13,6 +13,7 @@
 --                Rooftop (150, -320, on top of a 30-stud building with an elevator pad at its foot)
 -- Every arena's gate is on its +Z side, facing town. Arena ids and tiers are in src/shared/Config/Arenas.luau.
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
@@ -92,6 +93,7 @@ local KEEP_MATERIAL = {
 	[Enum.Material.Mud] = true,
 	[Enum.Material.Neon] = true,
 	[Enum.Material.Glass] = true,
+	[Enum.Material.ForceField] = true,
 }
 
 local function part(parent: Instance, props: { [string]: any }): Part
@@ -891,6 +893,59 @@ function MapBuilder.Build(): Map
 			face.Position = Vector3.new(x - 0.63 * k - 0.08, 4.6 * k, z)
 		end
 		leaderboards[id] = face
+	end
+
+	-- Lock barriers: a shimmering wall across the front of each zone that isn't open yet, with the level it
+	-- opens at. Each player's client hides the ones they've unlocked (ZoneLocks.luau). The server does the
+	-- actual keeping-out (Travel.luau), so these don't block anything by themselves.
+	for _, def in Config.Arenas.List do
+		local l = ARENA_LAYOUT[def.Id]
+		local need = Config.Levels.ZoneLevels[def.Id] or 1
+		if l and need > 1 then
+			local front = l.Center.Z + l.HalfZ + (if def.Id == "Rooftop" then 9 else 8)
+			local width = l.HalfX * 2 + 24
+			local wall = part(map, {
+				Name = `ZoneLock_{def.Id}`,
+				Size = Vector3.new(width, 14, 0.6),
+				Position = Vector3.new(l.Center.X, 7, front),
+				Color = Color3.fromRGB(255, 120, 90),
+				Material = Enum.Material.ForceField,
+				CanCollide = false,
+				CanQuery = false,
+			})
+			wall:SetAttribute("ArenaId", def.Id)
+			wall:SetAttribute("Level", need)
+			CollectionService:AddTag(wall, "ZoneLock")
+			local sign = part(map, {
+				Name = "ZoneLockSign",
+				Size = Vector3.new(16, 5, 0.4),
+				Position = Vector3.new(l.Center.X, 6, front + 0.6),
+				Color = Color3.fromRGB(40, 30, 30),
+				CanCollide = false,
+				CanQuery = false,
+			})
+			sign:SetAttribute("ArenaId", def.Id)
+			sign:SetAttribute("Level", need)
+			CollectionService:AddTag(sign, "ZoneLock")
+			local gui = Instance.new("SurfaceGui")
+			gui.Face = Enum.NormalId.Back -- facing town (+Z)
+			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+			gui.PixelsPerStud = 40
+			gui.LightInfluence = 0
+			local label = Instance.new("TextLabel")
+			label.Size = UDim2.fromScale(1, 1)
+			label.BackgroundTransparency = 1
+			label.Font = Enum.Font.LuckiestGuy
+			label.TextScaled = true
+			label.TextWrapped = false
+			label.TextColor3 = Color3.fromRGB(255, 220, 90)
+			label.Text = `🔒 LEVEL {need}`
+			label.Parent = gui
+			local stroke = Instance.new("UIStroke")
+			stroke.Thickness = 4
+			stroke.Parent = label
+			gui.Parent = sign
+		end
 	end
 
 	-- Everything that's just for looks: the island, ocean and mountains, terraces, paths, zone themes

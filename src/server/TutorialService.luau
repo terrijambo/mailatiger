@@ -9,6 +9,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local ProgressionService = require(script.Parent.ProgressionService)
 local Remotes = require(script.Parent.Remotes)
 
 -- Coins for finishing the walkthrough (not for skipping it)
@@ -36,6 +37,7 @@ function TutorialService.Start()
 		profile.TutorialDone = true
 		if action == "Done" then
 			Analytics.Onboarding(player, "TutorialDone")
+			ProgressionService.AddXP(player, Config.Levels.TutorialXP, "Tutorial")
 		else
 			Analytics.Custom(player, "TutorialSkipped")
 		end

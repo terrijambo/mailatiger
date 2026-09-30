@@ -49,21 +49,27 @@ function Store.Start()
 		description: string,
 		button: string,
 		color: Color3,
-		onClick: (() -> ())?
+		onClick: (() -> ())?,
+		icon: string?
 	)
 		local frame = Ui.card(list, {
 			LayoutOrder = order,
 			Size = UDim2.new(1, -12, 0, 64),
 			BackgroundColor3 = Ui.WHITE,
 		})
+		local left = 14
+		if icon then
+			Ui.icon(frame, icon, { Position = UDim2.fromOffset(10, 8), Size = UDim2.fromOffset(48, 48) })
+			left = 68
+		end
 		Ui.label(frame, {
-			Position = UDim2.fromOffset(14, 6),
+			Position = UDim2.fromOffset(left, 6),
 			Size = UDim2.new(1, -180, 0, 24),
 			TextSize = 20,
 			Text = title,
 		})
 		Ui.label(frame, {
-			Position = UDim2.fromOffset(14, 32),
+			Position = UDim2.fromOffset(left, 32),
 			Size = UDim2.new(1, -180, 0, 28),
 			TextSize = 14,
 			TextColor3 = Color3.fromRGB(110, 100, 90),
@@ -121,7 +127,8 @@ function Store.Start()
 						then nil
 						else function()
 							MarketplaceService:PromptGamePassPurchase(player, pass.Id)
-						end
+						end,
+					`Store_{pass.Key}`
 				)
 			end
 		end
@@ -132,7 +139,7 @@ function Store.Start()
 				any = true
 				row(nextOrder(), product.DisplayName, product.Description, `R$ {product.Price}`, Ui.BLUE, function()
 					MarketplaceService:PromptProductPurchase(player, product.Id)
-				end)
+				end, `Store_{product.Key}`)
 			end
 		end
 

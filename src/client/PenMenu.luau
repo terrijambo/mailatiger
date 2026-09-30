@@ -27,7 +27,7 @@ local TIER_COLORS = {
 	Color3.fromRGB(190, 110, 255),
 }
 
-type Card = { Button: TextButton, Status: TextButton, Icon: ViewportFrame? }
+type Card = { Button: TextButton, Status: TextButton, Icon: GuiObject, Lock: GuiObject }
 
 function PenMenu.Start()
 	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "PenMenu", "Animal Pen", Ui.GREEN)
@@ -98,23 +98,20 @@ function PenMenu.Start()
 		Ui.round(top, 14)
 		Ui.gloss(top)
 
-		local icon = Ui.modelIcon(card, "AnimalModels", animal.Id, {
+		local icon = Ui.icon(card, `Animal_{animal.Id}`, {
 			AnchorPoint = Vector2.new(0.5, 0),
-			Position = UDim2.new(0.5, 0, 0, 2),
-			Size = UDim2.fromOffset(92, 88),
+			Position = UDim2.new(0.5, 0, 0, 8),
+			Size = UDim2.fromOffset(80, 76),
 			ZIndex = 2,
 		})
-		if not icon then
-			local dot = Ui.make("Frame", {
-				AnchorPoint = Vector2.new(0.5, 0),
-				Position = UDim2.new(0.5, 0, 0, 14),
-				Size = UDim2.fromOffset(62, 62),
-				BackgroundColor3 = animal.Color or Ui.WHITE,
-				ZIndex = 2,
-			}, card)
-			Ui.round(dot, 31)
-			Ui.border(dot, 2)
-		end
+		-- A padlock over animals whose zone isn't open yet
+		local lock = Ui.icon(card, "Hud_Lock", {
+			AnchorPoint = Vector2.new(1, 0),
+			Position = UDim2.new(1, -6, 0, 26),
+			Size = UDim2.fromOffset(28, 28),
+			ZIndex = 4,
+			Visible = false,
+		})
 		-- Tier badge in the corner
 		local badge = Ui.outlined(card, {
 			Position = UDim2.fromOffset(6, 4),
@@ -167,7 +164,7 @@ function PenMenu.Start()
 		end
 		card.Activated:Connect(pick)
 		status.Activated:Connect(pick)
-		cards[animal.Id] = { Button = card, Status = status, Icon = icon }
+		cards[animal.Id] = { Button = card, Status = status, Icon = icon, Lock = lock }
 	end
 
 	local function refresh()
@@ -177,7 +174,14 @@ function PenMenu.Start()
 			local status = card.Status
 			local owned = data.Owned[animal.Id] == true
 			local affordable = data.Coins >= animal.Price
-			if owned then
+			-- The animal's zone opens at a level (Config/Levels.luau)
+			local arena = Config.Arenas.ByTier[animal.Tier]
+			local needLevel = if arena then Config.Levels.ZoneLevels[arena.Id] or 1 else 1
+			local zoneLocked = (data.Level or 1) < needLevel
+			if zoneLocked then
+				status.Text = `🔒 Lv {needLevel}`
+				status.BackgroundColor3 = Ui.GREY
+			elseif owned then
 				status.Text = "PLAY"
 				status.BackgroundColor3 = Ui.GREEN
 			elseif freeInStudio then
@@ -187,13 +191,17 @@ function PenMenu.Start()
 				status.Text = `BUY {Format.Short(animal.Price)}`
 				status.BackgroundColor3 = Ui.ORANGE
 			else
-				status.Text = `🔒 {Format.Short(animal.Price)}`
-				status.BackgroundColor3 = Ui.GREY
+				status.Text = `💰 {Format.Short(animal.Price)}`
+				status.BackgroundColor3 = Color3.fromRGB(190, 95, 90)
 			end
-			-- Animals you can't have yet show as a dark silhouette
-			local icon = card.Icon
-			if icon then
-				icon.ImageColor3 = if owned or freeInStudio or affordable then Ui.WHITE else Color3.fromRGB(35, 35, 45)
+			card.Lock.Visible = zoneLocked
+			-- Animals you can't have yet are dimmed
+			local dim = zoneLocked or not (owned or freeInStudio or affordable)
+			local iconObject = card.Icon
+			if iconObject:IsA("ImageLabel") then
+				iconObject.ImageColor3 = if dim then Color3.fromRGB(40, 40, 50) else Ui.WHITE
+			elseif iconObject:IsA("TextLabel") then
+				iconObject.TextTransparency = if dim then 0.55 else 0
 			end
 		end
 	end

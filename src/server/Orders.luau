@@ -71,15 +71,17 @@ local function conditionMet(condition: string, result: JobResult): boolean
 end
 
 -- Call after a job is mailed. Marks matching orders done and returns the total bonus earned.
-function Orders.OnMailed(profile: Profile, animalId: string, result: JobResult): number
-	local total = 0
+-- Returns the bonus coins, and how many orders this completed
+function Orders.OnMailed(profile: Profile, animalId: string, result: JobResult): (number, number)
+	local total, completed = 0, 0
 	for _, order in profile.Orders do
 		if not order.Done and order.AnimalId == animalId and conditionMet(order.Condition, result) then
 			order.Done = true
 			total += order.Reward
+			completed += 1
 		end
 	end
-	return total
+	return total, completed
 end
 
 return Orders

@@ -34,7 +34,14 @@ function Economy.Sync(player: Player)
 	-- Your running speed (with Sneakers). The client's Movement module uses it, in town too.
 	player:SetAttribute("WalkSpeed", Economy.WalkSpeed(player))
 	DataService.Sync(player)
+	local hook = Economy.OnSync
+	if hook then
+		hook(player)
+	end
 end
+
+-- Set by ProgressionService: runs after every change to a player's progress (to finish "state" quests)
+Economy.OnSync = nil :: ((Player) -> ())?
 
 -- Base running speed plus Sneakers
 function Economy.WalkSpeed(player: Player): number

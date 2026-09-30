@@ -31,6 +31,7 @@ local Badges = require(script.Parent.Badges)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local MailService = require(script.Parent.MailService)
+local ProgressionService = require(script.Parent.ProgressionService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
@@ -147,6 +148,7 @@ local function setStage(s: Session, stage: string, tip: string)
 		member:SetAttribute("Stage", stage)
 		member:SetAttribute("Tip", tip)
 		member:SetAttribute("Chaos", s.Chaos)
+		member:SetAttribute("JobArena", s.ArenaId) -- lets you stay in a zone you're working in
 		refreshMovement(member)
 	end
 end
@@ -458,6 +460,7 @@ local function endSession(s: Session)
 		member:SetAttribute("Tip", "")
 		member:SetAttribute("Anger", nil)
 		member:SetAttribute("Chaos", false)
+		member:SetAttribute("JobArena", nil)
 		refreshMovement(member)
 	end
 end
@@ -656,6 +659,7 @@ local function leaveCrew(s: Session, helper: Player)
 	helper:SetAttribute("Tip", "")
 	helper:SetAttribute("Anger", nil)
 	helper:SetAttribute("Chaos", false)
+	helper:SetAttribute("JobArena", nil)
 	notify(helper, "BoxDone", {})
 	refreshMovement(helper)
 	CatchAI.RefreshLabel(s)
@@ -910,6 +914,12 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 		gruffSays(player, Gruff.BagFull)
 		return
 	end
+	-- Each zone opens at a level (Config/Levels.luau)
+	local allowed, why = ProgressionService.CanTakeAnimal(player, animalId)
+	if not allowed then
+		gruffSays(player, why or "Not yet.")
+		return
+	end
 	if not Economy.Owns(player, animalId) then
 		local free = Config.Dev.FreeAnimalsInStudio and RunService:IsStudio()
 		if not free and not Economy.TrySpend(player, animal.Price, `Animal_{animalId}`) then
@@ -1067,6 +1077,58 @@ local function onPlayerAdded(player: Player)
 			gruffSays(player, pick(Gruff.WelcomeBack))
 		end
 	end)
+end
+
+---------------------------------------------------------------------------------------------------
+-- For troll items (TrollService). They only ever touch Chaos Mode jobs, never anyone who didn't opt in.
+
+-- Is this player on a Chaos Mode job (owner or crew)?
+function BoxingService.InChaos(player: Player): boolean
+	local s = jobOf(player)
+	return s ~= nil and s.Chaos
+end
+
+-- Spooks every Chaos animal within `radius` of `position` (except the troller's own)
+function BoxingService.SpookNear(position: Vector3, radius: number, byPlayer: Player): number
+	local count = 0
+	for _, s in sessions do
+		local critter = s.Critter
+		if s.Chaos and s.Stage == "Catch" and critter and jobOf(byPlayer) ~= s then
+			if (critter.Position - position).Magnitude <= radius then
+				CatchAI.Spook(s, byPlayer)
+				count += 1
+			end
+		end
+	end
+	return count
+end
+
+-- Makes the nearest Chaos player who's boxing (within `radius`) angrier. Returns who got hit.
+function BoxingService.AngerNearest(position: Vector3, radius: number, byPlayer: Player, amount: number): Player?
+	local best: Session? = nil
+	local bestDistance = radius
+	for _, s in sessions do
+		local root = getCharacterParts(s.Player)
+		if s.Chaos and s.Box and root and jobOf(byPlayer) ~= s then
+			local distance = (root.Position - position).Magnitude
+			if distance <= bestDistance then
+				best, bestDistance = s, distance
+			end
+		end
+	end
+	local target = best
+	if not target then
+		return nil
+	end
+	local state = target.Box :: Types.BoxState
+	state.Anger += amount
+	syncBox(target)
+	notifyAll(target, "Thump", {})
+	return target.Player
+end
+
+function BoxingService.Stun(player: Player, seconds: number)
+	stun(player, seconds)
 end
 
 function BoxingService.Start(builtMap: MapBuilder.Map)

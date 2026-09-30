@@ -17,6 +17,22 @@ local report = Instance.new("RemoteEvent")
 report.Name = "E2EReport"
 report.Parent = ReplicatedStorage
 
+-- Test-only shortcut (this script only exists in the throwaway test place): jump the test player to a level
+local setLevel = Instance.new("RemoteEvent")
+setLevel.Name = "E2ESetLevel"
+setLevel.Parent = ReplicatedStorage
+setLevel.OnServerEvent:Connect(function(player, level)
+	local server = game:GetService("ServerScriptService"):WaitForChild("Server")
+	local DataService = require(server.DataService)
+	local Economy = require(server.Economy)
+	local profile = DataService.Get(player)
+	if profile and typeof(level) == "number" then
+		profile.Level = level
+		profile.XP = 0
+		Economy.Sync(player)
+	end
+end)
+
 local result = nil
 report.OnServerEvent:Connect(function(_player, clientResult)
 	result = clientResult
