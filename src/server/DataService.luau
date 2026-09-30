@@ -56,6 +56,8 @@ export type Profile = {
 	RarestIndex: number, -- position in Animals.List of the rarest animal ever mailed (0 = none)
 	TutorialDone: boolean, -- finished or skipped Gruff's walkthrough
 	Receipts: { string }, -- recent Robux purchase ids already granted (so a retry never pays twice)
+	PaycheckDay: number, -- the last day (days since 1970, UTC) you got Gruff's daily paycheck
+	PaycheckStreak: number, -- days in a row
 }
 
 local DataService = {}
@@ -89,6 +91,8 @@ local function newProfile(): Profile
 		RarestIndex = 0,
 		TutorialDone = false,
 		Receipts = {},
+		PaycheckDay = 0,
+		PaycheckStreak = 0,
 	}
 end
 

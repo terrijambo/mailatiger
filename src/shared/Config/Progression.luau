@@ -8,6 +8,13 @@ return {
 		PayoutBonusPerRebirth = 0.25, -- +25% coins from every job, forever, per rebirth
 	},
 
+	-- Gruff's daily paycheck: paid automatically once a day when you play. Coins = your best animal's base pay
+	-- x JobsPerDay x your streak (days in a row, up to MaxStreak). Miss a day and the streak restarts.
+	Paycheck = {
+		JobsPerDay = 5,
+		MaxStreak = 7,
+	},
+
 	Orders = {
 		Count = 3,
 		RefreshMinutes = 10,

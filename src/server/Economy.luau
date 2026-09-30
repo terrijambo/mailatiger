@@ -101,6 +101,18 @@ function Economy.ToolBonus(player: Player, toolId: string): number
 	return Economy.ToolLevel(player, toolId) * Config.Tools.ById[toolId].PerLevel
 end
 
+-- Base pay of the best animal you own. Rewards scale with it so they stay worth having all game.
+function Economy.BestBaseValue(player: Player): number
+	local profile = DataService.Get(player)
+	local best = 1
+	for _, animal in Config.Animals.List do
+		if profile and profile.Owned[animal.Id] then
+			best = math.max(best, animal.BaseValue)
+		end
+	end
+	return best
+end
+
 function Economy.RebirthCost(rebirths: number): number
 	local rebirth = Config.Progression.Rebirth
 	return math.round(rebirth.BaseCost * rebirth.CostGrowth ^ rebirths)

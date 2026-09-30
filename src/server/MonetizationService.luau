@@ -42,23 +42,12 @@ local function say(player: Player, text: string)
 	Remotes.Notify:FireClient(player, "Message", { Speaker = "Postmaster Gruff", Text = text })
 end
 
--- The best animal you own (by base pay): coin packs scale with it so they stay useful all game
-local function bestBaseValue(profile: DataService.Profile): number
-	local best = 1
-	for _, animal in Config.Animals.List do
-		if profile.Owned[animal.Id] then
-			best = math.max(best, animal.BaseValue)
-		end
-	end
-	return best
-end
-
 -- Gives what a product buys. Returns false if it can't be given right now (e.g. nothing left to unlock),
 -- which tells Roblox not to charge.
 local function grant(player: Player, profile: DataService.Profile, key: string): boolean
 	local jobs = Money.CoinPackJobs[key]
 	if jobs then
-		local coins = bestBaseValue(profile) * jobs
+		local coins = Economy.BestBaseValue(player) * jobs -- scales with your best animal
 		profile.Coins += coins
 		Analytics.Earn(player, coins, profile.Coins, key, true)
 		say(player, `{coins} coins. Don't let it go to your head.`)
