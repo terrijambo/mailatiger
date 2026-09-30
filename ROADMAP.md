@@ -174,6 +174,17 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 - [ ] **You:** live save test (moved from Phase 3): publish, enable API access, then check join/leave/rejoin, two quick rejoins (session lock), and a server shutdown
 - [x] Launch checklist written (README → Launch checklist)
 
+## Overnight extras (2026-09-29)
+Things added beyond the plan while you were away:
+- [x] **Daily paycheck** from Gruff (`server/PaycheckService.luau`): the first time you play each day you're paid 5 jobs' worth of your best animal × your streak (days in a row, max 7). Tune in `Config/Progression.luau` → `Paycheck`
+- [x] **Settings** button (left side): music, sound effects, camera shake & zoom on/off, saved with your progress
+- [x] **Music** slots for town, arena and BOX that fade into each other
+- [x] **Starter sounds**: every slot has a free sound from Roblox's own library (placeholders picked by name, so give them a listen)
+- [x] **Draft icon + thumbnails** rendered from your models (`art/marketing/`)
+- [x] **Model checker** (`tools/check_models.luau`): reads your saved place and lists missing, misplaced or backwards models
+- [x] **Automatic tests** (`tests/run.luau`, ~550 checks): Config consistency and box math, runs in seconds without Studio
+- [x] Layout pass using the real model sizes (post office depth, fence heights, barn size, mud puddles, cap size, leaderboard board)
+
 ## Phase 9 — Live Ops
 - [ ] Weekly limited animal
 - [ ] Seasonal events (Holiday Rush: box reindeer)
