@@ -43,14 +43,10 @@ function TutorialService.Start()
 		if action == "Done" and profile.Mailed > 0 then
 			profile.Coins += REWARD
 			Analytics.Earn(player, REWARD, profile.Coins, "TutorialBonus")
-			Remotes.Notify:FireClient(
-				player,
-				"Message",
-				{
-					Speaker = "Postmaster Gruff",
-					Text = `{Config.Gruff.Tutorial.Reward} (+{Format.Short(REWARD)} coins)`,
-				}
-			)
+			Remotes.Notify:FireClient(player, "Message", {
+				Speaker = "Postmaster Gruff",
+				Text = `{Config.Gruff.Tutorial.Reward} (+{Format.Short(REWARD)} coins)`,
+			})
 		end
 		Economy.Sync(player)
 	end)

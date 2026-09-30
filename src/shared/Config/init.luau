@@ -19,6 +19,10 @@ return {
 	Look = require(script.Look),
 	Codes = require(script.Codes),
 	Badges = require(script.Badges),
+	Levels = require(script.Levels),
+	Quests = require(script.Quests),
+	Trolls = require(script.Trolls),
+	Icons = require(script.Icons),
 
 	Dev = {
 		-- In Roblox Studio every animal is free, so you can test any of them right away.

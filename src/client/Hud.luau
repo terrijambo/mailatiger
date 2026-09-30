@@ -297,11 +297,14 @@ function Hud.Start()
 	}, toast)
 	Ui.make("UIStroke", { Thickness = 2, Color = Color3.fromRGB(110, 0, 0) }, ratingStamp)
 
-	-- Popups wait their turn: each one shows for 5 seconds, or 2.5 if another is waiting behind it
+	-- Popups: each shows about 3.5 seconds, but only 1.2 if another is waiting. At most 2 wait in line (older
+	-- ones are dropped, so you only ever see what's current), and repeats of the same message are skipped.
 	type Toast = { Who: string, Text: string, Foot: string?, Stars: number?, Color: Color3? }
+	local MAX_WAITING = 2
+	local SHOW_ALONE, SHOW_BUSY = 3.5, 1.2
 	local queue: { Toast } = {}
 	local running = false
-
+	local current: Toast? = nil
 	local function present(item: Toast)
 		placeToast()
 		speaker.Text = item.Who
@@ -331,19 +334,30 @@ function Hud.Start()
 	end
 
 	local function showToast(who: string, text: string, foot: string?, stars: number?, color: Color3?)
-		table.insert(queue, { Who = who, Text = text, Foot = foot, Stars = stars, Color = color })
+		local item: Toast = { Who = who, Text = text, Foot = foot, Stars = stars, Color = color }
+		local last = queue[#queue] or current
+		if last and last.Who == who and last.Text == text then
+			return -- the same message again
+		end
+		table.insert(queue, item)
+		while #queue > MAX_WAITING do
+			table.remove(queue, 1)
+		end
 		if running then
 			return
 		end
 		running = true
 		task.spawn(function()
 			while #queue > 0 do
-				present(table.remove(queue, 1) :: Toast)
+				local nextItem = table.remove(queue, 1) :: Toast
+				current = nextItem
+				present(nextItem)
 				local shown = 0
-				while shown < 5 and not (shown >= 2.5 and #queue > 0) do
+				while shown < SHOW_ALONE and not (shown >= SHOW_BUSY and #queue > 0) do
 					shown += task.wait(0.1)
 				end
 			end
+			current = nil
 			toast.Visible = false
 			running = false
 		end)
