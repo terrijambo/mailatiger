@@ -161,7 +161,7 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 | Priority Stamp Pack | product | 29 | 5 Priority stamps |
 | Buy Gruff a Coffee | product | 5 | Nothing. Gruff says thanks, grudgingly. A tip jar |
 
-- [x] Code: `server/MonetizationService.luau` (pass checks on join and on purchase, safe ProcessReceipt that writes the purchase id into the save before telling Roblox "granted", so retries never pay twice), `client/Store.luau` (green **Store** button on the left, only lists items you've set up), hooks for 2x coins (Economy), bag size (server + client) and VIP tape/tag
+- [x] Code: `server/MonetizationService.luau` (pass checks on join and on purchase, safe ProcessReceipt that writes the purchase id into the save before telling Roblox "granted", so retries never pay twice), `client/Store.luau` (green **Store** button at the top-left, only lists items you've set up), hooks for 2x coins (Economy), bag size (server + client) and VIP tape/tag
 - [x] No random crates. **Nothing affects Chaos Mode fights**: no pass changes shove, spook, speed or anger. Double Coins only changes pay
 - [ ] **You:** approve or edit the table, then create the passes and products (steps in README → Launch checklist)
 - [ ] **You:** private servers: Creator Dashboard → your game → Monetization → Private Servers (suggest free or 100 Robux)
