@@ -36,7 +36,7 @@ local C = {
 	Brick = Color3.fromRGB(214, 124, 88), -- terrace sides
 	Stone = Color3.fromRGB(238, 238, 244),
 	Path = Color3.fromRGB(78, 80, 92), -- roads
-	Sidewalk = Color3.fromRGB(214, 216, 224),
+	Sidewalk = Color3.fromRGB(186, 188, 196),
 	Line = Color3.fromRGB(250, 250, 250),
 	Wood = Color3.fromRGB(196, 136, 84),
 	White = Color3.fromRGB(250, 250, 250),
@@ -50,7 +50,7 @@ local C = {
 	Dark = Color3.fromRGB(40, 42, 54),
 	Gold = Color3.fromRGB(255, 205, 60),
 	Hedge = Color3.fromRGB(140, 218, 106),
-	Sand = Color3.fromRGB(248, 226, 172),
+	Sand = Color3.fromRGB(236, 206, 148),
 }
 
 -- Leafy greens for trees, picked by position so the world doesn't look copy-pasted

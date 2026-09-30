@@ -63,7 +63,7 @@ local COLORS = {
 	Grass = Color3.fromRGB(122, 204, 92),
 	DarkGrass = Color3.fromRGB(88, 178, 74),
 	Dirt = Color3.fromRGB(214, 168, 112),
-	Stone = Color3.fromRGB(236, 200, 170), -- plaza paving (peach)
+	Stone = Color3.fromRGB(170, 168, 164), -- plaza paving (grey stone)
 	Wood = Color3.fromRGB(196, 136, 84),
 	Yellow = Color3.fromRGB(255, 220, 90),
 	PostRed = Color3.fromRGB(226, 72, 66),
@@ -80,6 +80,10 @@ local COLORS = {
 	Concrete = Color3.fromRGB(186, 190, 202),
 	Metal = Color3.fromRGB(196, 200, 212),
 }
+
+-- The plaza's material. SmoothPlastic gives flat grey tiles; try Enum.Material.Quartz (or Marble, Slate)
+-- for a stone texture instead.
+local PLAZA_MATERIAL = Enum.Material.SmoothPlastic
 
 -- Everything is smooth plastic except materials that matter: Ice (you slide), Mud (slows you),
 -- Neon (glows) and Glass (see-through)
@@ -98,7 +102,7 @@ local function part(parent: Instance, props: { [string]: any }): Part
 	for key, value in props do
 		(p :: any)[key] = value
 	end
-	if not KEEP_MATERIAL[p.Material] then
+	if not KEEP_MATERIAL[p.Material] and p.Material ~= PLAZA_MATERIAL then
 		p.Material = Enum.Material.SmoothPlastic
 	end
 	p.Parent = parent
@@ -703,7 +707,46 @@ function MapBuilder.Build(): Map
 	map.Parent = Workspace
 
 	-- Hub town plaza + spawn (the island itself is terrain, made in Scenery.luau)
-	block(map, "Plaza", PLAZA_MIN - Vector3.new(0, 0.2, 0), PLAZA_MAX + Vector3.new(0, 0.1, 0), COLORS.Stone)
+	block(map, "Plaza", PLAZA_MIN - Vector3.new(0, 0.2, 0), PLAZA_MAX + Vector3.new(0, 0.1, 0), COLORS.Stone, {
+		Material = PLAZA_MATERIAL,
+	})
+	-- Big paving tiles: darker grout lines every 12 studs, and a darker stone border around the edge
+	local grout = Color3.fromRGB(140, 138, 134)
+	local plazaSize = PLAZA_MAX - PLAZA_MIN
+	local plazaCenter = (PLAZA_MIN + PLAZA_MAX) / 2
+	for x = PLAZA_MIN.X + 12, PLAZA_MAX.X - 1, 12 do
+		part(map, {
+			Name = "Grout",
+			Size = Vector3.new(0.4, 0.04, plazaSize.Z),
+			Position = Vector3.new(x, 0.12, plazaCenter.Z),
+			Color = grout,
+			CanCollide = false,
+		})
+	end
+	for z = PLAZA_MIN.Z + 12, PLAZA_MAX.Z - 1, 12 do
+		part(map, {
+			Name = "Grout",
+			Size = Vector3.new(plazaSize.X, 0.04, 0.4),
+			Position = Vector3.new(plazaCenter.X, 0.12, z),
+			Color = grout,
+			CanCollide = false,
+		})
+	end
+	for _, edge in
+		{
+			{ Vector3.new(plazaCenter.X, 0, PLAZA_MIN.Z + 1.5), Vector3.new(plazaSize.X, 0.3, 3) },
+			{ Vector3.new(plazaCenter.X, 0, PLAZA_MAX.Z - 1.5), Vector3.new(plazaSize.X, 0.3, 3) },
+			{ Vector3.new(PLAZA_MIN.X + 1.5, 0, plazaCenter.Z), Vector3.new(3, 0.3, plazaSize.Z) },
+			{ Vector3.new(PLAZA_MAX.X - 1.5, 0, plazaCenter.Z), Vector3.new(3, 0.3, plazaSize.Z) },
+		}
+	do
+		part(map, {
+			Name = "PlazaBorder",
+			Size = edge[2],
+			Position = edge[1] + Vector3.new(0, 0.05, 0),
+			Color = Color3.fromRGB(128, 126, 124),
+		})
+	end
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(6, 1, 6)
