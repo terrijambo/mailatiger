@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
@@ -45,7 +46,10 @@ function TutorialService.Start()
 			Remotes.Notify:FireClient(
 				player,
 				"Message",
-				{ Speaker = "Postmaster Gruff", Text = `{Config.Gruff.Tutorial.Reward} (+{REWARD} coins)` }
+				{
+					Speaker = "Postmaster Gruff",
+					Text = `{Config.Gruff.Tutorial.Reward} (+{Format.Short(REWARD)} coins)`,
+				}
 			)
 		end
 		Economy.Sync(player)

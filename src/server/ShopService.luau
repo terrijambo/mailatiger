@@ -7,6 +7,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
 local DataService = require(script.Parent.DataService)
@@ -44,7 +45,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			return
 		end
 		if not Economy.TrySpend(player, box.Price, `Box_{itemId}`) then
-			reply(player, `The {box.DisplayName} costs {box.Price} coins.`)
+			reply(player, `The {box.DisplayName} costs {Format.Short(box.Price)} coins.`)
 			return
 		end
 		profile.Boxes[itemId] = true
@@ -66,7 +67,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		end
 		local price = Config.Tools.PriceFor(tool, level)
 		if not Economy.TrySpend(player, price, `Tool_{itemId}_{level + 1}`) then
-			reply(player, `Level {level + 1} {tool.DisplayName} costs {price} coins.`)
+			reply(player, `Level {level + 1} {tool.DisplayName} costs {Format.Short(price)} coins.`)
 			return
 		end
 		profile.Tools[itemId] = level + 1
@@ -77,7 +78,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			return
 		end
 		if not Economy.TrySpend(player, stamp.Price, `Stamp_{itemId}`) then
-			reply(player, `A {stamp.DisplayName} stamp costs {stamp.Price} coins.`)
+			reply(player, `A {stamp.DisplayName} stamp costs {Format.Short(stamp.Price)} coins.`)
 			return
 		end
 		profile.Stamps[itemId] = (profile.Stamps[itemId] or 0) + 1
@@ -97,7 +98,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			return
 		end
 		if not Economy.TrySpend(player, chute.Price, `Chute_{itemId}`) then
-			reply(player, `The {chute.DisplayName} costs {chute.Price} coins.`)
+			reply(player, `The {chute.DisplayName} costs {Format.Short(chute.Price)} coins.`)
 			return
 		end
 		profile.ChuteTier = itemId
@@ -105,7 +106,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	elseif action == "Rebirth" then
 		local cost = Economy.RebirthCost(profile.Rebirths)
 		if profile.Coins < cost then
-			reply(player, `Rebirth costs {cost} coins.`)
+			reply(player, `Rebirth costs {Format.Short(cost)} coins.`)
 			return
 		end
 		-- Start over, but keep a permanent coin bonus

@@ -219,5 +219,14 @@ for t = 0, 20, 0.25 do
 	check(p.X >= 0 and p.X <= 1 and p.Y >= 0 and p.Y <= BoxMath.VISIBLE_HEIGHT, `a drifting spot left the picture at t={t}`)
 end
 
+section("Number formatting")
+local Format = load(node(ROOT .. "/Format"))
+for input, expected in {
+	[5] = "5", [999] = "999", [1000] = "1k", [1500] = "1.5k", [12500] = "12.5k", [150000] = "150k",
+	[1000000] = "1M", [2500000] = "2.5M", [999999] = "999k", [1e9] = "1B", [3.2e12] = "3.2T",
+} do
+	check(Format.Short(input) == expected, `Format.Short({input}) = {Format.Short(input)}, expected {expected}`)
+end
+
 print(`\n{passes} checks passed, {failures} failed`)
 process.exit(if failures == 0 then 0 else 1)

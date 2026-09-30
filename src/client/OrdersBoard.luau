@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
@@ -82,7 +83,7 @@ function OrdersBoard.Start()
 				TextSize = 20,
 				TextXAlignment = Enum.TextXAlignment.Right,
 				TextColor3 = if order.Done then Ui.GREEN else Color3.fromRGB(200, 140, 0),
-				Text = if order.Done then "DONE ✓" else `+{order.Reward} coins`,
+				Text = if order.Done then "DONE ✓" else `+{Format.Short(order.Reward)} coins`,
 			})
 		end
 		local minutes = math.max(0, math.ceil((profile.OrdersRefreshAt - os.time()) / 60))

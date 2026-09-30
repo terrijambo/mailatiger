@@ -12,6 +12,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
@@ -24,25 +25,8 @@ local COIN_GREEN = Color3.fromRGB(110, 255, 110)
 local BAG_TAN = Color3.fromRGB(255, 205, 120)
 local BOOST_ORANGE = Color3.fromRGB(255, 170, 60)
 
--- Short numbers for big amounts: 9500, 12.5K, 3.2M, 1.05B
-local UNITS: { { From: number, Divide: number, Suffix: string } } = {
-	{ From = 1e12, Divide = 1e12, Suffix = "T" },
-	{ From = 1e9, Divide = 1e9, Suffix = "B" },
-	{ From = 1e6, Divide = 1e6, Suffix = "M" },
-	{ From = 1e4, Divide = 1e3, Suffix = "K" },
-}
-function Hud.Short(n: number): string
-	for _, unit in UNITS do
-		if math.abs(n) >= unit.From then
-			local scaled = n / unit.Divide
-			local text = if math.abs(scaled) >= 100
-				then tostring(math.floor(scaled))
-				else (string.gsub(string.format("%.1f", scaled), "%.0$", ""))
-			return text .. unit.Suffix
-		end
-	end
-	return tostring(n)
-end
+-- Short numbers (1k, 12.5k, 1M): see src/shared/Format.luau
+Hud.Short = Format.Short
 
 -- One row of the stats stack: an emoji icon and a big outlined value
 local function statRow(parent: Instance, order: number, icon: string, color: Color3): (Frame, TextLabel)
@@ -410,18 +394,18 @@ function Hud.Start()
 			showToast(
 				`📦 Taped! {data.Animal} is in your bag ({data.Count}/{data.Capacity})`,
 				"Carry it to the Mail Chute in town and hold E to mail it.",
-				`worth {data.Coins} coins{stamp}`,
+				`worth {Format.Short(data.Coins)} coins{stamp}`,
 				data.Stars,
 				Ui.GREEN
 			)
 		elseif kind == "MailReceipt" then
 			-- You mailed your bag at the chute
-			local extras = if data.OrderBonus > 0 then `   +{data.OrderBonus} from orders!` else ""
+			local extras = if data.OrderBonus > 0 then `   +{Format.Short(data.OrderBonus)} from orders!` else ""
 			local plural = if data.Count == 1 then "parcel" else "parcels"
 			showToast(
 				`✉️ {data.Count} {plural} mailed ({data.Chute})`,
 				`"{data.Line}"   {table.concat(data.Lines, ",  ")}`,
-				`+{data.Coins} coins{extras}`,
+				`+{Format.Short(data.Coins)} coins{extras}`,
 				data.Best,
 				Ui.GOLD
 			)

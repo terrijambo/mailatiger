@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
@@ -37,7 +38,7 @@ local function pay(player: Player)
 		else "Max streak! Keep it up."
 	Remotes.Notify:FireClient(player, "Message", {
 		Speaker = "Postmaster Gruff",
-		Text = `Daily paycheck, day {profile.PaycheckStreak} in a row: +{coins} coins. {tomorrow}`,
+		Text = `Daily paycheck, day {profile.PaycheckStreak} in a row: +{Format.Short(coins)} coins. {tomorrow}`,
 	})
 end
 

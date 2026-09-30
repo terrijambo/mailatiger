@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
@@ -138,7 +139,7 @@ function Shop.Start()
 						shopAction:FireServer("EquipBox", box.Id)
 					end)
 				else
-					rowButton(frame, 1, `Buy: {box.Price}`, Ui.ORANGE, function()
+					rowButton(frame, 1, `Buy: {Format.Short(box.Price)}`, Ui.ORANGE, function()
 						shopAction:FireServer("BuyBox", box.Id)
 					end)
 				end
@@ -156,9 +157,15 @@ function Shop.Start()
 				if level >= tool.MaxLevel then
 					rowButton(frame, 1, "MAXED", Ui.GREEN, nil)
 				else
-					rowButton(frame, 1, `Upgrade: {Config.Tools.PriceFor(tool, level)}`, Ui.ORANGE, function()
-						shopAction:FireServer("UpgradeTool", tool.Id)
-					end)
+					rowButton(
+						frame,
+						1,
+						`Upgrade: {Format.Short(Config.Tools.PriceFor(tool, level))}`,
+						Ui.ORANGE,
+						function()
+							shopAction:FireServer("UpgradeTool", tool.Id)
+						end
+					)
 				end
 			end
 		elseif currentTab == "Stamps" then
@@ -178,7 +185,7 @@ function Shop.Start()
 					stamp.Description,
 					{ "PropModels", "RubberStamp" }
 				)
-				rowButton(frame, 1, `Buy: {stamp.Price}`, Ui.ORANGE, function()
+				rowButton(frame, 1, `Buy: {Format.Short(stamp.Price)}`, Ui.ORANGE, function()
 					shopAction:FireServer("BuyStamp", stamp.Id)
 				end)
 				if profile.SelectedStamp == stamp.Id then
@@ -205,7 +212,7 @@ function Shop.Start()
 				elseif index < current then
 					rowButton(frame, 1, "Owned", Ui.GREY, nil)
 				elseif index == current + 1 then
-					rowButton(frame, 1, `Buy: {chute.Price}`, Ui.ORANGE, function()
+					rowButton(frame, 1, `Buy: {Format.Short(chute.Price)}`, Ui.ORANGE, function()
 						shopAction:FireServer("BuyChute", chute.Id)
 					end)
 				else
@@ -219,7 +226,7 @@ function Shop.Start()
 			local bonusNext = math.round((profile.Rebirths + 1) * rebirth.PayoutBonusPerRebirth * 100)
 			local frame = row(
 				1,
-				`Rebirth #{profile.Rebirths + 1}   (costs {cost} coins)`,
+				`Rebirth #{profile.Rebirths + 1}   (costs {Format.Short(cost)} coins)`,
 				`Resets coins, animals, boxes, tools and stamps. Coin bonus: +{bonusNow}% now, +{bonusNext}% after. Forever.`
 			)
 			local armed = os.clock() < rebirthArmedUntil

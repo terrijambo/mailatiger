@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
@@ -40,7 +41,7 @@ function CodesService.Start()
 			local coins = Economy.BestBaseValue(player) * code.Jobs
 			profile.Coins += coins
 			Analytics.Earn(player, coins, profile.Coins, `Code_{key}`)
-			table.insert(gifts, `{coins} coins`)
+			table.insert(gifts, `{Format.Short(coins)} coins`)
 		end
 		local stamps: { [string]: number } = code.Stamps or {}
 		for stampId, count in stamps do

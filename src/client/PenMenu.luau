@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
@@ -150,7 +151,7 @@ function PenMenu.Start()
 			TextSize = 13,
 			TextXAlignment = Enum.TextXAlignment.Center,
 			TextColor3 = Color3.fromRGB(110, 100, 95),
-			Text = `{TIER_NAMES[animal.Tier] or ""} · pays {animal.BaseValue}`,
+			Text = `{TIER_NAMES[animal.Tier] or ""} · pays {Format.Short(animal.BaseValue)}`,
 		})
 		local status = Ui.button(card, {
 			AnchorPoint = Vector2.new(0.5, 1),
@@ -183,10 +184,10 @@ function PenMenu.Start()
 				status.Text = "FREE (Studio)"
 				status.BackgroundColor3 = Ui.BLUE
 			elseif affordable then
-				status.Text = `BUY {animal.Price}`
+				status.Text = `BUY {Format.Short(animal.Price)}`
 				status.BackgroundColor3 = Ui.ORANGE
 			else
-				status.Text = `🔒 {animal.Price}`
+				status.Text = `🔒 {Format.Short(animal.Price)}`
 				status.BackgroundColor3 = Ui.GREY
 			end
 			-- Animals you can't have yet show as a dark silhouette

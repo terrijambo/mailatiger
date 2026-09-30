@@ -19,6 +19,7 @@ local Economy = require(script.Parent.Economy)
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
 
@@ -227,7 +228,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 
 		local animal = Config.Animals.ById[parcel.AnimalId]
 		local name = if animal then animal.DisplayName else parcel.AnimalId
-		table.insert(lines, `{name} {string.rep("★", parcel.Stars)} +{pay}`)
+		table.insert(lines, `{name} {string.rep("★", parcel.Stars)} +{Format.Short(pay)}`)
 	end
 
 	local count = #profile.Parcels

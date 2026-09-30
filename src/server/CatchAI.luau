@@ -13,6 +13,7 @@ local BoxingConfig = require(ReplicatedStorage.Shared.Config.Boxing)
 local Config = require(ReplicatedStorage.Shared.Config)
 local MapBuilder = require(script.Parent.MapBuilder)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Types = require(script.Parent.Types)
 
 type Session = Types.Session
@@ -211,7 +212,7 @@ local function dropEgg(s: Session)
 		egg:Destroy()
 		local bonus = math.max(1, math.round(animal.BaseValue * Tuning.Eggs.BonusFraction))
 		s.Bonus += bonus
-		api.Say(s.Player, animal.DisplayName, `You picked up an egg! +{bonus} bonus coins.`)
+		api.Say(s.Player, animal.DisplayName, `You picked up an egg! +{Format.Short(bonus)} bonus coins.`)
 	end)
 end
 
