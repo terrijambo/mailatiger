@@ -742,7 +742,14 @@ function MapBuilder.Build(): Map
 			block(map, `Leaderboard_{id}`, Vector3.new(-42, 0, z - 4.5), Vector3.new(-41, 11, z + 4.5), COLORS.PostBlue)
 		local stand = dress(map, "LeaderboardStand", spot(-42.5, 0, z, Vector3.xAxis), 10.5, { face })
 		if stand then
-			ModelFit.Align(stand, Vector3.xAxis, -41.1) -- the scores sit on the board's face
+			ModelFit.Align(stand, Vector3.xAxis, -41.1)
+			-- Shrink the (invisible) score part to fit exactly on the stand's dark board. The numbers come
+			-- from art/blender_scripts/town.py: the stand is 9 wide, its board 8.2 x 7.6 centered 4.6 up,
+			-- set 0.63 back from the front of the plinth.
+			local _, size = stand:GetBoundingBox()
+			local k = math.max(size.X, size.Z) / 9
+			face.Size = Vector3.new(0.2, 7.6 * k, 8.2 * k)
+			face.Position = Vector3.new(-41.1 - 0.63 * k - 0.08, 4.6 * k, z)
 		end
 		leaderboards[id] = face
 	end

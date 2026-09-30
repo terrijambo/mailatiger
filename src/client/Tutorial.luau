@@ -172,7 +172,6 @@ function Tutorial.Start()
 
 	local step = ""
 	local escaped = false
-	local mailed = false
 	local shopUntil = 0
 	local finished = false
 	local connections: { RBXScriptConnection } = {}
@@ -194,7 +193,8 @@ function Tutorial.Start()
 	end
 
 	local function wanted(): string
-		if mailed then
+		-- Mailed something (your save counts it the moment the chute pays you): last step
+		if Profile.Get().Mailed > 0 then
 			return "Shop"
 		end
 		local stage = player:GetAttribute("Stage")
@@ -251,8 +251,6 @@ function Tutorial.Start()
 				escaped = true
 			elseif kind == "BoxStart" then
 				escaped = false
-			elseif kind == "MailReceipt" then
-				mailed = true
 			elseif kind == "OpenShop" and step == "Shop" then
 				finish("Done")
 				return
