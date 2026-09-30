@@ -125,6 +125,11 @@ local function dress(
 	options: ModelFit.SpawnOptions?
 ): Model?
 	local model = ModelFit.Spawn("MapModels", name, floor, size, parent, options)
+	if model then
+		-- e.g. "PenCounterArt": never the same name as the grey part it covers, so code that looks a part
+		-- up by name (like the tutorial arrow) always finds the part
+		model.Name = `{name}Art`
+	end
 	if model and hide then
 		for _, p in hide do
 			(p :: BasePart).Transparency = 1

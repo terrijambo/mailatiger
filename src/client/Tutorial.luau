@@ -228,16 +228,21 @@ function Tutorial.Start()
 		end
 	end
 
+	local function partNamed(name: string): BasePart?
+		local found = map:FindFirstChild(name)
+		return if found and found:IsA("BasePart") then found else nil
+	end
+
 	-- What the arrow points at right now (nil = no arrow, e.g. while the Box screen is up)
 	local function target(): BasePart?
 		if step == "Pen" then
-			return map:FindFirstChild("PenCounter") :: BasePart?
+			return partNamed("PenCounter")
 		elseif step == "Catch" or step == "Escaped" then
 			return myCritter()
 		elseif step == "Mail" then
-			return map:FindFirstChild("MailChute") :: BasePart?
+			return partNamed("MailChute")
 		elseif step == "Shop" then
-			return map:FindFirstChild("ShopCounter") :: BasePart?
+			return partNamed("ShopCounter")
 		end
 		return nil
 	end
