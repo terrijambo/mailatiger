@@ -1,7 +1,8 @@
 --!nocheck
 -- Checks the models you've imported into Studio against the list the game expects.
 -- Reads your saved place file (it never changes it) and reports missing, misplaced and extra models,
--- plus any model whose front (its eyes/face/door) doesn't point the way the game expects (-Z).
+-- any model whose front (its eyes/face/door) doesn't point the way the game expects (-Z), and any part the
+-- game can't color (its name doesn't match anything in src/shared/ArtColors/<Model>.json).
 --
 -- Run it from the project folder after saving in Studio (Ctrl+S):
 --     lune run tools/check_models.luau MailATiger.rbxl
@@ -10,6 +11,7 @@
 local fs = require("@lune/fs")
 local process = require("@lune/process")
 local roblox = require("@lune/roblox")
+local serde = require("@lune/serde")
 
 local EXPECTED = {
 	AnimalModels = {
@@ -72,6 +74,24 @@ for folder, names in EXPECTED do
 		elseif not model:IsA("Model") then
 			report(`{folder}/{name} is a {model.ClassName}, not a Model (import it as one Model with its parts)`)
 		else
+			-- Colors: every part needs a matching entry in its ArtColors file (exact name, or a name containing it)
+			local colorFile = `src/shared/ArtColors/{name}.json`
+			if not fs.isFile(colorFile) then
+				report(`{name} has no {colorFile}, so it will stay grey`)
+			else
+				local colors = serde.decode("json", fs.readFile(colorFile))
+				for _, part in model:GetDescendants() do
+					if part:IsA("BasePart") then
+						local found = colors[part.Name] ~= nil
+						for key in colors do
+							found = found or string.find(string.lower(part.Name), string.lower(key), 1, true) ~= nil
+						end
+						if not found then
+							report(`{folder}/{name} part "{part.Name}" has no color (it'll stay grey; was it renamed?)`)
+						end
+					end
+				end
+			end
 			-- Facing: the front parts should sit on the model's -Z side
 			local lo, hi = nil, nil
 			local fronts = {}
