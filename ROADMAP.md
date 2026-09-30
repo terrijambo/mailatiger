@@ -166,11 +166,12 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 - [ ] **You:** private servers: Creator Dashboard → your game → Monetization → Private Servers (suggest free or 100 Robux)
 
 ## Phase 8 — Launch Prep
-- [ ] Icon + thumbnails + trailer clip (RETURN TO SENDER!)
-- [ ] Analytics events (funnel: join → first catch → first mail → first unlock → rebirth)
+- [ ] **You:** icon + thumbnails + trailer clip (RETURN TO SENDER!). Steps in README → Launch checklist
+- [x] Analytics (`server/Analytics.luau`, Roblox's built-in dashboards): onboarding funnel (joined → picked animal → caught → taped → mailed → tutorial done), every coin source and sink with item names, and custom events for launches, escapes, rebirths and tutorial skips
 - [ ] Soft launch → fix retention drop-offs → sponsored ads
-- [ ] Anti-exploit review: the server already rate-limits petting and taping. Consider checking tape strokes server-side too
-- [ ] Live save test (moved from Phase 3): publish, enable API access, then check join/leave/rejoin, two quick rejoins (session lock), and a server shutdown
+- [x] Anti-exploit review (2026-09-29): every client → server remote has a per-player rate limit (`Remotes.Listen`). Every handler checks its argument types, and the server re-checks distance, coins, ownership, stage and role. Pet calm is time-based, so spamming can't calm faster than a perfect human. Tape has a minimum gap per seam. Tiger times under 5s are ignored on the leaderboard. Robux receipts are idempotent. **Known limits (normal for Roblox):** an exploiter can teleport or speed-hack their own character (Roblox gives clients control of their character), and can "play perfectly" in the BOX stage, which is no faster than a skilled human
+- [ ] **You:** live save test (moved from Phase 3): publish, enable API access, then check join/leave/rejoin, two quick rejoins (session lock), and a server shutdown
+- [x] Launch checklist written (README → Launch checklist)
 
 ## Phase 9 — Live Ops
 - [ ] Weekly limited animal
