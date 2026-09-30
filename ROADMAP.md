@@ -121,7 +121,7 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 - [x] Each arena has a BACK TO TOWN pad. Mailed boxes fly all the way to the chute in town (farther = higher arc)
 - [x] Obstacle-aware AI (`CatchAI.luau`): animals steer around trees, bales, bushes and AC units, slide along them instead of passing through, and use them as corners you can trap them against
 - [x] Client movement module (`client/Movement.luau`): sneak (C), mud slow, and ice sliding, all built on the server's speed so Sneakers upgrades and stuns still apply
-- [x] "Roof didn't work" (your Phase 4 note): my best guess is that falling off only put you back up while you were **on a job**. Visiting by travel pad and stepping off left you stuck on the ground. Fixed on 2026-09-29: now anyone who falls off the roof is put back up. If it was something else, tell me what happened
+- [x] "Roof didn't work" (your Phase 4 note): my best guess is that falling off only put you back up while you were **on a job**. Visiting by travel pad and stepping off left you stuck on the ground. Fixed on 2026-09-29: now anyone who falls off the roof is put back up (verified by the automated playtest). If it was something else, tell me what happened
 - [ ] **Playtest checkpoint** (checklist in README)
 
 ## Phase 5 — Multiplayer / Social ✅
@@ -186,7 +186,7 @@ Things added beyond the plan while you were away:
 - [x] **Starter sounds**: every slot has a free sound from Roblox's own library (placeholders picked by name, so give them a listen)
 - [x] **Draft icon + thumbnails** rendered from your models (`art/marketing/`)
 - [x] **Model checker** (`tools/check_models.luau`): reads your saved place and lists missing, misplaced or backwards models
-- [x] **Automated playtest** (`tools/e2e/run.sh`): opens a temporary Studio, and a test player picks a Hamster, catches it, pets and tapes it, mails it, buys a stamp, upgrades Sneakers, redeems a code and changes a setting, using the real code and your models. **All 26 steps passed on 2026-09-29, with no script errors**
+- [x] **Automated playtest** (`tools/e2e/run.sh`): opens a temporary Studio, and a test player picks a Hamster, catches it, pets and tapes it, mails it, buys a stamp, upgrades Sneakers, redeems a code and changes a setting, using the real code and your models. Also: the Pen and Orders prompts, all chute upgrades and Rocket mail-anywhere, a tiger launch with RETURN TO SENDER (cap flies), and falling off the roof. **All 49 steps passed on 2026-09-29, with no script errors**
 - [x] **Studio smoke test** (`tools/smoke/run.sh`): builds the real map with your models and loads every module
 - [x] **Automatic tests** (`tests/run.luau`, ~550 checks): Config consistency and box math, runs in seconds without Studio
 - [x] Layout pass using the real model sizes (post office depth, fence heights, barn size, mud puddles, cap size, leaderboard board)

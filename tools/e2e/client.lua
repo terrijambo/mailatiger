@@ -181,6 +181,125 @@ local function run()
 	end, 16), "tutorial finished and remembered")
 	task.wait(0.2)
 	log(gui:FindFirstChild("Tutorial") == nil, "tutorial UI cleaned up")
+
+	-- 7. Prompts open their menus
+	local function goTo(part)
+		root.CFrame = part.CFrame * CFrame.new(0, 2, 5)
+		task.wait(0.4)
+	end
+	goTo(map.PenCounter)
+	holdPrompt(map.PenCounter:FindFirstChildOfClass("ProximityPrompt"))
+	log(waitFor(function()
+		return gui.PenMenu.Enabled
+	end, 3), "Pen prompt opens the Pen menu")
+	gui.PenMenu.Enabled = false
+	goTo(map.OrdersBoard)
+	holdPrompt(map.OrdersBoard:FindFirstChildOfClass("ProximityPrompt"))
+	log(waitFor(function()
+		return gui.OrdersBoard.Enabled
+	end, 3), "Orders prompt opens Gruff's Orders")
+	gui.OrdersBoard.Enabled = false
+
+	-- 8. Chute upgrades, in order, up to the Rocket (mail from anywhere)
+	goTo(map.ShopCounter)
+	for _, chute in { "Express", "Pneumatic", "Rocket" } do
+		remotes.ShopAction:FireServer("BuyChute", chute)
+		log(waitFor(function()
+			return profile().ChuteTier == chute
+		end, 3), "bought the " .. chute .. " chute")
+		task.wait(0.2)
+	end
+	local messages = events.Message or 0
+	remotes.MailAnywhere:FireServer()
+	log(waitFor(function()
+		return (events.Message or 0) > messages
+	end, 3), "Rocket mail-anywhere answers (empty bag)")
+
+	-- 9. The tiger: grab it, then make it furious. VINE BOOM, launch, RETURN TO SENDER, Gruff's cap flies.
+	local function catchMine(tries)
+		for _ = 1, tries do
+			for _, b in CollectionService:GetTagged("Critter") do
+				if b:GetAttribute("OwnerId") == player.UserId then
+					root.CFrame = b.CFrame * CFrame.new(0, 1, 1.5)
+					task.wait(0.15)
+					local prompt = b:FindFirstChildOfClass("ProximityPrompt")
+					if prompt then
+						holdPrompt(prompt)
+					end
+				end
+			end
+			if player:GetAttribute("Stage") == "Box" then
+				return true
+			end
+			task.wait(0.2)
+		end
+		return false
+	end
+	local function giveUp()
+		goTo(map.PenCounter)
+		local pen = map.PenCounter:FindFirstChildOfClass("ProximityPrompt")
+		holdPrompt(pen)
+		task.wait(0.3)
+		holdPrompt(pen)
+		gui.PenMenu.Enabled = false
+		return waitFor(function()
+			return player:GetAttribute("Stage") == ""
+		end, 3)
+	end
+	goTo(map.PenCounter)
+	remotes.RequestAnimal:FireServer("Tiger", false)
+	log(waitFor(function()
+		return player:GetAttribute("Stage") == "Catch"
+	end, 5), "picked a Tiger (sent to the Ice Rink)")
+	if catchMine(40) then
+		log(true, "grabbed the tiger")
+		waitFor(function()
+			return lastBoxStart ~= nil and lastBoxStart.AnimalId == "Tiger"
+		end, 3)
+		local angry = nil
+		for i, spot in (lastBoxStart and lastBoxStart.Spots) or {} do
+			if spot.Kind == "Angry" then
+				angry = i
+			end
+		end
+		log(angry ~= nil, "tiger has an angry spot to poke")
+		local launches = events.Launch or 0
+		for _ = 1, 30 do
+			if (events.Launch or 0) > launches then
+				break
+			end
+			if angry then
+				remotes.BoxingInput:FireServer("Angry", angry)
+			end
+			task.wait(0.55)
+		end
+		log((events.Launch or 0) > launches, "anger hit 100: launched")
+		log(waitFor(function()
+			return (events.Breakout or 0) > 0
+		end, 3), "RETURN TO SENDER (breakout)")
+		task.wait(0.3)
+		log(map.GruffHat.Anchored == false, "Gruff's cap was knocked flying")
+		log(waitFor(function()
+			return player:GetAttribute("Stage") == "Catch"
+		end, 8), "tiger escaped back into the arena")
+	else
+		log(false, "could not grab the tiger in 40 tries")
+	end
+	task.wait(5) -- let the ragdoll finish
+	log(giveUp(), "used the Pen twice to give up on the tiger")
+
+	-- 10. Rooftop: walk off the edge and get put back up
+	remotes.RequestAnimal:FireServer("Dragon", false)
+	log(waitFor(function()
+		return player:GetAttribute("Stage") == "Catch"
+	end, 5), "picked a Dragon (sent to the Rooftop)")
+	task.wait(1)
+	log(root.Position.Y > 28, "standing on the roof")
+	root.CFrame = CFrame.new(76, 12, -125) -- just off the edge, falling
+	task.wait(2)
+	log(root.Position.Y > 28, "fell off the roof and was put back up")
+	task.wait(2.5)
+	log(giveUp(), "gave up on the dragon")
 	log(true, "events seen: " .. HttpService:JSONEncode(events))
 end
 

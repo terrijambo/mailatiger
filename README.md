@@ -182,7 +182,7 @@ stylua src                     # format everything
 lune run tools/check_models.luau MailATiger.rbxl   # after Ctrl+S in Studio: are all models imported, in the right folders, facing the right way?
 lune run tests/run.luau        # ~550 automatic checks on the Config files and box math. Run after changing any Config file
 bash tools/smoke/run.sh        # builds the real map with your models in a temporary Studio and reports errors (Ctrl+S first)
-bash tools/e2e/run.sh          # automated playtest in a temporary Studio: catch, box, mail, shop, codes (~40 s, Ctrl+S first)
+bash tools/e2e/run.sh          # automated playtest in a temporary Studio: 49 steps incl. catch, box, mail, shop, tiger launch (~2 min, Ctrl+S first)
 ```
 
 Type-check (catches misspelled Roblox API names). The VS Code Luau extension does this live, and every file starts with `--!strict`:
