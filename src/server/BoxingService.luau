@@ -192,7 +192,10 @@ local function buildBox(s: Session): Model
 		"Tape",
 		Vector3.new(0.05, 0.3, 0.7),
 		box.CFrame * CFrame.new(0, 1.75 * scale, 0),
-		Color3.fromRGB(230, 200, 120)
+		-- VIP pass: golden tape
+		if s.Player:GetAttribute("Pass_VIP") == true
+			then Color3.fromRGB(255, 200, 40)
+			else Color3.fromRGB(230, 200, 120)
 	)
 	strip.Transparency = 1 -- appears as you tape
 	local critter = piece(

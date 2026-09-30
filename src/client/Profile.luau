@@ -57,7 +57,8 @@ end
 -- How many parcels your bag holds (starting size + Mail Bag upgrades)
 function Profile.BagCapacity(data: Data): number
 	local mail = Config.Mail
-	return mail.BagCapacity + (data.Tools.MailBag or 0) * Config.Tools.ById.MailBag.PerLevel
+	local bigBag = if player:GetAttribute("Pass_BigBag") == true then Config.Monetization.BigBagSlots else 0
+	return mail.BagCapacity + (data.Tools.MailBag or 0) * Config.Tools.ById.MailBag.PerLevel + bigBag
 end
 
 -- Calls `callback` now and whenever your progress changes.

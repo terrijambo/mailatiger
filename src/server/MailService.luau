@@ -49,7 +49,8 @@ local function animalIndex(animalId: string): number
 end
 
 function MailService.Capacity(player: Player): number
-	return Config.Mail.BagCapacity + Economy.ToolBonus(player, "MailBag")
+	local bigBag = if player:GetAttribute("Pass_BigBag") == true then Config.Monetization.BigBagSlots else 0
+	return Config.Mail.BagCapacity + Economy.ToolBonus(player, "MailBag") + bigBag
 end
 
 function MailService.Count(player: Player): number

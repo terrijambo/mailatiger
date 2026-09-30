@@ -96,11 +96,15 @@ function Economy.RebirthCost(rebirths: number): number
 	return math.round(rebirth.BaseCost * rebirth.CostGrowth ^ rebirths)
 end
 
--- Permanent payout multiplier from rebirths
+-- Your personal payout multiplier: rebirths, plus the Double Coins pass (MonetizationService sets the attribute)
 function Economy.PayoutMult(player: Player): number
 	local profile = DataService.Get(player)
 	local rebirths = if profile then profile.Rebirths else 0
-	return 1 + rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
+	local mult = 1 + rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
+	if player:GetAttribute("Pass_DoubleCoins") == true then
+		mult *= Config.Monetization.DoubleCoinsMult
+	end
+	return mult
 end
 
 function Economy.Start()

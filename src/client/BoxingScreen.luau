@@ -25,6 +25,11 @@ local BoxingScreen = {}
 local PINK = Color3.fromRGB(255, 120, 170)
 local ANGRY = Color3.fromRGB(220, 50, 50)
 local TAPE = Color3.fromRGB(235, 205, 120)
+local GOLD_TAPE = Color3.fromRGB(255, 200, 40) -- VIP pass
+
+local function tapeColor(): Color3
+	return if Players.LocalPlayer:GetAttribute("Pass_VIP") == true then GOLD_TAPE else TAPE
+end
 local CARDBOARD = Color3.fromRGB(205, 165, 115)
 local DARK = Color3.fromRGB(30, 30, 36)
 local PET_SEND_INTERVAL = 0.1
@@ -282,7 +287,7 @@ function BoxingScreen.Start()
 		for index, seam in seams do
 			if taped[index] then
 				done += 1
-				line(layer, seam.A, seam.B, 22, TAPE, 3)
+				line(layer, seam.A, seam.B, 22, tapeColor(), 3)
 			else
 				-- a dashed seam: short dark segments with a dot at each end
 				for step = 0, 9 do
@@ -471,7 +476,7 @@ function BoxingScreen.Start()
 			if preview then
 				preview:Destroy()
 			end
-			preview = line(boxCard, path[1], p, 18, TAPE:Lerp(Color3.new(1, 1, 1), 0.3), 6)
+			preview = line(boxCard, path[1], p, 18, tapeColor():Lerp(Color3.new(1, 1, 1), 0.3), 6)
 		end
 	end
 

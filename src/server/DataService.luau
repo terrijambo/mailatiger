@@ -55,6 +55,7 @@ export type Profile = {
 	BestTigerSeconds: number, -- 0 = never mailed a tiger
 	RarestIndex: number, -- position in Animals.List of the rarest animal ever mailed (0 = none)
 	TutorialDone: boolean, -- finished or skipped Gruff's walkthrough
+	Receipts: { string }, -- recent Robux purchase ids already granted (so a retry never pays twice)
 }
 
 local DataService = {}
@@ -87,6 +88,7 @@ local function newProfile(): Profile
 		BestTigerSeconds = 0,
 		RarestIndex = 0,
 		TutorialDone = false,
+		Receipts = {},
 	}
 end
 
@@ -141,11 +143,12 @@ local function load(player: Player): Profile?
 	return nil
 end
 
-local function save(player: Player, release: boolean)
+-- Returns whether the save reached Roblox (always false when saving is off)
+local function save(player: Player, release: boolean): boolean
 	local profile = profiles[player]
 	local activeStore = store
 	if not profile or not activeStore or temporary[player] then
-		return
+		return false
 	end
 
 	local lostLock = false
@@ -168,6 +171,7 @@ local function save(player: Player, release: boolean)
 	if lostLock and not release and player.Parent then
 		player:Kick("Your progress was opened on another server. Please rejoin.")
 	end
+	return ok and not lostLock
 end
 
 local function onPlayerAdded(player: Player)
@@ -205,6 +209,18 @@ end
 -- Whether saving works this session (leaderboards need it too)
 function DataService.IsOnline(): boolean
 	return store ~= nil
+end
+
+-- Saves right now (used after Robux purchases). True if it saved, or if saving is off this session
+-- (Studio without API access), where there's nothing to wait for.
+function DataService.SaveNow(player: Player): boolean
+	if not profiles[player] then
+		return false
+	end
+	if temporary[player] or not store then
+		return true
+	end
+	return save(player, false)
 end
 
 -- Copies the profile onto the player as JSON so their UI can read it.

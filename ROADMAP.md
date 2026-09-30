@@ -148,10 +148,22 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 - [ ] **Playtest checkpoint** (checklist in README)
 
 ## Phase 7 — Monetization
-- [ ] Game passes: 2x coins, VIP box skins, golden tape gun
-- [ ] Dev products: coin packs, skip-the-unlock for the next animal (no random crates)
-- [ ] No pay-to-win in Chaos Mode
-- [ ] Private servers
+**⚠ PLAN NEEDS YOUR APPROVAL.** The code is written and wired up, but nothing can be bought until you create each item on Roblox and paste its id into `src/shared/Config/Monetization.luau` (id 0 = hidden). Change any price or cut any item there before you create it.
+
+| Item | Type | Robux | What it does |
+|---|---|---|---|
+| Double Coins | pass | 199 | Every job pays 2x coins |
+| Big Mail Bag | pass | 99 | +3 bag slots |
+| VIP Postie | pass | 149 | Golden tape (on screen and on the box) and a golden ★ VIP ★ tag. Cosmetic only |
+| Sack / Crate / Vault of Coins | product | 49 / 129 / 349 | Coins worth 20 / 60 / 200 jobs of your best owned animal, so packs stay useful all game |
+| Skip the Wait | product | 99 | Unlocks the next animal you don't own, tiers 1–4 only (the big late-game animals must be earned). Hidden when there's nothing left to unlock |
+| Priority Stamp Pack | product | 29 | 5 Priority stamps |
+| Buy Gruff a Coffee | product | 5 | Nothing. Gruff says thanks, grudgingly. A tip jar |
+
+- [x] Code: `server/MonetizationService.luau` (pass checks on join and on purchase, safe ProcessReceipt that writes the purchase id into the save before telling Roblox "granted", so retries never pay twice), `client/Store.luau` (green **Store** button on the left, only lists items you've set up), hooks for 2x coins (Economy), bag size (server + client) and VIP tape/tag
+- [x] No random crates. **Nothing affects Chaos Mode fights**: no pass changes shove, spook, speed or anger. Double Coins only changes pay
+- [ ] **You:** approve or edit the table, then create the passes and products (steps in README → Launch checklist)
+- [ ] **You:** private servers: Creator Dashboard → your game → Monetization → Private Servers (suggest free or 100 Robux)
 
 ## Phase 8 — Launch Prep
 - [ ] Icon + thumbnails + trailer clip (RETURN TO SENDER!)
