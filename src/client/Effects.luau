@@ -123,14 +123,42 @@ end
 function Effects.Start()
 	-- Chaos Mode: F (or the on-screen button) shoves the nearest player doing a Chaos job.
 	-- The server picks who, and checks range and cooldown.
+	-- The key and button only exist while someone else is on a Chaos job (otherwise there's nobody to shove,
+	-- and on phones the button would just be clutter).
 	local shove = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Shove") :: RemoteEvent
-	ContextActionService:BindAction("Shove", function(_name: string, state: Enum.UserInputState)
-		if state == Enum.UserInputState.Begin then
-			shove:FireServer()
+	local bound = false
+	local function refreshShove()
+		local anyone = false
+		for _, other in Players:GetPlayers() do
+			if other ~= player and other:GetAttribute("Chaos") == true then
+				anyone = true
+			end
 		end
-		return Enum.ContextActionResult.Pass
-	end, true, Config.Social.Chaos.ShoveKey, Enum.KeyCode.ButtonX)
-	ContextActionService:SetTitle("Shove", "Shove")
+		if anyone and not bound then
+			bound = true
+			ContextActionService:BindAction("Shove", function(_name: string, state: Enum.UserInputState)
+				if state == Enum.UserInputState.Begin then
+					shove:FireServer()
+				end
+				return Enum.ContextActionResult.Pass
+			end, true, Config.Social.Chaos.ShoveKey, Enum.KeyCode.ButtonX)
+			ContextActionService:SetTitle("Shove", "Shove")
+		elseif not anyone and bound then
+			bound = false
+			ContextActionService:UnbindAction("Shove")
+		end
+	end
+	local function watch(other: Player)
+		other:GetAttributeChangedSignal("Chaos"):Connect(refreshShove)
+	end
+	for _, other in Players:GetPlayers() do
+		watch(other)
+	end
+	Players.PlayerAdded:Connect(watch)
+	Players.PlayerRemoving:Connect(function()
+		task.defer(refreshShove)
+	end)
+	refreshShove()
 
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })

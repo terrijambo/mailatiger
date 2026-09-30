@@ -1,10 +1,12 @@
 --!strict
 -- The Settings button (under Store): music, sound effects, and camera shake/zoom on or off.
+-- Also the Invite button under it (asks Roblox to show its invite-friends popup).
 -- Choices are saved with your progress. Other scripts read them from attributes this sets on you:
 -- MusicOff, SfxOff, MotionOff.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SocialService = game:GetService("SocialService")
 
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
@@ -92,6 +94,24 @@ function Settings.Start()
 	})
 	open.Activated:Connect(function()
 		gui.Enabled = not gui.Enabled
+	end)
+
+	-- Invite friends (Roblox's own invite popup). Hidden where Roblox doesn't allow invites.
+	local invite = Ui.button(hud, {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 12, 0.4, 90),
+		Size = UDim2.fromOffset(96, 36),
+		BackgroundColor3 = Ui.BLUE,
+		TextSize = 17,
+		Text = "Invite",
+		Visible = false,
+	})
+	task.spawn(function()
+		local ok, allowed = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)
+		invite.Visible = ok and allowed == true
+	end)
+	invite.Activated:Connect(function()
+		pcall(SocialService.PromptGameInvite, SocialService, player)
 	end)
 end
 
