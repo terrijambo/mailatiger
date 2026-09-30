@@ -47,7 +47,6 @@ local Tuning = Boxing.TwistTuning
 local Social = Config.Social
 local Gruff = Config.Gruff
 
-local WALK_SPEED = 16
 local JUMP_HEIGHT = 7.2
 
 local BoxingService = {}
@@ -128,7 +127,7 @@ local function refreshMovement(player: Player)
 	local s = jobOf(player)
 	local busy = s ~= nil and s.Stage ~= "Catch"
 	local stunned = os.clock() < (stunnedUntil[player] or 0)
-	local speed = WALK_SPEED + Economy.ToolBonus(player, "Sneakers")
+	local speed = Economy.WalkSpeed(player)
 	player:SetAttribute("WalkSpeed", speed) -- the client's Movement module builds on this (sneak, mud, ice)
 	player:SetAttribute("Frozen", busy or stunned)
 	humanoid.UseJumpPower = false

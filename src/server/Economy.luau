@@ -13,6 +13,8 @@ local DataService = require(script.Parent.DataService)
 
 local Economy = {}
 
+Economy.BASE_WALK_SPEED = 16
+
 function Economy.Sync(player: Player)
 	local profile = DataService.Get(player)
 	if not profile then
@@ -29,7 +31,14 @@ function Economy.Sync(player: Player)
 			rebirths.Value = profile.Rebirths
 		end
 	end
+	-- Your running speed (with Sneakers). The client's Movement module uses it, in town too.
+	player:SetAttribute("WalkSpeed", Economy.WalkSpeed(player))
 	DataService.Sync(player)
+end
+
+-- Base running speed plus Sneakers
+function Economy.WalkSpeed(player: Player): number
+	return Economy.BASE_WALK_SPEED + Economy.ToolBonus(player, "Sneakers")
 end
 
 local function setupPlayer(player: Player)

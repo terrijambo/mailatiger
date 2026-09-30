@@ -146,9 +146,10 @@ function Shop.Start()
 		elseif currentTab == "Tools" then
 			for index, tool in Config.Tools.List do
 				local level = profile.Tools[tool.Id] or 0
+				local now = if level > 0 then `  ·  now: {Config.Tools.EffectText(tool, level)}` else ""
 				local frame = row(
 					index,
-					`{tool.DisplayName}  (Lv {level}/{tool.MaxLevel})`,
+					`{tool.DisplayName}  (Lv {level}/{tool.MaxLevel}){now}`,
 					tool.Description,
 					{ "PropModels", TOOL_MODELS[tool.Id] or "" }
 				)

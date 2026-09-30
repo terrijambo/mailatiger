@@ -210,6 +210,16 @@ local function run()
 	log(waitFor(function()
 		return (profile().Tools.Sneakers or 0) >= 1
 	end, 3), "upgraded Sneakers")
+	task.wait(0.5)
+	local humanoid = character:FindFirstChildOfClass("Humanoid")
+	log(player:GetAttribute("WalkSpeed") == 18 and humanoid.WalkSpeed == 18, "Sneakers work in town (speed " .. humanoid.WalkSpeed .. ")")
+	for _, tool in { "Gloves", "Net", "TapeGun", "MailBag" } do
+		task.wait(0.2)
+		remotes.ShopAction:FireServer("UpgradeTool", tool)
+		log(waitFor(function()
+			return (profile().Tools[tool] or 0) >= 1
+		end, 3), "upgraded " .. tool)
+	end
 	local before = profile().Coins
 	remotes.RedeemCode:FireServer("launch")
 	log(waitFor(function()
@@ -436,6 +446,14 @@ local function run()
 		return player:GetAttribute("Stage") == "Catch"
 	end, 5)
 	log(profile().SelectedStamp == nil, "the stamp was used up by the job")
+	task.wait(0.5)
+	for _, b in CollectionService:GetTagged("Critter") do
+		local prompt = b:GetAttribute("OwnerId") == player.UserId and b:FindFirstChildOfClass("ProximityPrompt")
+		if prompt then
+			log(math.abs(prompt.HoldDuration - 0.3 * 0.85) < 0.01, "Gloves shorten the grab (" .. prompt.HoldDuration .. " s)")
+			log(prompt.MaxActivationDistance == 8, "Net adds reach (" .. prompt.MaxActivationDistance .. " studs)")
+		end
+	end
 	if catchMine(25) then
 		waitFor(function()
 			return lastBoxStart ~= nil

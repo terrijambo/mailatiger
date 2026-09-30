@@ -130,6 +130,7 @@ for _, box in Config.Boxes.List do
 end
 check(Config.Stamps.ById.Priority ~= nil, "the Priority stamp is sold in the Store, so it must exist")
 for _, tool in Config.Tools.List do
+	check(string.find(tool.Effect or "", "{}", 1, true) ~= nil, `{tool.Id} Effect needs a \{\} for the number`)
 	local last = -1
 	for level = 0, tool.MaxLevel - 1 do
 		local price = Config.Tools.PriceFor(tool, level)
