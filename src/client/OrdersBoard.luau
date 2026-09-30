@@ -53,14 +53,24 @@ function OrdersBoard.Start()
 				BackgroundColor3 = if order.Done then Color3.fromRGB(220, 245, 220) else Ui.WHITE,
 			}, list)
 			Ui.round(frame)
+			-- The animal's 3D picture, if its model is imported
+			local left = 14
+			if
+				Ui.modelIcon(frame, "AnimalModels", order.AnimalId, {
+					Position = UDim2.fromOffset(6, 3),
+					Size = UDim2.fromOffset(64, 64),
+				})
+			then
+				left = 76
+			end
 			Ui.label(frame, {
-				Position = UDim2.fromOffset(14, 8),
+				Position = UDim2.fromOffset(left, 8),
 				Size = UDim2.new(1, -200, 0, 26),
 				TextSize = 22,
 				Text = `Mail a {if animal then animal.DisplayName else order.AnimalId}`,
 			})
 			Ui.label(frame, {
-				Position = UDim2.fromOffset(14, 38),
+				Position = UDim2.fromOffset(left, 38),
 				Size = UDim2.new(1, -200, 0, 22),
 				TextColor3 = Color3.fromRGB(110, 100, 90),
 				Text = CONDITION_TEXT[order.Condition] or order.Condition,
