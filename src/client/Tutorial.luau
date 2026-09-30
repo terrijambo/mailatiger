@@ -221,7 +221,8 @@ function Tutorial.Start()
 		end
 		step = nextStep
 		text.Text = (Lines :: any)[step] or ""
-		gui.Enabled = true
+		-- The BOX screen shows the same instructions itself, and on phones the panel would cover the box
+		gui.Enabled = step ~= "Box"
 		if step == "Shop" then
 			shopUntil = os.clock() + SHOP_STEP_SECONDS
 		end
@@ -279,7 +280,7 @@ function Tutorial.Start()
 			local character = player.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 			local goal = target()
-			local show = goal ~= nil and root ~= nil and gui.Enabled
+			local show = goal ~= nil and root ~= nil
 			arrow.Beam.Enabled = show
 			arrow.Marker.Enabled = show
 			if goal and root then
