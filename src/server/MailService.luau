@@ -201,7 +201,9 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 			profile.FiveStampJobs += 1
 		end
 		if
-			parcel.AnimalId == "Tiger" and (profile.BestTigerSeconds == 0 or parcel.Seconds < profile.BestTigerSeconds)
+			parcel.AnimalId == "Tiger"
+			and parcel.Seconds >= Config.Social.Leaderboards.MinTigerSeconds
+			and (profile.BestTigerSeconds == 0 or parcel.Seconds < profile.BestTigerSeconds)
 		then
 			profile.BestTigerSeconds = parcel.Seconds
 		end
@@ -236,7 +238,7 @@ function MailService.Start(builtMap: MapBuilder.Map)
 	map.ChutePrompt.Triggered:Connect(function(player: Player)
 		MailService.MailAll(player, true)
 	end)
-	Remotes.MailAnywhere.OnServerEvent:Connect(function(player: Player)
+	Remotes.Listen(Remotes.MailAnywhere, 2, function(player: Player)
 		MailService.MailAll(player, false)
 	end)
 

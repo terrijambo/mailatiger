@@ -146,7 +146,7 @@ function ShopService.Start(builtMap: MapBuilder.Map)
 		Remotes.Notify:FireClient(player, "OpenOrders", {})
 	end)
 
-	Remotes.ShopAction.OnServerEvent:Connect(onShopAction)
+	Remotes.Listen(Remotes.ShopAction, 8, onShopAction)
 
 	-- New players (and anyone whose orders expired while they were away) get fresh orders on join
 	DataService.Loaded:Connect(function(player: Player, profile: DataService.Profile)

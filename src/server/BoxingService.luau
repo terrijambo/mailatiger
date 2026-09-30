@@ -1056,9 +1056,10 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 	})
 
 	map.PenPrompt.Triggered:Connect(onPenUsed)
-	Remotes.RequestAnimal.OnServerEvent:Connect(onRequestAnimal)
-	Remotes.Shove.OnServerEvent:Connect(onShove)
-	Remotes.BoxingInput.OnServerEvent:Connect(function(player: Player, action: unknown, index: unknown)
+	Remotes.Listen(Remotes.RequestAnimal, 4, onRequestAnimal)
+	Remotes.Listen(Remotes.Shove, 4, onShove)
+	-- Petting sends ~10 a second, so 30 leaves lots of room
+	Remotes.Listen(Remotes.BoxingInput, 30, function(player: Player, action: unknown, index: unknown)
 		local s = jobOf(player)
 		if not s or s.Stage ~= "Box" then
 			return

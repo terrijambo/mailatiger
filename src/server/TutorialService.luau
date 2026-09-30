@@ -16,7 +16,7 @@ local REWARD = 100
 local TutorialService = {}
 
 function TutorialService.Start()
-	Remotes.Tutorial.OnServerEvent:Connect(function(player: Player, action: unknown)
+	Remotes.Listen(Remotes.Tutorial, 2, function(player: Player, action: unknown)
 		local profile = DataService.Get(player)
 		if not profile or profile.TutorialDone or (action ~= "Done" and action ~= "Skip") then
 			return
