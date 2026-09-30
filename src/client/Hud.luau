@@ -156,6 +156,12 @@ function Hud.Start()
 			local bonus = math.round(profile.Rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth * 100)
 			table.insert(parts, `Rebirth {profile.Rebirths} (+{bonus}% coins)`)
 		end
+		if player:GetAttribute("Premium") then
+			table.insert(parts, `Premium +{math.round((Config.Monetization.PremiumPayoutMult - 1) * 100)}%`)
+		end
+		if player:GetAttribute("InGroup") then
+			table.insert(parts, `Group +{math.round((Config.Monetization.GroupPayoutMult - 1) * 100)}%`)
+		end
 		local stamp = profile.SelectedStamp and Config.Stamps.ById[profile.SelectedStamp]
 		if stamp then
 			table.insert(parts, `Next job: {stamp.DisplayName} stamp`)
@@ -168,6 +174,8 @@ function Hud.Start()
 	end
 	Profile.Watch(refreshStatus)
 	player:GetAttributeChangedSignal("Chaos"):Connect(refreshStatus)
+	player:GetAttributeChangedSignal("Premium"):Connect(refreshStatus)
+	player:GetAttributeChangedSignal("InGroup"):Connect(refreshStatus)
 
 	-- Tip banner (bottom center): what to do right now
 	local tip = make("TextLabel", {

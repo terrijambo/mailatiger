@@ -110,6 +110,11 @@ return {
 	ProductByKey = productByKey,
 
 	DoubleCoinsMult = 2,
+	-- Roblox Premium members earn a little more (Roblox also pays you for Premium players' playtime)
+	PremiumPayoutMult = 1.1,
+	-- Join-the-group bonus. Create a group on Roblox, paste its id here (0 = off). Players in it earn more.
+	GroupId = 0,
+	GroupPayoutMult = 1.1,
 	BigBagSlots = 3,
 	-- Coin packs: how many jobs' worth of your best owned animal's base pay
 	CoinPackJobs = { CoinsSmall = 20, CoinsMedium = 60, CoinsLarge = 200 },

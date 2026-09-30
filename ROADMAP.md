@@ -160,6 +160,8 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 | Skip the Wait | product | 99 | Unlocks the next animal you don't own, tiers 1–4 only (the big late-game animals must be earned). Hidden when there's nothing left to unlock |
 | Priority Stamp Pack | product | 29 | 5 Priority stamps |
 | Buy Gruff a Coffee | product | 5 | Nothing. Gruff says thanks, grudgingly. A tip jar |
+| Roblox Premium perk | free | – | Premium members earn +10% coins (Roblox pays you for Premium players' playtime) |
+| Group bonus | free | – | +10% coins for members of your Roblox group (off until you set `GroupId`) |
 
 - [x] Code: `server/MonetizationService.luau` (pass checks on join and on purchase, safe ProcessReceipt that writes the purchase id into the save before telling Roblox "granted", so retries never pay twice), `client/Store.luau` (green **Store** button at the top-left, only lists items you've set up), hooks for 2x coins (Economy), bag size (server + client) and VIP tape/tag
 - [x] No random crates. **Nothing affects Chaos Mode fights**: no pass changes shove, spook, speed or anger. Double Coins only changes pay

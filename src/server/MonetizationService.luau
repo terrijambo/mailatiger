@@ -132,7 +132,18 @@ local function addVipTag(player: Player)
 	gui.Parent = head
 end
 
+-- Roblox Premium and group membership (each is a small coin bonus, see Config.Monetization)
+local function checkPerks(player: Player)
+	player:SetAttribute("Premium", player.MembershipType == Enum.MembershipType.Premium)
+	local groupId = Money.GroupId
+	if groupId ~= 0 then
+		local ok, inGroup = pcall(player.IsInGroupAsync, player, groupId)
+		player:SetAttribute("InGroup", ok and inGroup == true)
+	end
+end
+
 local function watchPlayer(player: Player)
+	task.spawn(checkPerks, player)
 	player.CharacterAdded:Connect(function(character)
 		character:WaitForChild("Head", 10)
 		addVipTag(player)
@@ -146,6 +157,7 @@ end
 
 function MonetizationService.Start()
 	MarketplaceService.ProcessReceipt = processReceipt
+	Players.PlayerMembershipChanged:Connect(checkPerks) -- bought Premium mid-game
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, passId: number, bought: boolean)
 		if not bought then
 			return

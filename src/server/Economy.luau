@@ -118,13 +118,21 @@ function Economy.RebirthCost(rebirths: number): number
 	return math.round(rebirth.BaseCost * rebirth.CostGrowth ^ rebirths)
 end
 
--- Your personal payout multiplier: rebirths, plus the Double Coins pass (MonetizationService sets the attribute)
+-- Your personal payout multiplier: rebirths, the Double Coins pass, Roblox Premium and the group bonus
+-- (MonetizationService sets those attributes)
 function Economy.PayoutMult(player: Player): number
 	local profile = DataService.Get(player)
 	local rebirths = if profile then profile.Rebirths else 0
 	local mult = 1 + rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
+	local money = Config.Monetization
 	if player:GetAttribute("Pass_DoubleCoins") == true then
-		mult *= Config.Monetization.DoubleCoinsMult
+		mult *= money.DoubleCoinsMult
+	end
+	if player:GetAttribute("Premium") == true then
+		mult *= money.PremiumPayoutMult
+	end
+	if player:GetAttribute("InGroup") == true then
+		mult *= money.GroupPayoutMult
 	end
 	return mult
 end
