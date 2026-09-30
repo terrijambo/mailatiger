@@ -243,18 +243,68 @@ function Hud.Start()
 		Text = "",
 	}, toast)
 
-	local toastId = 0
-	local function showToast(who: string, text: string, foot: string?)
-		toastId += 1
-		local myId = toastId
-		speaker.Text = who
-		body.Text = text
-		footer.Text = foot or ""
+	-- A red rating stamp that thumps onto receipts (e.g. "★★★★☆")
+	local ratingStamp = make("TextLabel", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -70, 1, -24),
+		Size = UDim2.fromOffset(130, 40),
+		Rotation = -10,
+		BackgroundTransparency = 1,
+		Font = FONT,
+		TextScaled = true,
+		TextColor3 = Color3.fromRGB(210, 40, 40),
+		Text = "",
+		Visible = false,
+		ZIndex = 3,
+	}, toast)
+	make("UIStroke", { Thickness = 2, Color = Color3.fromRGB(120, 0, 0) }, ratingStamp)
+	local toastScale = make("UIScale", { Scale = 1 }, toast)
+
+	-- Popups wait their turn: each one shows for 5 seconds, or 2.5 if another is waiting behind it
+	type Toast = { Who: string, Text: string, Foot: string?, Stars: number? }
+	local queue: { Toast } = {}
+	local running = false
+
+	local function present(item: Toast)
+		speaker.Text = item.Who
+		body.Text = item.Text
+		footer.Text = item.Foot or ""
 		toast.Visible = true
-		task.delay(5, function()
-			if toastId == myId then
-				toast.Visible = false
+		toastScale.Scale = 0.85
+		TweenService:Create(toastScale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Scale = 1,
+		}):Play()
+		local stars = item.Stars
+		ratingStamp.Visible = stars ~= nil
+		if stars then
+			ratingStamp.Text = string.rep("★", stars) .. string.rep("☆", 5 - stars)
+			ratingStamp.Size = UDim2.fromOffset(260, 80)
+			ratingStamp.TextTransparency = 1
+			task.delay(0.35, function()
+				TweenService:Create(ratingStamp, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+					Size = UDim2.fromOffset(130, 40),
+					TextTransparency = 0,
+				}):Play()
+			end)
+		end
+	end
+
+	local function showToast(who: string, text: string, foot: string?, stars: number?)
+		table.insert(queue, { Who = who, Text = text, Foot = foot, Stars = stars })
+		if running then
+			return
+		end
+		running = true
+		task.spawn(function()
+			while #queue > 0 do
+				present(table.remove(queue, 1) :: Toast)
+				local shown = 0
+				while shown < 5 and not (shown >= 2.5 and #queue > 0) do
+					shown += task.wait(0.1)
+				end
 			end
+			toast.Visible = false
+			running = false
 		end)
 	end
 
@@ -290,12 +340,12 @@ function Hud.Start()
 			showToast(data.Speaker, data.Text)
 		elseif kind == "Parcel" then
 			-- A taped box went into your bag
-			local stars = string.rep("★", data.Stars) .. string.rep("☆", 5 - data.Stars)
 			local stamp = if data.Stamp then `   {data.Stamp}` else ""
 			showToast(
 				`Taped!  ·  {data.Animal} is in your bag ({data.Count}/{data.Capacity})`,
 				"Carry it to the Mail Chute in town and hold E to mail it.",
-				`{stars}   worth {data.Coins} coins{stamp}`
+				`worth {data.Coins} coins{stamp}`,
+				data.Stars
 			)
 		elseif kind == "MailReceipt" then
 			-- You mailed your bag at the chute
@@ -304,7 +354,8 @@ function Hud.Start()
 			showToast(
 				`Postmaster Gruff  ·  {data.Count} {plural} mailed ({data.Chute})`,
 				`"{data.Line}"   {table.concat(data.Lines, ",  ")}`,
-				`+{data.Coins} coins{extras}`
+				`+{data.Coins} coins{extras}`,
+				data.Best
 			)
 		elseif kind == "Roar" then
 			showToast("ROOOOAR!", "It roared at you! You're frozen in fear for a second.")

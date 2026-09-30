@@ -229,6 +229,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		Chute = chute.DisplayName,
 		Lines = lines,
 		Line = pick(Config.Gruff.Ratings[best]),
+		Best = best, -- the best star rating in this bag (the receipt stamps it)
 	})
 end
 
