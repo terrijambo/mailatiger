@@ -184,3 +184,5 @@ _None right now. New questions get added here as they come up, always as a multi
 - **Boss:** Postmaster Gruff, a grumpy walrus. He runs the tutorial and the orders board, rates jobs, and is the final job.
 - **Signature moment:** VINE BOOM ragdoll launch, plus "RETURN TO SENDER" for the tiger.
 - **Roster:** real animals through the mid-game (hamster → tiger), then silly ones at late tiers (dragon, alien, a mailman).
+- **Working unattended (2026-09-29):** build everything through launch prep, including monetization code from a plan logged here for your approval. Ambiguous calls get decided and logged in this section. Commit after each working piece, with no check-ins. Things only you can do (sound ids, publishing, API access, game passes, icon) get a checklist.
+- **Tutorial:** Gruff walks new players through it (Pen → catch a hamster → box it → mail it) with an arrow pointing where to go, and it can be skipped.
