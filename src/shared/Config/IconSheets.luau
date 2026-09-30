@@ -8,8 +8,8 @@
 -- the sheet, if you ever want to swap one icon without re-packing.)
 
 return {
-	"", -- icons_sheet_1.png
-	"", -- icons_sheet_2.png
-	"", -- icons_sheet_3.png
-	"", -- icons_sheet_4.png
+	"rbxassetid://84623444085843", -- icons_sheet_1.png
+	"rbxassetid://139025452598007", -- icons_sheet_2.png
+	"rbxassetid://134256527637959", -- icons_sheet_3.png
+	"rbxassetid://83772096277078", -- icons_sheet_4.png
 } :: { string }
