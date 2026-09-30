@@ -7,6 +7,7 @@ local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Ragdoll = require(script.Parent.Ragdoll)
@@ -54,6 +55,57 @@ local function tint(color: Color3, blurSize: number, seconds: number)
 	end)
 end
 
+-- Zooms the camera out (positive) or in (negative) for a moment, then eases back
+local BASE_FOV = 70
+local function fovPunch(amount: number, seconds: number)
+	local camera = Workspace.CurrentCamera
+	if not camera then
+		return
+	end
+	camera.FieldOfView = BASE_FOV + amount
+	TweenService:Create(camera, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		FieldOfView = BASE_FOV,
+	}):Play()
+end
+
+-- A burst of confetti at a spot in the world (only you see it)
+local CONFETTI = ColorSequence.new({
+	ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 90, 90)),
+	ColorSequenceKeypoint.new(0.25, Color3.fromRGB(255, 215, 80)),
+	ColorSequenceKeypoint.new(0.5, Color3.fromRGB(110, 220, 120)),
+	ColorSequenceKeypoint.new(0.75, Color3.fromRGB(90, 160, 255)),
+	ColorSequenceKeypoint.new(1, Color3.fromRGB(230, 120, 255)),
+})
+local function confetti(at: Vector3, amount: number)
+	local attachment = Instance.new("Attachment")
+	attachment.WorldPosition = at
+	attachment.Parent = Workspace.Terrain
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Color = CONFETTI
+	emitter.Size = NumberSequence.new(0.35, 0.15)
+	emitter.Lifetime = NumberRange.new(1.2, 2)
+	emitter.Speed = NumberRange.new(14, 26)
+	emitter.SpreadAngle = Vector2.new(50, 50)
+	emitter.Acceleration = Vector3.new(0, -30, 0)
+	emitter.Drag = 1.5
+	emitter.Rotation = NumberRange.new(0, 360)
+	emitter.RotSpeed = NumberRange.new(-300, 300)
+	emitter.LightEmission = 0.3
+	emitter.EmissionDirection = Enum.NormalId.Top
+	emitter.Enabled = false
+	emitter.Parent = attachment
+	emitter:Emit(amount)
+	task.delay(3, function()
+		attachment:Destroy()
+	end)
+end
+
+local function myPosition(): Vector3?
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	return root and root.Position
+end
+
 local function knockback(direction: Vector3, strength: number)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -95,7 +147,24 @@ function Effects.Start()
 		elseif kind == "Launch" then
 			-- VINE BOOM (the sound plays from the server so everyone nearby hears it)
 			shakeCamera(2, 0.4)
+			fovPunch(22, 0.9)
 			Ragdoll.Launch(data.Velocity, data.Seconds)
+		elseif kind == "Parcel" then
+			-- Taped and stamped! A little celebration, bigger for better ratings
+			local at = myPosition()
+			if at then
+				confetti(at + Vector3.new(0, 2, 0), 10 + (data.Stars or 1) * 8)
+			end
+			fovPunch(-6, 0.35)
+		elseif kind == "MailReceipt" then
+			local map = Workspace:FindFirstChild("GrayboxMap")
+			local chute = map and map:FindFirstChild("MailChute") :: BasePart?
+			local at = if chute then chute.Position + Vector3.new(0, chute.Size.Y / 2 + 1, 0) else myPosition()
+			if at then
+				confetti(at, 40 + 10 * (data.Count or 1))
+			end
+			fovPunch(6, 0.5)
+			shakeCamera(0.4, 0.2)
 		end
 	end)
 end
