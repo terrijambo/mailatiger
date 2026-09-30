@@ -154,6 +154,8 @@ Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` expo
 
 A missing model is never a problem: that spot just keeps its grey block.
 
+**Check your imports:** save in Studio (Ctrl+S), then run `lune run tools/check_models.luau MailATiger.rbxl`. It lists missing models, models in the wrong folder, and any that face backwards. (Last check, 2026-09-29: `Mailbox` and `MudPuddle` are missing from MapModels, `ButterflyNet` from PropModels, and there's a spare `Chimney` in AnimalModels you can delete. Everything else is in place and facing the right way.)
+
 **For each model:**
 1. **Home → Import 3D** → pick the file in `art/export/`.
 2. In the import preview, keep it as **one Model** with its parts (don't merge them into one mesh). It will look grey in Studio, which is fine: the game paints each part from `src/shared/ArtColors/` when it spawns.
@@ -168,6 +170,7 @@ rojo serve                     # live-sync to Studio
 rojo build -o MailATiger.rbxl  # build a fresh place file (REPLACES the .rbxl: anything you made in Studio is lost)
 selene src                     # lint
 stylua src                     # format everything
+lune run tools/check_models.luau MailATiger.rbxl   # after Ctrl+S in Studio: are all models imported, in the right folders, facing the right way?
 ```
 
 Type-check (catches misspelled Roblox API names). The VS Code Luau extension does this live, and every file starts with `--!strict`:
