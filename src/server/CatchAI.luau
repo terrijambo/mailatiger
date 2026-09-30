@@ -3,6 +3,7 @@
 -- it's cornered, and doing its twist tricks (hopping, flying, charging, roaring...).
 -- The animal is an anchored part that the server moves every frame, kept inside the arena bounds.
 
+local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -146,49 +147,19 @@ local function wallAvoidance(arena: MapBuilder.Arena, position: Vector3): Vector
 	return push
 end
 
--- If you've made a model for this animal, put it in ReplicatedStorage > AnimalModels, named after the
--- animal's Id (e.g. "Hamster"). It's sized to the animal and stood on the ground (see ModelFit.luau), and
--- placeCritter moves it along with the invisible "runner" ball every frame.
--- Returns the model and where it sits relative to the ball.
--- (No welds on purpose: a weld made before the ball is in the world locks in the wrong offset.)
-local function attachModel(critter: Part, animalId: string): (Model?, CFrame?)
-	local models = ReplicatedStorage:FindFirstChild("AnimalModels")
-	local template = models and models:FindFirstChild(animalId)
-	if not (template and template:IsA("Model")) then
-		return nil, nil
-	end
-	local model = template:Clone()
-	ModelFit.Paint(model, animalId)
-	local floor = critter.CFrame * CFrame.new(0, -critter.Size.Y / 2, 0)
-	ModelFit.Fit(model, floor, critter.Size.X * 1.15)
-	for _, descendant in model:GetDescendants() do
-		if descendant:IsA("BasePart") then
-			descendant.Anchored = true
-			descendant.CanCollide = false
-			descendant.CanQuery = false
-			descendant:SetAttribute("BaseTransparency", descendant.Transparency)
-		end
-	end
-	model.Parent = critter
-	critter.Transparency = 1
-	critter:SetAttribute("HasModel", true)
-	return model, critter.CFrame:ToObjectSpace(model:GetPivot())
-end
+-- The Blender model for the animal (ReplicatedStorage > AnimalModels > "<animal id>") is drawn by each
+-- player's client, following this invisible-to-them "runner" ball and hopping, bobbing and twitching as it
+-- goes (src/client/Animate.luau). The server only moves the ball, which saves a lot of network traffic.
+-- Without a model, the ball itself is what you chase.
 
 local function setHidden(critter: Part, hidden: boolean)
 	if critter:GetAttribute("Hidden") == hidden then
 		return
 	end
-	critter:SetAttribute("Hidden", hidden)
-	if not critter:GetAttribute("HasModel") then
-		critter.Transparency = if hidden then 1 else 0
-	end
+	critter:SetAttribute("Hidden", hidden) -- the client hides the animal's model too
+	critter.Transparency = if hidden then 1 else 0
 	for _, descendant in critter:GetDescendants() do
-		if descendant:IsA("BasePart") then
-			descendant.Transparency = if hidden
-				then 1
-				else (descendant:GetAttribute("BaseTransparency") :: number?) or 0
-		elseif descendant:IsA("BillboardGui") or descendant:IsA("ProximityPrompt") then
+		if descendant:IsA("BillboardGui") or descendant:IsA("ProximityPrompt") then
 			(descendant :: any).Enabled = not hidden
 		end
 	end
@@ -202,11 +173,6 @@ local function placeCritter(s: Session)
 	local st = s.CatchState
 	local position = st.Pos + Vector3.new(0, arenaOf(s).FloorY + st.Radius + st.Lift, 0)
 	critter.CFrame = CFrame.lookAt(position, position + st.Facing)
-	-- Carry your Blender model along with the ball
-	local art = st.Art
-	if art then
-		art:PivotTo(critter.CFrame * st.ArtOffset)
-	end
 end
 
 local function startDodge(s: Session, now: number, toPlayer: Vector3)
@@ -344,7 +310,8 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 	critter.Color = animal.Color or Color3.new(1, 1, 1)
 	critter.Anchored = true
 	critter.CanCollide = false
-	local art, artOffset = attachModel(critter, s.AnimalId)
+	critter:SetAttribute("AnimalId", s.AnimalId)
+	CollectionService:AddTag(critter, "Critter")
 	MapBuilder.Label(critter, `{s.Player.DisplayName}'s {animal.DisplayName}`, radius + 1.5)
 
 	-- One prompt for everyone: the owner/crew grab it, others can join a giant's crew or spook a Chaos animal
@@ -371,8 +338,6 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 		Lift = 0,
 		SpeedMult = 1,
 		Asleep = twists.Sleep == true,
-		Art = art,
-		ArtOffset = artOffset,
 	}
 	s.Critter = critter
 	CatchAI.RefreshLabel(s)

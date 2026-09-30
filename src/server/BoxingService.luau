@@ -16,6 +16,7 @@
 -- The server runs everything and checks every message. The client only draws the screen and reports what you
 -- rubbed and taped. Calming is capped per second and tape strips can't come faster than a human could drag them.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -30,6 +31,7 @@ local Economy = require(script.Parent.Economy)
 local MailService = require(script.Parent.MailService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Remotes = require(script.Parent.Remotes)
 local StampsConfig = require(ReplicatedStorage.Shared.Config.Stamps)
 local Travel = require(script.Parent.Travel)
@@ -234,6 +236,9 @@ local function buildBox(s: Session): Model
 	end
 
 	model.PrimaryPart = box
+	-- Each client wiggles the box art by anger and squishes the animal when it's petted (Animate.luau)
+	model:SetAttribute("Anger", 0)
+	CollectionService:AddTag(model, "JobBox")
 	model.Parent = boxesFolder
 	return model
 end
@@ -251,6 +256,7 @@ local function updateBoxVisual(s: Session)
 	if not (box and lid and strip) then
 		return
 	end
+	model:SetAttribute("Anger", state.Anger)
 	local scale = (box:GetAttribute("Scale") :: number?) or 1
 	local shake = if state.Anger > 70 then (math.random() - 0.5) * 0.15 * scale else 0
 	local angle = math.rad(math.clamp(state.Anger, 0, 100) * 0.6)
@@ -498,19 +504,7 @@ local function escape(s: Session, how: string)
 end
 
 local function playVineBoom(at: BasePart)
-	local id = Config.Sounds.VineBoom
-	if id == "" then
-		return -- no sound id set yet (see src/shared/Config/Sounds.luau)
-	end
-	local sound = Instance.new("Sound")
-	sound.SoundId = id
-	sound.Volume = Config.Sounds.VineBoomVolume
-	sound.RollOffMaxDistance = 150
-	sound.Parent = at
-	sound:Play()
-	sound.Ended:Once(function()
-		sound:Destroy()
-	end)
+	Sfx.Play("VineBoom", at) -- silent until you set its id in src/shared/Config/Sounds.luau
 end
 
 -- Anger hit 100: VINE BOOM, launch everyone in the job as ragdolls, and the animal escapes.
@@ -570,6 +564,7 @@ local function finishJob(s: Session)
 	local model = s.BoxModel
 	s.BoxModel = nil
 	if model then
+		model:SetAttribute("Done", true) -- clients stop wiggling it
 		local critter = model:FindFirstChild("Animal") :: Part?
 		if critter then
 			critter.Transparency = 1 -- it's in the box now

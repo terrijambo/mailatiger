@@ -4,6 +4,8 @@
 
 local Players = game:GetService("Players")
 
+local Animate = require(script.Animate)
+local Audio = require(script.Audio)
 local Effects = require(script.Effects)
 local Hud = require(script.Hud)
 local BoxingScreen = require(script.BoxingScreen)
@@ -20,6 +22,8 @@ OrdersBoard.Start()
 BoxingScreen.Start()
 Effects.Start()
 Movement.Start()
+Animate.Start()
+Audio.Start()
 task.spawn(ChuteVisual.Start) -- waits for the map to load, so it runs on its own
 
 print(`[Mail a Tiger] Client started for {Players.LocalPlayer.Name}.`)

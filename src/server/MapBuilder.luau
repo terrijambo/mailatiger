@@ -278,8 +278,8 @@ local function buildArena(parent: Instance, spec: ArenaSpec, returnPads: { BaseP
 		MapBuilder.Label(sign, string.upper(def.DisplayName), 2, COLORS.Yellow)
 		dress(folder, "ArenaGate", spot(center.X, y, z1 + 0.5), 12.5, { leftPost, rightPost, sign })
 		-- Land just outside the gate, facing in
-		local spot = Vector3.new(center.X, y + 3, z1 + 6)
-		gate = CFrame.lookAt(spot, spot - Vector3.zAxis)
+		local landing = Vector3.new(center.X, y + 3, z1 + 6)
+		gate = CFrame.lookAt(landing, landing - Vector3.zAxis)
 		block(
 			folder,
 			"GatePath",
@@ -289,8 +289,8 @@ local function buildArena(parent: Instance, spec: ArenaSpec, returnPads: { BaseP
 		)
 	else
 		-- No fence: land on the roof itself
-		local spot = Vector3.new(center.X, y + 3, spec.MaxZ - 4)
-		gate = CFrame.lookAt(spot, spot - Vector3.zAxis)
+		local landing = Vector3.new(center.X, y + 3, spec.MaxZ - 4)
+		gate = CFrame.lookAt(landing, landing - Vector3.zAxis)
 		local sign = block(
 			folder,
 			"Sign",

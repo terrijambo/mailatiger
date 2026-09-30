@@ -14,6 +14,8 @@ local Workspace = game:GetService("Workspace")
 
 local BoxMath = require(ReplicatedStorage.Shared.BoxMath)
 local Config = require(ReplicatedStorage.Shared.Config)
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Ui = require(script.Parent.Ui)
 
 local player = Players.LocalPlayer
@@ -133,13 +135,33 @@ function BoxingScreen.Start()
 		BackgroundTransparency = 1,
 		ZIndex = 2,
 	}, scene)
+	-- The plain circle-with-a-face animal (used when its Blender model isn't imported)
 	local animalBody = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.fromScale(0.5, 1),
 		Size = UDim2.fromScale(1, 1),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		ZIndex = 2,
 	}, animalCard)
 	Ui.round(animalBody, 1000)
-	Ui.make("UIStroke", { Thickness = 4, Color = DARK }, animalBody)
+	local bodyStroke = Ui.make("UIStroke", { Thickness = 4, Color = DARK }, animalBody)
+	-- Your Blender animal in 3D, when imported
+	local viewport = Ui.make("ViewportFrame", {
+		AnchorPoint = Vector2.new(0.5, 1),
+		Position = UDim2.fromScale(0.5, 1),
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Ambient = Color3.fromRGB(170, 170, 170),
+		LightColor = Color3.new(1, 1, 1),
+		LightDirection = Vector3.new(-0.4, -1, 0.6),
+		ZIndex = 2,
+	}, animalCard)
+	local viewportCamera = Instance.new("Camera")
+	viewportCamera.FieldOfView = 30
+	viewportCamera.Parent = viewport
+	viewport.CurrentCamera = viewportCamera
+	local viewportModel: Model? = nil
+	local squishUntil = 0
 	local face = Ui.label(animalBody, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.36),
@@ -310,6 +332,25 @@ function BoxingScreen.Start()
 		animalTitle.Text = `Calm your {if animal then animal.DisplayName else "animal"}`
 		animalBody.BackgroundColor3 = if animal and animal.Color then animal.Color else Color3.new(1, 1, 1)
 
+		-- Show the 3D model if there is one, looking at its face; otherwise the circle
+		if viewportModel then
+			viewportModel:Destroy()
+			viewportModel = nil
+		end
+		local model = ModelFit.Spawn("AnimalModels", data.AnimalId, CFrame.identity, 4, nil)
+		if model then
+			local _, size = model:GetBoundingBox()
+			local focus = Vector3.new(0, size.Y / 2, 0)
+			local distance = math.max(size.X, size.Y) / 2 / math.tan(math.rad(15)) * 1.05
+			-- Models face -Z (see ModelFit), so the camera stands on that side
+			viewportCamera.CFrame = CFrame.lookAt(focus + Vector3.new(0, size.Y * 0.08, -distance), focus)
+			model.Parent = viewport
+			viewportModel = model
+		end
+		animalBody.BackgroundTransparency = if model then 1 else 0
+		bodyStroke.Enabled = model == nil
+		face.Visible = model == nil
+
 		for _, frame in spotFrames do
 			frame:Destroy()
 		end
@@ -370,6 +411,15 @@ function BoxingScreen.Start()
 				frame.Position = UDim2.fromScale(p.X, p.Y)
 			end
 		end
+		-- The 3D animal looks around a little, and squishes happily when petted
+		local now = os.clock()
+		local squish = if now < squishUntil then math.sin((squishUntil - now) / 0.25 * math.pi) * 0.1 else 0
+		local squash = UDim2.fromScale(1 + squish, 1 - squish)
+		animalBody.Size = squash
+		viewport.Size = squash
+		if viewportModel then
+			viewportModel:PivotTo(CFrame.Angles(0, math.sin(now * 1.3) * 0.3, math.sin(now * 0.9) * 0.05))
+		end
 		-- A furious animal trembles and strains to get out of the box
 		if not popping then
 			local anger = (player:GetAttribute("Anger") :: number?) or 0
@@ -405,6 +455,8 @@ function BoxingScreen.Start()
 						lastPetSend = now
 						input:FireServer("Pet", index)
 						floatText("♥", screen, PINK)
+						squishUntil = now + 0.25
+						Sfx.Play("Purr")
 					elseif spot.Kind == "Angry" and now - lastAngrySend >= 0.5 then
 						lastAngrySend = now
 						input:FireServer("Angry", index)
