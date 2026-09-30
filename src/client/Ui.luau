@@ -1,6 +1,11 @@
 --!strict
 -- Small helpers for building UI in code, shared by the menus.
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+
 local Ui = {}
 
 Ui.FONT = Enum.Font.FredokaOne
@@ -72,7 +77,64 @@ function Ui.window(parentGui: Instance, name: string, title: string): (ScreenGui
 	close.Activated:Connect(function()
 		gui.Enabled = false
 	end)
+	Ui.press(close)
+	Ui.pop(gui, frame)
 	return gui, frame
+end
+
+-- Windows pop open with a little bounce instead of just appearing
+function Ui.pop(gui: ScreenGui, frame: GuiObject)
+	local scale = Ui.make("UIScale", { Scale = 1 }, frame)
+	gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+		if gui.Enabled then
+			scale.Scale = 0.85
+			TweenService:Create(scale, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Scale = 1,
+			}):Play()
+		end
+	end)
+end
+
+-- Buttons squish a little while you press them
+function Ui.press(button: GuiButton)
+	local scale = Ui.make("UIScale", { Scale = 1 }, button)
+	local info = TweenInfo.new(0.08)
+	button.MouseButton1Down:Connect(function()
+		TweenService:Create(scale, info, { Scale = 0.93 }):Play()
+	end)
+	local function release()
+		TweenService:Create(scale, TweenInfo.new(0.15, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	end
+	button.MouseButton1Up:Connect(release)
+	button.MouseLeave:Connect(release)
+end
+
+-- A little 3D picture of one of your Blender models (e.g. "AnimalModels", "Tiger"), turned to face you.
+-- Returns nil if that model isn't imported, so callers can keep a plain fallback.
+function Ui.modelIcon(parent: Instance, folderName: string, modelName: string, props: { [string]: any }): ViewportFrame?
+	local model = ModelFit.Spawn(folderName, modelName, CFrame.identity, 4, nil)
+	if not model then
+		return nil
+	end
+	local viewport = Ui.make("ViewportFrame", {
+		BackgroundTransparency = 1,
+		Ambient = Color3.fromRGB(170, 170, 170),
+		LightDirection = Vector3.new(-0.4, -1, 0.6),
+	}, parent)
+	for key, value in props do
+		(viewport :: any)[key] = value
+	end
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = 30
+	camera.Parent = viewport
+	viewport.CurrentCamera = camera
+	-- Look at it from the front and a little to the side and above (models face -Z)
+	local box, size = model:GetBoundingBox()
+	local reach = math.max(size.X, size.Y, size.Z) / 2 / math.tan(math.rad(15)) * 1.15
+	local direction = Vector3.new(0.45, 0.35, -1).Unit
+	camera.CFrame = CFrame.lookAt(box.Position + direction * reach, box.Position)
+	model.Parent = viewport
+	return viewport
 end
 
 -- A small colored button.
@@ -89,6 +151,7 @@ function Ui.button(parent: Instance, props: { [string]: any }): TextButton
 	end
 	local button = Ui.make("TextButton", base, parent)
 	Ui.round(button, 8)
+	Ui.press(button)
 	return button
 end
 

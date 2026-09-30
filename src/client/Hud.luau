@@ -32,6 +32,26 @@ local function round(parent: Instance, radius: number?)
 	make("UICorner", { CornerRadius = UDim.new(0, radius or 10) }, parent)
 end
 
+-- Short numbers for big amounts: 9500, 12.5K, 3.2M, 1.05B
+local UNITS: { { From: number, Divide: number, Suffix: string } } = {
+	{ From = 1e12, Divide = 1e12, Suffix = "T" },
+	{ From = 1e9, Divide = 1e9, Suffix = "B" },
+	{ From = 1e6, Divide = 1e6, Suffix = "M" },
+	{ From = 1e4, Divide = 1e3, Suffix = "K" },
+}
+function Hud.Short(n: number): string
+	for _, unit in UNITS do
+		if math.abs(n) >= unit.From then
+			local scaled = n / unit.Divide
+			local text = if math.abs(scaled) >= 100
+				then tostring(math.floor(scaled))
+				else (string.gsub(string.format("%.1f", scaled), "%.0$", ""))
+			return text .. unit.Suffix
+		end
+	end
+	return tostring(n)
+end
+
 function Hud.Start()
 	local gui = make("ScreenGui", { Name = "MailATigerHud", ResetOnSpawn = false }, player:WaitForChild("PlayerGui"))
 
@@ -75,9 +95,54 @@ function Hud.Start()
 		TextStrokeTransparency = 0.4,
 		Text = "",
 	}, gui)
+	-- The coin counter rolls up to its new value, bounces, and floats a "+123" when you get paid
+	local shownCoins = Instance.new("NumberValue")
+	local coinScale = make("UIScale", { Scale = 1 }, coinsLabel)
+	local knownCoins: number? = nil
+	shownCoins.Changed:Connect(function(value: number)
+		coinsLabel.Text = `{Hud.Short(math.round(value))} coins`
+	end)
+	local function showCoins(coins: number)
+		local before = knownCoins
+		knownCoins = coins
+		if before == nil then
+			shownCoins.Value = coins
+			coinsLabel.Text = `{Hud.Short(coins)} coins`
+			return
+		end
+		if coins == before then
+			return
+		end
+		TweenService:Create(shownCoins, TweenInfo.new(0.6, Enum.EasingStyle.Quad), { Value = coins }):Play()
+		coinScale.Scale = 1.15
+		TweenService:Create(coinScale, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+		if coins > before then
+			local gain = make("TextLabel", {
+				AnchorPoint = Vector2.new(0.5, 0),
+				Position = UDim2.new(0.5, 0, 0, 44),
+				Size = UDim2.fromOffset(200, 30),
+				BackgroundTransparency = 1,
+				Font = FONT,
+				TextSize = 26,
+				TextColor3 = Color3.fromRGB(255, 215, 80),
+				TextStrokeTransparency = 0.3,
+				Text = `+{Hud.Short(coins - before)}`,
+			}, gui)
+			local rise = TweenService:Create(gain, TweenInfo.new(1.1), {
+				Position = UDim2.new(0.5, 0, 0, 90),
+				TextTransparency = 1,
+				TextStrokeTransparency = 1,
+			})
+			rise:Play()
+			rise.Completed:Once(function()
+				gain:Destroy()
+			end)
+		end
+	end
+
 	local function refreshStatus()
 		local profile = Profile.Get()
-		coinsLabel.Text = `{profile.Coins} coins`
+		showCoins(profile.Coins)
 		local capacity = Profile.BagCapacity(profile)
 		bagLabel.Text = `Bag {#profile.Parcels}/{capacity}`
 		bagLabel.TextColor3 = if #profile.Parcels >= capacity

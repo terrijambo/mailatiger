@@ -16,6 +16,15 @@ local Shop = {}
 
 local TABS = { "Boxes", "Tools", "Stamps", "Chutes", "Rebirth" }
 
+-- Which PropModels picture goes with each tool
+local TOOL_MODELS: { [string]: string } = {
+	Gloves = "GrabbingGloves",
+	Sneakers = "Sneakers",
+	TapeGun = "TapeGun",
+	Net = "ButterflyNet",
+	MailBag = "Parcel",
+}
+
 local function rebirthCost(rebirths: number): number
 	local rebirth = Config.Progression.Rebirth
 	return math.round(rebirth.BaseCost * rebirth.CostGrowth ^ rebirths)
@@ -53,22 +62,33 @@ function Shop.Start()
 	local tabButtons: { [string]: TextButton } = {}
 	local rebirthArmedUntil = 0
 
-	-- One row: name + description on the left, one or two buttons on the right
-	local function row(order: number, title: string, description: string): Frame
+	-- One row: a 3D picture (if that model is imported), name + description, then one or two buttons.
+	-- icon = { folder, model name }, e.g. { "BoxModels", "Steel" }
+	local function row(order: number, title: string, description: string, icon: { string }?): Frame
 		local frame = Ui.make("Frame", {
 			LayoutOrder = order,
 			Size = UDim2.new(1, -12, 0, 70),
 			BackgroundColor3 = Ui.WHITE,
 		}, list)
 		Ui.round(frame)
+		local left = 14
+		if
+			icon
+			and Ui.modelIcon(frame, icon[1], icon[2], {
+				Position = UDim2.fromOffset(6, 3),
+				Size = UDim2.fromOffset(64, 64),
+			})
+		then
+			left = 76
+		end
 		Ui.label(frame, {
-			Position = UDim2.fromOffset(14, 8),
+			Position = UDim2.fromOffset(left, 8),
 			Size = UDim2.new(1, -300, 0, 24),
 			TextSize = 20,
 			Text = title,
 		})
 		Ui.label(frame, {
-			Position = UDim2.fromOffset(14, 34),
+			Position = UDim2.fromOffset(left, 34),
 			Size = UDim2.new(1, -300, 0, 30),
 			TextSize = 14,
 			TextColor3 = Color3.fromRGB(110, 100, 90),
@@ -108,7 +128,8 @@ function Shop.Start()
 				local frame = row(
 					index,
 					box.DisplayName,
-					`Animals start at {box.StartAnger} anger · get angry {math.round(box.AngerMult * 100)}% as fast`
+					`Animals start at {box.StartAnger} anger · get angry {math.round(box.AngerMult * 100)}% as fast`,
+					{ "BoxModels", box.Id }
 				)
 				if profile.EquippedBox == box.Id then
 					rowButton(frame, 1, "Equipped", Ui.GREEN, nil)
@@ -125,7 +146,12 @@ function Shop.Start()
 		elseif currentTab == "Tools" then
 			for index, tool in Config.Tools.List do
 				local level = profile.Tools[tool.Id] or 0
-				local frame = row(index, `{tool.DisplayName}  (Lv {level}/{tool.MaxLevel})`, tool.Description)
+				local frame = row(
+					index,
+					`{tool.DisplayName}  (Lv {level}/{tool.MaxLevel})`,
+					tool.Description,
+					{ "PropModels", TOOL_MODELS[tool.Id] or "" }
+				)
 				if level >= tool.MaxLevel then
 					rowButton(frame, 1, "MAXED", Ui.GREEN, nil)
 				else
@@ -145,7 +171,12 @@ function Shop.Start()
 			end
 			for index, stamp in Config.Stamps.List do
 				local count = profile.Stamps[stamp.Id] or 0
-				local frame = row(index, `{stamp.DisplayName}  (you have {count})`, stamp.Description)
+				local frame = row(
+					index,
+					`{stamp.DisplayName}  (you have {count})`,
+					stamp.Description,
+					{ "PropModels", "RubberStamp" }
+				)
 				rowButton(frame, 1, `Buy: {stamp.Price}`, Ui.ORANGE, function()
 					shopAction:FireServer("BuyStamp", stamp.Id)
 				end)
@@ -162,8 +193,12 @@ function Shop.Start()
 			local current = Config.Mail.ChuteIndex[profile.ChuteTier] or 1
 			for index, chute in Config.Mail.Chutes do
 				local pay = math.round((chute.PayMult - 1) * 100)
-				local frame =
-					row(index, `{chute.DisplayName}  (+{pay}% pay, {chute.HoldTime}s to mail)`, chute.Description)
+				local frame = row(
+					index,
+					`{chute.DisplayName}  (+{pay}% pay, {chute.HoldTime}s to mail)`,
+					chute.Description,
+					{ "PropModels", chute.Model }
+				)
 				if index == current then
 					rowButton(frame, 1, "Installed", Ui.GREEN, nil)
 				elseif index < current then

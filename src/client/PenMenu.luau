@@ -9,6 +9,7 @@ local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Profile = require(script.Parent.Profile)
+local Ui = require(script.Parent.Ui)
 
 local player = Players.LocalPlayer
 
@@ -56,6 +57,7 @@ function PenMenu.Start()
 	round(window, 16)
 	make("UIStroke", { Thickness = 4, Color = Color3.fromRGB(120, 70, 40) }, window)
 	make("UISizeConstraint", { MaxSize = Vector2.new(900, 640) }, window)
+	Ui.pop(gui, window)
 
 	make("TextLabel", {
 		Position = UDim2.fromOffset(20, 10),
@@ -79,6 +81,7 @@ function PenMenu.Start()
 		Text = "X",
 	}, window)
 	round(close, 20)
+	Ui.press(close)
 
 	-- Chaos Mode toggle: +50% pay, but other players can spook your animal and shove you
 	local chaos = false
@@ -119,7 +122,7 @@ function PenMenu.Start()
 		SortOrder = Enum.SortOrder.LayoutOrder,
 	}, list)
 
-	local cards: { [string]: { Button: TextButton, Status: TextLabel } } = {}
+	local cards: { [string]: { Button: TextButton, Status: TextLabel, Icon: ViewportFrame? } } = {}
 
 	for index, animal in Config.Animals.List do
 		local button = make("TextButton", {
@@ -131,12 +134,22 @@ function PenMenu.Start()
 		round(button)
 
 		local swatch = make("Frame", {
-			Position = UDim2.fromOffset(10, 10),
-			Size = UDim2.fromOffset(36, 36),
+			Position = UDim2.fromOffset(6, 6),
+			Size = UDim2.fromOffset(44, 44),
 			BackgroundColor3 = animal.Color or WHITE,
 		}, button)
-		round(swatch, 18)
+		round(swatch, 22)
 		make("UIStroke", { Thickness = 2, Color = Color3.fromRGB(60, 60, 60) }, swatch)
+		-- The animal's 3D model on a soft circle, if imported (the colored dot is the fallback)
+		local icon = Ui.modelIcon(swatch, "AnimalModels", animal.Id, {
+			Position = UDim2.fromOffset(-4, -6),
+			Size = UDim2.fromOffset(52, 52),
+			ZIndex = 2,
+		})
+		if icon then
+			swatch.BackgroundColor3 = (animal.Color or WHITE):Lerp(WHITE, 0.6)
+		end
+		Ui.press(button)
 
 		make("TextLabel", {
 			Position = UDim2.fromOffset(54, 8),
@@ -183,7 +196,7 @@ function PenMenu.Start()
 			requestAnimal:FireServer(animal.Id, chaos)
 			gui.Enabled = false
 		end)
-		cards[animal.Id] = { Button = button, Status = status }
+		cards[animal.Id] = { Button = button, Status = status, Icon = icon }
 	end
 
 	local function refresh()
@@ -193,6 +206,12 @@ function PenMenu.Start()
 			local card = cards[animal.Id]
 			local status = card.Status
 			local coop = if animal.Carriers > 1 then ` · co-op {animal.Carriers}p` else ""
+			-- Animals you can't have yet show as a dark silhouette
+			local icon = card.Icon
+			if icon then
+				local locked = not owned[animal.Id] and not freeInStudio and myCoins < animal.Price
+				icon.ImageColor3 = if locked then Color3.fromRGB(40, 40, 50) else WHITE
+			end
 			if owned[animal.Id] then
 				status.Text = `Owned - Box it!{coop}`
 				status.BackgroundColor3 = Color3.fromRGB(90, 180, 90)
