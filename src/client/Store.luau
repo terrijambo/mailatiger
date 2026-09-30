@@ -146,12 +146,12 @@ function Store.Start()
 		end
 	end
 
-	-- The button that opens it (left side of the screen)
+	-- The button that opens it: first in the row of buttons along the top-left, just under Roblox's own
+	-- menu bar, level with the coins (Settings and Invite sit to its right). Nothing else goes there, even on phones
 	local hud = Ui.make("ScreenGui", { Name = "StoreButton", ResetOnSpawn = false }, playerGui)
 	local open = Ui.button(hud, {
-		AnchorPoint = Vector2.new(0, 0.5),
-		Position = UDim2.new(0, 12, 0.4, 0),
-		Size = UDim2.fromOffset(96, 40),
+		Position = UDim2.fromOffset(12, 8),
+		Size = UDim2.fromOffset(96, 36),
 		BackgroundColor3 = Color3.fromRGB(80, 180, 90),
 		TextSize = 20,
 		Text = "Store",

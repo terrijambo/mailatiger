@@ -108,11 +108,11 @@ Play once with a **fresh save** (saving is off in Studio, so every Play is fresh
 - [ ] **Tutorial** (fresh save): Gruff's panel on the left says to go to the Pen, with a glowing yellow line and a bouncing ▼ pointing there. It updates for catching (points at your animal), boxing, mailing (points at the chute) and shopping, then disappears. You get +100 coins at the end. "Skip tutorial" also works.
 - [ ] **Juice:** confetti when you finish a box and when you mail. The camera zooms on launches. The coin counter rolls up with a "+N", and big numbers show as 12.5K / 3.2M.
 - [ ] **Menus:** 3D pictures in the Pen (animals you can't afford are dark silhouettes) and in every Shop tab. Windows pop open, and buttons squish when pressed.
-- [ ] **Store** (green button on the left): says "The Store opens soon!" until you add ids. After you add one, it lists it and Roblox's (test) purchase popup appears.
+- [ ] **Store** (green button, top-left): says "The Store opens soon!" until you add ids. After you add one, it lists it and Roblox's (test) purchase popup appears.
 - [ ] **Lighting:** the world now has shadows, an early-afternoon sun and soft haze (from `Config/Look.luau`). For crisper shadows, in Studio select **Lighting** and set **Technology** to **Future** (scripts can't change that one). Don't like the look? Set `Apply = false` in `Config/Look.luau`.
 - [ ] **Popups** queue up instead of replacing each other, and receipts get a red star-rating stamp.
 - [ ] **Daily paycheck:** a few seconds after joining, Gruff pays you for showing up (day 1 of your streak).
-- [ ] **Settings** button (left, under Store): turn music, sound effects or camera shake off and on. Choices stick after a rejoin (with saving on).
+- [ ] **Settings** button (top-left, next to Store): turn music, sound effects or camera shake off and on. Choices stick after a rejoin (with saving on).
 - [ ] **Sounds and music** play (starter sounds from Roblox's library). Note any that are annoying or wrong.
 - [ ] Anything that looks wrong: tell me what and where (a screenshot helps).
 
