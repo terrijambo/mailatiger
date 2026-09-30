@@ -13,6 +13,7 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Analytics = require(script.Parent.Analytics)
+local Badges = require(script.Parent.Badges)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local LeaderboardService = require(script.Parent.LeaderboardService)
@@ -209,6 +210,20 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		end
 		profile.RarestIndex = math.max(profile.RarestIndex, animalIndex(parcel.AnimalId))
 		best = math.max(best, parcel.Stars)
+
+		-- Badges (only awarded once you've set their ids in Config/Badges.luau)
+		Badges.Award(player, "FirstDelivery")
+		if parcel.AnimalId == "Tiger" then
+			Badges.Award(player, "TigerMailed")
+		elseif parcel.AnimalId == "Gruff" then
+			Badges.Award(player, "SpecialDelivery")
+		end
+		if parcel.Stars == 5 then
+			Badges.Award(player, "FiveStamps")
+		end
+		if parcel.Stamp == "CHAOS" then
+			Badges.Award(player, "ChaosCourier")
+		end
 
 		local animal = Config.Animals.ById[parcel.AnimalId]
 		local name = if animal then animal.DisplayName else parcel.AnimalId

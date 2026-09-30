@@ -18,6 +18,7 @@ return {
 	Monetization = require(script.Monetization),
 	Look = require(script.Look),
 	Codes = require(script.Codes),
+	Badges = require(script.Badges),
 
 	Dev = {
 		-- In Roblox Studio every animal is free, so you can test any of them right away.

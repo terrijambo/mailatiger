@@ -135,11 +135,12 @@ In rough order. Each one is a few minutes.
 6. **Group bonus** (optional): create a Roblox group for the game, then paste its id into `GroupId` in `Config/Monetization.luau`. Members earn +10% coins (Premium members get +10% already, automatically).
 7. **Private servers** (optional): Monetization → Private Servers → set a price (free or 100 Robux is typical).
 8. **Icon and thumbnails:** drafts rendered from your models are in `art/marketing/` (icon.png 512×512, two 1920×1080 thumbnails; re-render with `art/blender_scripts/marketing.py`). Use them or take in-game screenshots, then Creator Dashboard → your experience → **Places / Configure** → upload. Good in-game shots: the RETURN TO SENDER stamp mid-launch, a player taping an angry tiger, the town with Gruff.
-9. **Game settings:** Genre *Simulation* (or *Comedy*), max players 12–16, **Maturity questionnaire** (Creator Dashboard → Experience Questionnaire; the ragdoll launch is cartoon slapstick), and allow **Private Servers** if you did step 7.
-10. **Reward codes:** edit `Config/Codes.luau` (e.g. a `LAUNCH` code for launch day) and share them in your game description, group or videos.
-11. **Fresh data for launch:** change `StoreName` in `Config/Progression.luau` to `PlayerData_v2` (wipes test saves) and `StoreVersion` in `Config/Social.luau` to `"v2"` (resets leaderboards).
-12. **Studio free animals** are Studio-only and turn off by themselves in the live game. Nothing to do.
-13. **Go public:** Creator Dashboard → your experience → **Access → Public**. Then watch **Analytics** → Onboarding funnel to see where new players drop off.
+9. **Game settings:** Genre *Simulation* (or *Comedy*), max players 12–16, **Maturity questionnaire** (Creator Dashboard → Experience Questionnaire; the ragdoll launch is cartoon slapstick), and allow **Private Servers** if you did step 7 (Private servers).
+10. **Badges** (optional): Creator Dashboard → your experience → **Associated Items → Badges**, create the 7 badges listed in `Config/Badges.luau` (names and descriptions are there), and paste each id in.
+11. **Reward codes:** edit `Config/Codes.luau` (e.g. a `LAUNCH` code for launch day) and share them in your game description, group or videos.
+12. **Fresh data for launch:** change `StoreName` in `Config/Progression.luau` to `PlayerData_v2` (wipes test saves) and `StoreVersion` in `Config/Social.luau` to `"v2"` (resets leaderboards).
+13. **Studio free animals** are Studio-only and turn off by themselves in the live game. Nothing to do.
+14. **Go public:** Creator Dashboard → your experience → **Access → Public**. Then watch **Analytics** → Onboarding funnel to see where new players drop off.
 
 ## Saving (DataStores)
 Progress saves automatically: every 60 seconds, when you leave, and when a server shuts down.

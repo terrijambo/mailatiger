@@ -27,6 +27,7 @@ local BoxingConfig = require(ReplicatedStorage.Shared.Config.Boxing)
 local CatchAI = require(script.Parent.CatchAI)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Analytics = require(script.Parent.Analytics)
+local Badges = require(script.Parent.Badges)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local MailService = require(script.Parent.MailService)
@@ -488,6 +489,7 @@ local function breakout(s: Session, position: Vector3)
 	end
 	for _, member in membersOf(s) do
 		gruffSays(member, pick(Gruff.Breakout))
+		Badges.Award(member, "ReturnToSender")
 	end
 end
 

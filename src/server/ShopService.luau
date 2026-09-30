@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Analytics = require(script.Parent.Analytics)
+local Badges = require(script.Parent.Badges)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local MapBuilder = require(script.Parent.MapBuilder)
@@ -114,6 +115,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		-- Start over, but keep a permanent coin bonus
 		Analytics.Spend(player, profile.Coins, 0, `Rebirth_{profile.Rebirths + 1}`)
 		Analytics.Custom(player, "Rebirth", profile.Rebirths + 1)
+		Badges.Award(player, "Reborn")
 		profile.Coins = 0
 		profile.Owned = { Hamster = true }
 		profile.Boxes = { Cardboard = true }

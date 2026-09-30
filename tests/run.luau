@@ -170,6 +170,12 @@ for name, code in Config.Codes do
 	end
 end
 
+section("Badges")
+for key, badge in Config.Badges do
+	check(type(badge.Id) == "number", `badge {key} Id must be a number (0 = not set up yet)`)
+	check(#badge.Description > 0, `badge {key} needs a description`)
+end
+
 section("Sounds")
 for name, sound in Config.Sounds do
 	check(type(sound.Id) == "string", `sound {name} has no Id string`)
