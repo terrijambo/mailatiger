@@ -8,6 +8,7 @@
 --   MailAnywhere   client -> server   press M to mail your bag from anywhere (Rocket Chute only; server checks)
 --   Tutorial       client -> server   "Done" or "Skip" for Gruff's walkthrough (server checks the reward)
 --   Setting        client -> server   turn a setting (Music, Sfx, Motion) on or off; saved with your progress
+--   RedeemCode     client -> server   a reward code typed into Settings (server checks it)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -30,6 +31,7 @@ local shove = remote("Shove")
 local mailAnywhere = remote("MailAnywhere")
 local tutorial = remote("Tutorial")
 local setting = remote("Setting")
+local redeemCode = remote("RedeemCode")
 
 folder.Parent = ReplicatedStorage
 
@@ -68,4 +70,5 @@ return {
 	MailAnywhere = mailAnywhere,
 	Tutorial = tutorial,
 	Setting = setting,
+	RedeemCode = redeemCode,
 }

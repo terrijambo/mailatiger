@@ -27,7 +27,7 @@ function Settings.Start()
 	local gui, window = Ui.window(playerGui, "Settings", "Settings")
 	local size = window:FindFirstChildOfClass("UISizeConstraint")
 	if size then
-		size.MaxSize = Vector2.new(420, 260) -- a small window: just three switches
+		size.MaxSize = Vector2.new(420, 330) -- a small window: three switches and the code box
 	end
 
 	-- What you just clicked, until the server's saved copy catches up
@@ -63,6 +63,42 @@ function Settings.Start()
 		end)
 		buttons[option.Key] = button
 	end
+
+	-- Reward codes (the server checks them; see src/shared/Config/Codes.luau)
+	local redeem = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("RedeemCode") :: RemoteEvent
+	local codeY = 14 + (#OPTIONS + 1) * 56
+	local codeBox = Ui.make("TextBox", {
+		Position = UDim2.fromOffset(24, codeY),
+		Size = UDim2.new(1, -170, 0, 40),
+		BackgroundColor3 = Ui.WHITE,
+		Font = Ui.FONT,
+		TextSize = 18,
+		TextColor3 = Ui.INK,
+		PlaceholderText = "Type a code",
+		Text = "",
+		ClearTextOnFocus = false,
+	}, window)
+	Ui.round(codeBox, 8)
+	local redeemButton = Ui.button(window, {
+		AnchorPoint = Vector2.new(1, 0),
+		Position = UDim2.new(1, -24, 0, codeY),
+		Size = UDim2.fromOffset(110, 40),
+		BackgroundColor3 = Ui.ORANGE,
+		TextSize = 18,
+		Text = "Redeem",
+	})
+	local function submit()
+		if codeBox.Text ~= "" then
+			redeem:FireServer(codeBox.Text)
+			codeBox.Text = ""
+		end
+	end
+	redeemButton.Activated:Connect(submit)
+	codeBox.FocusLost:Connect(function(enterPressed: boolean)
+		if enterPressed then
+			submit()
+		end
+	end)
 
 	function Settings.Apply()
 		for _, option in OPTIONS do

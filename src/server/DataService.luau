@@ -59,6 +59,7 @@ export type Profile = {
 	PaycheckDay: number, -- the last day (days since 1970, UTC) you got Gruff's daily paycheck
 	PaycheckStreak: number, -- days in a row
 	Settings: { [string]: boolean }, -- Music, Sfx, Motion (camera shake/zoom). Missing = on
+	Codes: { [string]: boolean }, -- reward codes already redeemed
 }
 
 local DataService = {}
@@ -95,6 +96,7 @@ local function newProfile(): Profile
 		PaycheckDay = 0,
 		PaycheckStreak = 0,
 		Settings = {},
+		Codes = {},
 	}
 end
 

@@ -17,6 +17,7 @@ return {
 	Gruff = require(script.Gruff),
 	Monetization = require(script.Monetization),
 	Look = require(script.Look),
+	Codes = require(script.Codes),
 
 	Dev = {
 		-- In Roblox Studio every animal is free, so you can test any of them right away.

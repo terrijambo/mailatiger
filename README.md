@@ -113,6 +113,7 @@ Play once with a **fresh save** (saving is off in Studio, so every Play is fresh
 - [ ] **Popups** queue up instead of replacing each other, and receipts get a red star-rating stamp.
 - [ ] **Daily paycheck:** a few seconds after joining, Gruff pays you for showing up (day 1 of your streak).
 - [ ] **Settings** button (top-left, next to Store): turn music, sound effects or camera shake off and on. Choices stick after a rejoin (with saving on).
+- [ ] **Codes:** in Settings, type `launch` and press Redeem: Gruff gives you coins. Type it again: "already used". Try `gruff` for 2 Priority stamps. (Codes are in `Config/Codes.luau`.)
 - [ ] **Sounds and music** play (starter sounds from Roblox's library). Note any that are annoying or wrong.
 - [ ] Anything that looks wrong: tell me what and where (a screenshot helps).
 
@@ -134,9 +135,10 @@ In rough order. Each one is a few minutes.
 6. **Private servers** (optional): Monetization → Private Servers → set a price (free or 100 Robux is typical).
 7. **Icon and thumbnails:** drafts rendered from your models are in `art/marketing/` (icon.png 512×512, two 1920×1080 thumbnails; re-render with `art/blender_scripts/marketing.py`). Use them or take in-game screenshots, then Creator Dashboard → your experience → **Places / Configure** → upload. Good in-game shots: the RETURN TO SENDER stamp mid-launch, a player taping an angry tiger, the town with Gruff.
 8. **Game settings:** Genre *Simulation* (or *Comedy*), max players 12–16, **Maturity questionnaire** (Creator Dashboard → Experience Questionnaire; the ragdoll launch is cartoon slapstick), and allow **Private Servers** if you did step 6.
-9. **Fresh data for launch:** change `StoreName` in `Config/Progression.luau` to `PlayerData_v2` (wipes test saves) and `StoreVersion` in `Config/Social.luau` to `"v2"` (resets leaderboards).
-10. **Studio free animals** are Studio-only and turn off by themselves in the live game. Nothing to do.
-11. **Go public:** Creator Dashboard → your experience → **Access → Public**. Then watch **Analytics** → Onboarding funnel to see where new players drop off.
+9. **Reward codes:** edit `Config/Codes.luau` (e.g. a `LAUNCH` code for launch day) and share them in your game description, group or videos.
+10. **Fresh data for launch:** change `StoreName` in `Config/Progression.luau` to `PlayerData_v2` (wipes test saves) and `StoreVersion` in `Config/Social.luau` to `"v2"` (resets leaderboards).
+11. **Studio free animals** are Studio-only and turn off by themselves in the live game. Nothing to do.
+12. **Go public:** Creator Dashboard → your experience → **Access → Public**. Then watch **Analytics** → Onboarding funnel to see where new players drop off.
 
 ## Saving (DataStores)
 Progress saves automatically: every 60 seconds, when you leave, and when a server shuts down.

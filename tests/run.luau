@@ -161,6 +161,15 @@ for key in Config.Monetization.CoinPackJobs do
 	check(Config.Monetization.ProductByKey[key] ~= nil, `CoinPackJobs has {key}, which isn't a product`)
 end
 
+section("Reward codes")
+for name, code in Config.Codes do
+	check(name == string.upper(name) and not string.find(name, "%s"), `code "{name}" must be UPPERCASE with no spaces (players' typing is uppercased)`)
+	check(code.Jobs ~= nil or code.Stamps ~= nil, `code {name} gives nothing`)
+	for stampId in code.Stamps or {} do
+		check(Config.Stamps.ById[stampId] ~= nil, `code {name} gives "{stampId}" stamps, which don't exist`)
+	end
+end
+
 section("Sounds")
 for name, sound in Config.Sounds do
 	check(type(sound.Id) == "string", `sound {name} has no Id string`)

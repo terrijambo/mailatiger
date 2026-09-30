@@ -178,6 +178,7 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 Things added beyond the plan while you were away:
 - [x] **Daily paycheck** from Gruff (`server/PaycheckService.luau`): the first time you play each day you're paid 5 jobs' worth of your best animal × your streak (days in a row, max 7). Tune in `Config/Progression.luau` → `Paycheck`
 - [x] **Settings** and **Invite** buttons (top-left, next to Store): music, sound effects, camera shake & zoom on/off, saved with your progress
+- [x] **Reward codes** (`Config/Codes.luau`, `server/CodesService.luau`): typed into Settings, once per player, server-checked, optional expiry. Starts with `LAUNCH` (10 jobs of coins) and `GRUFF` (2 Priority stamps)
 - [x] **Music** slots for town, arena and BOX that fade into each other
 - [x] **Starter sounds**: every slot has a free sound from Roblox's own library (placeholders picked by name, so give them a listen)
 - [x] **Draft icon + thumbnails** rendered from your models (`art/marketing/`)
