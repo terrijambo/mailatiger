@@ -967,18 +967,36 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 	end
 end
 
--- Rooftop: fall off the edge and you're put back on the roof, dazed, with a word from Gruff.
-local function checkFall(s: Session)
-	local arena = map.Arenas[s.ArenaId]
-	if not arena.Edges then
-		return
-	end
-	for _, member in membersOf(s) do
-		local root = getCharacterParts(member)
-		if root and root.Position.Y < arena.FloorY - 8 then
-			Travel.ToArena(member, s.ArenaId)
-			stun(member, Config.Arenas.FallBackStun)
-			gruffSays(member, "You fell off the ROOF?! Get back up there.")
+-- Rooftop (any arena without fences): fall off the edge and you're put back on the roof with a word from
+-- Gruff, whether or not you're on a job (and dazed if you are). Anyone seen standing on the roof in the
+-- last few seconds who drops well below it counts as fallen.
+local lastOnRoof: { [Player]: number } = {}
+
+local function checkFalls(now: number)
+	for _, arena in map.Arenas do
+		if not arena.Edges then
+			continue
+		end
+		for _, player in Players:GetPlayers() do
+			local root = getCharacterParts(player)
+			if not root then
+				continue
+			end
+			local p = root.Position
+			local overRoof = p.X >= arena.Min.X - 2
+				and p.X <= arena.Max.X + 2
+				and p.Z >= arena.Min.Z - 2
+				and p.Z <= arena.Max.Z + 2
+			if overRoof and p.Y >= arena.FloorY - 1 then
+				lastOnRoof[player] = now
+			elseif p.Y < arena.FloorY - 8 and now - (lastOnRoof[player] or -math.huge) < 4 then
+				lastOnRoof[player] = nil
+				Travel.ToArena(player, arena.Id)
+				if jobOf(player) then
+					stun(player, Config.Arenas.FallBackStun)
+				end
+				gruffSays(player, "You fell off the ROOF?! Get back up there.")
+			end
 		end
 	end
 end
@@ -1084,12 +1102,15 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 		lastShove[player] = nil
 	end)
 
+	Players.PlayerRemoving:Connect(function(player)
+		lastOnRoof[player] = nil
+	end)
 	RunService.Heartbeat:Connect(function(dt)
 		local now = os.clock()
+		checkFalls(now)
 		for _, s in sessions do
 			if s.Stage == "Catch" then
 				CatchAI.Update(s, now, dt)
-				checkFall(s)
 			elseif s.Stage == "Box" then
 				updateBox(s, now, dt)
 			end
