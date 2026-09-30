@@ -5,7 +5,9 @@
 --   * without: it plays "in your ears" (for the local player on a client)
 
 local Debris = game:GetService("Debris")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SoundService = game:GetService("SoundService")
 local Workspace = game:GetService("Workspace")
 
@@ -18,6 +20,10 @@ local lastPlayed: { [string]: number } = {}
 function Sfx.Play(name: string, at: (BasePart | Vector3)?)
 	local def = Config.Sounds[name]
 	if not def or def.Id == "" then
+		return
+	end
+	-- The player turned sound effects off in Settings (the client sets this on itself)
+	if RunService:IsClient() and Players.LocalPlayer:GetAttribute("SfxOff") == true then
 		return
 	end
 	local now = os.clock()

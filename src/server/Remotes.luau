@@ -7,6 +7,7 @@
 --   Shove          client -> server   Chaos Mode shove (server picks the target and checks range/cooldown)
 --   MailAnywhere   client -> server   press M to mail your bag from anywhere (Rocket Chute only; server checks)
 --   Tutorial       client -> server   "Done" or "Skip" for Gruff's walkthrough (server checks the reward)
+--   Setting        client -> server   turn a setting (Music, Sfx, Motion) on or off; saved with your progress
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -28,6 +29,7 @@ local shopAction = remote("ShopAction")
 local shove = remote("Shove")
 local mailAnywhere = remote("MailAnywhere")
 local tutorial = remote("Tutorial")
+local setting = remote("Setting")
 
 folder.Parent = ReplicatedStorage
 
@@ -65,4 +67,5 @@ return {
 	Shove = shove,
 	MailAnywhere = mailAnywhere,
 	Tutorial = tutorial,
+	Setting = setting,
 }

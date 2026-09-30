@@ -21,9 +21,14 @@ local function getHumanoid(): Humanoid?
 	return character and character:FindFirstChildOfClass("Humanoid")
 end
 
+-- Settings -> "Camera shake & zoom" off: no shakes or zooms
+local function calm(): boolean
+	return player:GetAttribute("MotionOff") == true
+end
+
 local function shakeCamera(strength: number, duration: number)
 	local humanoid = getHumanoid()
-	if not humanoid then
+	if not humanoid or calm() then
 		return
 	end
 	task.spawn(function()
@@ -59,7 +64,7 @@ end
 local BASE_FOV = 70
 local function fovPunch(amount: number, seconds: number)
 	local camera = Workspace.CurrentCamera
-	if not camera then
+	if not camera or calm() then
 		return
 	end
 	camera.FieldOfView = BASE_FOV + amount

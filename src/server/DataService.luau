@@ -58,6 +58,7 @@ export type Profile = {
 	Receipts: { string }, -- recent Robux purchase ids already granted (so a retry never pays twice)
 	PaycheckDay: number, -- the last day (days since 1970, UTC) you got Gruff's daily paycheck
 	PaycheckStreak: number, -- days in a row
+	Settings: { [string]: boolean }, -- Music, Sfx, Motion (camera shake/zoom). Missing = on
 }
 
 local DataService = {}
@@ -93,6 +94,7 @@ local function newProfile(): Profile
 		Receipts = {},
 		PaycheckDay = 0,
 		PaycheckStreak = 0,
+		Settings = {},
 	}
 end
 

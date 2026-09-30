@@ -15,7 +15,18 @@ local REWARD = 100
 
 local TutorialService = {}
 
+-- Settings live here too (it's the other tiny "remember this about me" remote)
+local SETTINGS = { Music = true, Sfx = true, Motion = true }
+
 function TutorialService.Start()
+	Remotes.Listen(Remotes.Setting, 5, function(player: Player, name: unknown, on: unknown)
+		local profile = DataService.Get(player)
+		if profile and typeof(name) == "string" and SETTINGS[name] and typeof(on) == "boolean" then
+			profile.Settings[name] = on
+			DataService.Sync(player)
+		end
+	end)
+
 	Remotes.Listen(Remotes.Tutorial, 2, function(player: Player, action: unknown)
 		local profile = DataService.Get(player)
 		if not profile or profile.TutorialDone or (action ~= "Done" and action ~= "Skip") then

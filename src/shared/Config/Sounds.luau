@@ -46,6 +46,11 @@ local sounds: { [string]: Sound } = {
 	Kaching = { Id = "", Volume = 0.8 }, -- buying something
 	Click = { Id = "", Volume = 0.5, Cooldown = 0.05 }, -- opening a menu
 	Ding = { Id = "", Volume = 0.7 }, -- tutorial step done
+
+	-- Background music (loops). Search "cheerful loop", "funny chase music", "tense ticking" etc.
+	MusicTown = { Id = "", Volume = 0.25 }, -- walking around town
+	MusicArena = { Id = "", Volume = 0.25 }, -- chasing an animal
+	MusicBox = { Id = "", Volume = 0.3 }, -- the BOX stage (something tense and silly)
 }
 
 return sounds

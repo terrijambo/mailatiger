@@ -27,6 +27,7 @@ export type Data = {
 	Parcels: { { AnimalId: string, Stars: number, Coins: number } },
 	ChuteTier: string,
 	TutorialDone: boolean?,
+	Settings: { [string]: boolean }?,
 }
 
 local EMPTY: Data = {
@@ -55,6 +56,12 @@ function Profile.Get(): Data
 end
 
 -- How many parcels your bag holds (starting size + Mail Bag upgrades)
+-- Whether a setting (Music, Sfx, Motion) is on. Everything starts on.
+function Profile.Setting(name: string): boolean
+	local settings = Profile.Get().Settings
+	return not settings or settings[name] ~= false
+end
+
 function Profile.BagCapacity(data: Data): number
 	local mail = Config.Mail
 	local bigBag = if player:GetAttribute("Pass_BigBag") == true then Config.Monetization.BigBagSlots else 0
