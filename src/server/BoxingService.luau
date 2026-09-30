@@ -989,7 +989,15 @@ local function checkFalls(now: number)
 				and p.Z <= arena.Max.Z + 2
 			if overRoof and p.Y >= arena.FloorY - 1 then
 				lastOnRoof[player] = now
-			elseif p.Y < arena.FloorY - 8 and now - (lastOnRoof[player] or -math.huge) < 4 then
+			elseif
+				p.Y < arena.FloorY - 8
+				and now - (lastOnRoof[player] or -math.huge) < 4
+				-- still next to the building (not teleported to town by the BACK TO TOWN pad or a reset)
+				and p.X >= arena.Min.X - 25
+				and p.X <= arena.Max.X + 25
+				and p.Z >= arena.Min.Z - 25
+				and p.Z <= arena.Max.Z + 25
+			then
 				lastOnRoof[player] = nil
 				Travel.ToArena(player, arena.Id)
 				if jobOf(player) then
