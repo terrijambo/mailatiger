@@ -43,8 +43,8 @@ src/
    - **Rub** (click-and-drag back and forth, or swipe) over the pink **♥** spots on the animal to calm it. Never touch the red **✖** spots!
    - **Tape:** drag from one black dot to the other along each dashed seam on the box. Every strip makes it angrier, so keep going back to petting.
    - Tape every seam and the animal goes into your **bag** as a Parcel (you'll see it in your arms).
-5. **MAIL IT:** carry your parcels to the **Mail Chute** in town and hold **E**. That's when you get paid and Gruff rates you. Your bag holds 3 to start (upgrade the **Mail Bag** in the Supply Shop).
-4. If ANGER hits 100: *VINE BOOM*. You're launched into the sky as a ragdoll, and the animal escapes back into the arena.
+   - If ANGER hits 100: *VINE BOOM*. You're launched into the sky as a ragdoll, and the animal escapes back into the arena.
+4. **MAIL IT:** carry your parcels to the **Mail Chute** in town and hold **E**. That's when you get paid and Gruff rates you. Your bag holds 3 to start (upgrade the **Mail Bag** in the Supply Shop).
 - Changed your mind? Use the Pen counter twice within 5 seconds to give up on the current animal.
 
 ## Playtest checklist
@@ -96,12 +96,42 @@ Test with several players: in Studio, **Test tab → Clients and Servers → 2 p
 - [ ] A normal (non-Chaos) job can't be spooked or shoved.
 - [ ] **Leaderboards** (west side of the plaza): mail a 5-stamp job and the "Most 5-Stamp Jobs" board updates. It says "(this server only)" until saving is on.
 
-## Vine boom sound
-Roblox can only play sounds uploaded to Roblox, so the vine boom needs a real sound asset id:
-1. In Studio, open the **Toolbox → Marketplace → Audio**, search **"vine boom"**, and pick one you're allowed to use. Or upload your own in the Creator Dashboard.
+## Overnight build checklist: new map, animation, tutorial, store
+Play once with a **fresh save** (saving is off in Studio, so every Play is fresh) and once as usual.
+- [ ] **Town:** the Post Office building now faces the plaza, with Gruff in front of it, his counter, and the chute on the right. Is anything floating, sunk into the ground, or facing backwards? (Fix: add a Number attribute `YawOffset` = `180` to that model in its folder.)
+- [ ] Lampposts, benches, planters, the mailbox and the leaderboard stands are placed sensibly and the scores sit on the leaderboard boards.
+- [ ] A little letter spins over **Gruff's Orders**, and the tools spin on the table next to the **Supply Shop**.
+- [ ] **Arenas:** fences are made of fence models (pickets, farm rails, bamboo, rink boards) with no big gaps, and there's a gate at each entrance. Barn, hay bales, trees, mud puddles, hockey goals, snowmen, AC units, water tower and chimney all look right, and animals still can't get out.
+- [ ] **Gruff** bobs and turns to watch you when you're close. A tiger breakout still knocks his cap off, and it comes back.
+- [ ] **Animals** hop and lean when running, breathe and glance around when still. The **Chicken's** eggs are egg models.
+- [ ] **BOX screen:** your animal is the real 3D model (not a circle), it sways a little, and squishes when you rub a ♥ spot. In the arena the box rattles and the animal thrashes when anger is high.
+- [ ] **Tutorial** (fresh save): Gruff's panel on the left says to go to the Pen, with a glowing yellow line and a bouncing ▼ pointing there. It updates for catching (points at your animal), boxing, mailing (points at the chute) and shopping, then disappears. You get +100 coins at the end. "Skip tutorial" also works.
+- [ ] **Juice:** confetti when you finish a box and when you mail. The camera zooms on launches. The coin counter rolls up with a "+N", and big numbers show as 12.5K / 3.2M.
+- [ ] **Menus:** 3D pictures in the Pen (animals you can't afford are dark silhouettes) and in every Shop tab. Windows pop open, and buttons squish when pressed.
+- [ ] **Store** (green button on the left): says "The Store opens soon!" until you add ids. After you add one, it lists it and Roblox's (test) purchase popup appears.
+- [ ] Anything that looks wrong: tell me what and where (a screenshot helps).
+
+## Sounds
+Every sound effect has a slot in `src/shared/Config/Sounds.luau`, and each stays silent until you give it an id. Roblox can only play sounds uploaded to Roblox:
+1. In Studio, open the **Toolbox → Marketplace → Audio**, search for the sound, and pick one you're allowed to use (or upload your own in the Creator Dashboard).
 2. Right-click it → **Copy Asset ID**.
-3. Paste it into `src/shared/Config/Sounds.luau` as `VineBoom = "rbxassetid://THE_ID"`.
-Until then the ragdoll launch still happens, just without the boom.
+3. Paste it into the slot, e.g. `VineBoom = { Id = "rbxassetid://THE_ID", Volume = 2, ... }`.
+
+Search ideas: **VineBoom** "vine boom", **Pop** "cartoon pop", **Purr** "cat purr" / "happy chirp", **AngryHit** "ow" / "cartoon hit", **Growl** "animal growl", **TapeRip** "tape rip" / "duct tape", **TapePeel** "tape peel", **StampThud** "stamp" / "thud", **Escape** "cartoon run away" / "boing", **Roar** "tiger roar", **Spray** "spray hiss", **Freeze** "ice freeze", **Bonk** "bonk", **MailWhoosh** "whoosh", **CoinJingle** "coins", **Kaching** "cash register", **Click** "ui click", **Ding** "ding" / "success".
+
+## Launch checklist (things only you can do)
+In rough order. Each one is a few minutes.
+1. **Sound ids:** fill in `Config/Sounds.luau` (see Sounds above). At least the vine boom, since it's the big clip moment.
+2. **Publish:** in Studio, **File → Publish to Roblox**, and create a new experience called *Mail a Tiger*.
+3. **Turn on saving:** **Game Settings → Security → Enable Studio Access to API Services** (this is for testing in Studio; live servers save automatically once published).
+4. **Live save test** (moved here from Phase 3): in a published test, earn coins → leave → rejoin (coins kept). Rejoin twice quickly (no lost progress, maybe a short wait). Parcels in your bag survive a rejoin.
+5. **Robux items** (optional, see ROADMAP → Phase 7 for the plan to approve): Creator Dashboard → your experience → **Monetization** → create each **Pass** and **Developer Product**, then paste each id into `src/shared/Config/Monetization.luau`. Keep the prices the same as the table.
+6. **Private servers** (optional): Monetization → Private Servers → set a price (free or 100 Robux is typical).
+7. **Icon and thumbnails:** Creator Dashboard → your experience → **Places / Configure** → upload a 512×512 icon and 1920×1080 thumbnails. Good shots: the RETURN TO SENDER stamp mid-launch, a player taping an angry tiger, the town with Gruff. (I can set up a camera spot in the game for clean screenshots if you want.)
+8. **Game settings:** Genre *Simulation* (or *Comedy*), max players 12–16, **Maturity questionnaire** (Creator Dashboard → Experience Questionnaire; the ragdoll launch is cartoon slapstick), and allow **Private Servers** if you did step 6.
+9. **Fresh data for launch:** change `StoreName` in `Config/Progression.luau` to `PlayerData_v2` (wipes test saves) and `StoreVersion` in `Config/Social.luau` to `"v2"` (resets leaderboards).
+10. **Studio free animals** are Studio-only and turn off by themselves in the live game. Nothing to do.
+11. **Go public:** Creator Dashboard → your experience → **Access → Public**. Then watch **Analytics** → Onboarding funnel to see where new players drop off.
 
 ## Saving (DataStores)
 Progress saves automatically: every 60 seconds, when you leave, and when a server shuts down.
@@ -118,10 +148,11 @@ Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` expo
 |---|---|---|
 | `AnimalModels` | All 25 animals + `Gruff` | Yes |
 | `BoxModels` | `Cardboard`, `Wood`, `Steel`, `Vault` | Yes |
-| `PropModels` | `Parcel`, `MailChute`, `MailChuteExpress`, `MailChutePneumatic`, `MailChuteRocket` | Yes |
-| `PropModels` | `GruffHat`, `Egg`, `TapeRoll`, `RubberStamp`, `Envelope`, `GrabbingGloves`, `Sneakers`, `TapeGun`, `ButterflyNet` | Coming soon |
-| `MapModels` | Town: `PostOffice`, `PostCounter`, `PenCounter`, `ShopStall`, `OrdersBoard`, `LeaderboardStand`, `TravelPad`, `SpawnPad`, `Lamppost`, `Bench`, `Mailbox`, `Planter` | Coming soon (replaces the grey map blocks) |
-| `MapModels` | Arenas: `ArenaGate`, `PicketFence`, `Bush`, `Doghouse`, `Flowerbed`, `Barn`, `HayBale`, `FarmFence`, `Trough`, `JungleTree`, `MudPuddle`, `BambooFence`, `Rock`, `RinkBoard`, `HockeyGoal`, `Snowman`, `ACUnit`, `WaterTower`, `Chimney` | Coming soon (replaces the grey map blocks) |
+| `PropModels` | `Parcel`, `MailChute`, `MailChuteExpress`, `MailChutePneumatic`, `MailChuteRocket`, `GruffHat`, `Egg`, `Envelope`, `GrabbingGloves`, `Sneakers`, `TapeGun`, `ButterflyNet`, `TapeRoll`, `RubberStamp` | Yes (the tools spin on the shop table and show in the Shop menu) |
+| `MapModels` | Town: `PostOffice`, `PostCounter`, `PenCounter`, `ShopStall`, `OrdersBoard`, `LeaderboardStand`, `TravelPad`, `SpawnPad`, `Lamppost`, `Bench`, `Mailbox`, `Planter` | Yes (laid over the grey map blocks) |
+| `MapModels` | Arenas: `ArenaGate`, `PicketFence`, `Bush`, `Doghouse`, `Flowerbed`, `Barn`, `HayBale`, `FarmFence`, `Trough`, `JungleTree`, `MudPuddle`, `BambooFence`, `Rock`, `RinkBoard`, `HockeyGoal`, `Snowman`, `ACUnit`, `WaterTower`, `Chimney` | Yes (laid over the grey map blocks) |
+
+A missing model is never a problem: that spot just keeps its grey block.
 
 **For each model:**
 1. **Home → Import 3D** → pick the file in `art/export/`.
@@ -129,7 +160,7 @@ Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` expo
 3. Click **Import**, then drag the Model into its folder from the table.
 4. Check the Model's **name matches the file** exactly (no "(1)" or extra words).
 
-**What happens in game:** the arena animal uses your model, and during BOX the box in the arena uses your box model with your animal poking out of it. The game sizes and places models automatically, so import scale doesn't matter. **Facing backwards?** Select the Model and add a Number attribute `YawOffset` = `180`.
+**What happens in game:** the arena animal uses your model (animated by code: hops, bobs, twitches), during BOX the box in the arena uses your box model with your animal poking out of it, the BOX screen and menus show little 3D pictures, and the map models sit on top of the grey blocks (which turn invisible but still do the collisions). The game sizes and places models automatically, so import scale doesn't matter. **Facing backwards?** Select the Model and add a Number attribute `YawOffset` = `180`.
 
 ## Handy commands
 ```
