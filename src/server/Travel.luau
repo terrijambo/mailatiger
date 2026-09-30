@@ -47,6 +47,11 @@ function Travel.Start(builtMap: MapBuilder.Map)
 			Travel.ToArena(player, arenaId)
 		end)
 	end
+	for arenaId, pad in map.LiftPads do
+		onStep(pad, function(player)
+			Travel.ToArena(player, arenaId)
+		end)
+	end
 	for _, pad in map.ReturnPads do
 		onStep(pad, Travel.ToTown)
 	end

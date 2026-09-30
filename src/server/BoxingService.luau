@@ -897,8 +897,9 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 	end
 
 	local root = getCharacterParts(player)
-	if not root or (root.Position - map.PenCounter.Position).Magnitude > 20 then
-		gruffSays(player, Gruff.TooFar)
+	-- The Pen works from anywhere (the PEN button opens it, and picking an animal sends you to its arena),
+	-- but you need to be in the world, not respawning
+	if not root then
 		return
 	end
 	if jobOf(player) then

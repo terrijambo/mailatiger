@@ -366,7 +366,8 @@ local function run()
 	end, 5), "picked a Dragon (sent to the Rooftop)")
 	task.wait(1)
 	log(root.Position.Y > 28, "standing on the roof")
-	root.CFrame = CFrame.new(76, 12, -125) -- just off the edge, falling
+	local building = map.Arenas.RooftopBuilding
+	root.CFrame = CFrame.new(building.Position.X - building.Size.X / 2 - 4, 12, building.Position.Z) -- just off the edge, falling
 	task.wait(2)
 	log(root.Position.Y > 28, "fell off the roof and was put back up")
 	task.wait(2.5)

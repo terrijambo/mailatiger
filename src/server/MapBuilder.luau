@@ -4,21 +4,21 @@
 -- over it. The block stays, invisible, as the collider, the prompt holder and the name tag. Missing models
 -- just leave the grey block showing, so the game always works.
 --
--- Layout (top-down, ground at y = 0):
---   Hub town     plaza around (0, 30): spawn, Animal Pen, Supply Shop, Post Office (facing the plaza, with
---                Gruff, his counter and the chute out front), Gruff's Orders, and a row of travel pads at z = 32
---   Backyard     x  -30..30,   z  -40..0      (right next to the hub)
---   Barn         x -140..-80,  z  -50..0
---   Jungle       x   70..140,  z  -50..0
---   Ice Rink     x  -40..40,   z -150..-100
---   Rooftop      x   80..130,  z -150..-100, on top of a 30-stud-tall building
--- Every arena's gate is on its +Z side. Arena ids and tiers are in src/shared/Config/Arenas.luau.
+-- Layout (top-down, ground at y = 0; the island, terraces, paths and zone themes are in Scenery.luau):
+--   Hub town     plaza x -90..90, z -60..95. Spawn at the south end facing north; the Post Office (Gruff,
+--                counter, chute, orders) front and center; Animal Pen west; Supply Shop east; travel pads
+--                in a row at z = 18; leaderboards on the west edge
+--   Zones        spread across the north of the island (see ARENA_LAYOUT), each reached by a stone path:
+--                Backyard (0, -150), Barn (-160, -170), Jungle (160, -170), Ice Rink (-150, -320),
+--                Rooftop (150, -320, on top of a 30-stud building with an elevator pad at its foot)
+-- Every arena's gate is on its +Z side, facing town. Arena ids and tiers are in src/shared/Config/Arenas.luau.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local Scenery = require(script.Parent.Scenery)
 
 local MapBuilder = {}
 
@@ -45,6 +45,7 @@ export type Map = {
 	Arenas: { [string]: Arena },
 	TownSpawn: CFrame,
 	TravelPads: { [string]: BasePart }, -- in town, one per arena
+	LiftPads: { [string]: BasePart }, -- extra pads out in the world that take you into an arena (the Rooftop elevator)
 	ReturnPads: { BasePart }, -- at each arena, back to town
 	Chute: BasePart,
 	ChutePrompt: ProximityPrompt,
@@ -313,8 +314,8 @@ local function buildArena(parent: Instance, spec: ArenaSpec, returnPads: { BaseP
 		)
 	end
 
-	-- Pad back to town, just to the right of where you arrive (the Backyard is already in town)
-	if spec.Id ~= "Backyard" then
+	-- Pad back to town, just to the right of where you arrive
+	do
 		local padSpot = gate.Position + Vector3.new(9, -3, 0)
 		local pad = part(folder, {
 			Name = "ReturnPad",
@@ -347,13 +348,31 @@ local function addObstacle(arena: Arena, x: number, z: number, radius: number): 
 	return position
 end
 
+-- Where each arena sits: its center, and half its width (X) and depth (Z). Arenas are spread out around the
+-- north of the island as themed zones, each reached by a path from town (or a travel pad).
+local ARENA_LAYOUT: { [string]: { Center: Vector3, HalfX: number, HalfZ: number } } = {
+	Backyard = { Center = Vector3.new(0, 0, -150), HalfX = 30, HalfZ = 20 },
+	Barn = { Center = Vector3.new(-160, 0, -170), HalfX = 30, HalfZ = 25 },
+	Jungle = { Center = Vector3.new(160, 0, -170), HalfX = 35, HalfZ = 25 },
+	IceRink = { Center = Vector3.new(-150, 0, -320), HalfX = 40, HalfZ = 25 },
+	Rooftop = { Center = Vector3.new(150, 0, -320), HalfX = 25, HalfZ = 25 },
+}
+
+-- The spec for an arena from its layout entry
+local function around(id: string, floorY: number): (number, number, number, number, Vector3)
+	local l = ARENA_LAYOUT[id]
+	local c = l.Center
+	return c.X - l.HalfX, c.X + l.HalfX, c.Z - l.HalfZ, c.Z + l.HalfZ, c + Vector3.new(0, floorY, 0)
+end
+
 local function buildBackyard(parent: Instance, returnPads: { BasePart }): Arena
+	local x0, x1, z0, z1, c = around("Backyard", 0)
 	local arena = buildArena(parent, {
 		Id = "Backyard",
-		MinX = -30,
-		MaxX = 30,
-		MinZ = -40,
-		MaxZ = 0,
+		MinX = x0,
+		MaxX = x1,
+		MinZ = z0,
+		MaxZ = z1,
 		FloorY = 0,
 		FloorColor = COLORS.Grass,
 		FloorMaterial = Enum.Material.Grass,
@@ -362,8 +381,9 @@ local function buildBackyard(parent: Instance, returnPads: { BasePart }): Arena
 		FenceStep = 9, -- segment lengths make each fence about 3 studs tall (sizes: art/blender_scripts)
 	}, returnPads)
 	local folder = parent:FindFirstChild("Backyard") :: Folder
-	for _, at in { { -15, -25, 2.5 }, { 12, -12, 2 }, { 18, -30, 2.5 } } do
-		local position = addObstacle(arena, at[1], at[2], at[3])
+	-- (spots are relative to the arena's center)
+	for _, at in { { -15, -5, 2.5 }, { 12, 8, 2 }, { 18, -10, 2.5 } } do
+		local position = addObstacle(arena, c.X + at[1], c.Z + at[2], at[3])
 		local bush = part(folder, {
 			Name = "Bush",
 			Shape = Enum.PartType.Ball,
@@ -375,21 +395,22 @@ local function buildBackyard(parent: Instance, returnPads: { BasePart }): Arena
 		dress(folder, "Bush", spot(position.X, 0, position.Z), at[3] * 2.3, { bush })
 	end
 	-- Extra scenery (only if imported)
-	local doghouse = addObstacle(arena, -23, -8, 3)
+	local doghouse = addObstacle(arena, c.X - 23, c.Z + 12, 3)
 	if not dress(folder, "Doghouse", spot(doghouse.X, 0, doghouse.Z, Vector3.xAxis), 5.5, nil, { Solid = true }) then
 		table.remove(arena.Obstacles) -- nothing there to steer around
 	end
-	dress(folder, "Flowerbed", spot(0, 0, -37), 12)
+	dress(folder, "Flowerbed", spot(c.X, 0, c.Z - 17), 12)
 	return arena
 end
 
 local function buildBarn(parent: Instance, returnPads: { BasePart }): Arena
+	local x0, x1, z0, z1, c = around("Barn", 0)
 	local arena = buildArena(parent, {
 		Id = "Barn",
-		MinX = -140,
-		MaxX = -80,
-		MinZ = -50,
-		MaxZ = 0,
+		MinX = x0,
+		MaxX = x1,
+		MinZ = z0,
+		MaxZ = z1,
 		FloorY = 0,
 		FloorColor = COLORS.Dirt,
 		FloorMaterial = Enum.Material.Ground,
@@ -399,15 +420,17 @@ local function buildBarn(parent: Instance, returnPads: { BasePart }): Arena
 	}, returnPads)
 	local folder = parent:FindFirstChild("Barn") :: Folder
 	-- The barn itself, behind the arena
-	local wall = block(folder, "BarnWall", Vector3.new(-135, 0, -64), Vector3.new(-85, 16, -52), COLORS.BarnRed)
-	local roof = block(folder, "BarnRoof", Vector3.new(-137, 16, -66), Vector3.new(-83, 18, -50), COLORS.Stone)
-	local barn = dress(folder, "Barn", spot(-110, 0, -70), 28, { wall, roof }, { Solid = true })
+	local wall =
+		block(folder, "BarnWall", Vector3.new(c.X - 25, 0, z0 - 14), Vector3.new(c.X + 25, 16, z0 - 2), COLORS.BarnRed)
+	local roof =
+		block(folder, "BarnRoof", Vector3.new(c.X - 27, 16, z0 - 16), Vector3.new(c.X + 27, 18, z0), COLORS.Stone)
+	local barn = dress(folder, "Barn", spot(c.X, 0, z0 - 20), 28, { wall, roof }, { Solid = true })
 	if barn then
-		ModelFit.Align(barn, Vector3.zAxis, -52) -- its front sits just behind the back fence
+		ModelFit.Align(barn, Vector3.zAxis, z0 - 2) -- its front sits just behind the back fence
 	end
 	-- Hay bales to hide behind
-	for _, at in { { -125, -35 }, { -110, -15 }, { -95, -38 }, { -100, -12 }, { -122, -10 }, { -110, -40 } } do
-		local position = addObstacle(arena, at[1], at[2], 3.3)
+	for _, at in { { -15, -10 }, { 0, 10 }, { 15, -13 }, { 10, 13 }, { -12, 15 }, { 0, -15 } } do
+		local position = addObstacle(arena, c.X + at[1], c.Z + at[2], 3.3)
 		local bale = part(folder, {
 			Name = "HayBale",
 			Size = Vector3.new(5, 4, 5),
@@ -417,7 +440,7 @@ local function buildBarn(parent: Instance, returnPads: { BasePart }): Arena
 		})
 		dress(folder, "HayBale", spot(position.X, 0, position.Z), 5, { bale })
 	end
-	local trough = addObstacle(arena, -86, -26, 2.6)
+	local trough = addObstacle(arena, c.X + 24, c.Z - 1, 2.6)
 	if not dress(folder, "Trough", spot(trough.X, 0, trough.Z, Vector3.xAxis), 5, nil, { Solid = true }) then
 		table.remove(arena.Obstacles)
 	end
@@ -425,12 +448,13 @@ local function buildBarn(parent: Instance, returnPads: { BasePart }): Arena
 end
 
 local function buildJungle(parent: Instance, returnPads: { BasePart }): Arena
+	local x0, x1, z0, z1, c = around("Jungle", 0)
 	local arena = buildArena(parent, {
 		Id = "Jungle",
-		MinX = 70,
-		MaxX = 140,
-		MinZ = -50,
-		MaxZ = 0,
+		MinX = x0,
+		MaxX = x1,
+		MinZ = z0,
+		MaxZ = z1,
 		FloorY = 0,
 		FloorColor = COLORS.DarkGrass,
 		FloorMaterial = Enum.Material.LeafyGrass,
@@ -439,8 +463,8 @@ local function buildJungle(parent: Instance, returnPads: { BasePart }): Arena
 		FenceStep = 8,
 	}, returnPads)
 	local folder = parent:FindFirstChild("Jungle") :: Folder
-	for index, at in { { 82, -40 }, { 95, -20 }, { 110, -38 }, { 125, -15 }, { 132, -42 }, { 100, -8 }, { 118, -28 } } do
-		local position = addObstacle(arena, at[1], at[2], 1.8)
+	for index, at in { { -23, -15 }, { -10, 5 }, { 5, -13 }, { 20, 10 }, { 27, -17 }, { -5, 17 }, { 13, -3 } } do
+		local position = addObstacle(arena, c.X + at[1], c.Z + at[2], 1.8)
 		local trunk = part(folder, {
 			Name = "Trunk",
 			Size = Vector3.new(2.4, 12, 2.4),
@@ -461,15 +485,15 @@ local function buildJungle(parent: Instance, returnPads: { BasePart }): Arena
 		local turn = CFrame.Angles(0, index * 1.3, 0)
 		dress(folder, "JungleTree", spot(position.X, 0, position.Z) * turn, 17, { trunk, canopy }, { ByHeight = true })
 	end
-	for _, at in { { 76, -12 }, { 136, -28 } } do
-		local rock = addObstacle(arena, at[1], at[2], 2)
+	for _, at in { { -29, 13 }, { 31, -3 } } do
+		local rock = addObstacle(arena, c.X + at[1], c.Z + at[2], 2)
 		if not dress(folder, "Rock", spot(rock.X, 0, rock.Z), 4, nil, { Solid = true }) then
 			table.remove(arena.Obstacles)
 		end
 	end
 	-- Mud pits slow you down (Material = Mud is how the client knows, even when the block is hidden)
-	for _, rect in { { 84, -32, 12, 8 }, { 120, -6, 10, 8 }, { 104, -47, 14, 5 } } do
-		local x, z, sx, sz = rect[1], rect[2], rect[3], rect[4]
+	for _, rect in { { -21, -7, 12, 8 }, { 15, 19, 10, 8 }, { -1, -22, 14, 5 } } do
+		local x, z, sx, sz = c.X + rect[1], c.Z + rect[2], rect[3], rect[4]
 		local mud = block(
 			folder,
 			"Mud",
@@ -497,12 +521,13 @@ local function buildJungle(parent: Instance, returnPads: { BasePart }): Arena
 end
 
 local function buildIceRink(parent: Instance, returnPads: { BasePart }): Arena
+	local x0, x1, z0, z1, c = around("IceRink", 0)
 	local arena = buildArena(parent, {
 		Id = "IceRink",
-		MinX = -40,
-		MaxX = 40,
-		MinZ = -150,
-		MaxZ = -100,
+		MinX = x0,
+		MaxX = x1,
+		MinZ = z0,
+		MaxZ = z1,
 		FloorY = 0,
 		FloorColor = COLORS.Ice,
 		FloorMaterial = Enum.Material.Ice, -- the client makes you slide on Ice
@@ -511,8 +536,8 @@ local function buildIceRink(parent: Instance, returnPads: { BasePart }): Arena
 		FenceStep = 9,
 	}, returnPads)
 	local folder = parent:FindFirstChild("IceRink") :: Folder
-	for _, at in { { -30, -125 }, { 30, -125 } } do
-		local position = addObstacle(arena, at[1], at[2], 2.5)
+	for _, dx in { -30, 30 } do
+		local position = addObstacle(arena, c.X + dx, c.Z, 2.5)
 		local goal = block(
 			folder,
 			"Goal",
@@ -521,11 +546,11 @@ local function buildIceRink(parent: Instance, returnPads: { BasePart }): Arena
 			COLORS.PostRed
 		)
 		-- Goals face the middle of the rink
-		local inward = Vector3.new(-math.sign(position.X), 0, 0)
+		local inward = Vector3.new(-math.sign(dx), 0, 0)
 		dress(folder, "HockeyGoal", spot(position.X, 0, position.Z, inward), 5, { goal })
 	end
-	for _, at in { { -18, -140 }, { 18, -110 } } do
-		local snowman = addObstacle(arena, at[1], at[2], 1.8)
+	for _, at in { { -18, -15 }, { 18, 15 } } do
+		local snowman = addObstacle(arena, c.X + at[1], c.Z + at[2], 1.8)
 		if not dress(folder, "Snowman", spot(snowman.X, 0, snowman.Z), 6, nil, { ByHeight = true, Solid = true }) then
 			table.remove(arena.Obstacles)
 		end
@@ -533,23 +558,26 @@ local function buildIceRink(parent: Instance, returnPads: { BasePart }): Arena
 	return arena
 end
 
+local ROOF_Y = 30
+
 local function buildRooftop(parent: Instance, returnPads: { BasePart }): Arena
-	local roofY = 30
-	block(parent, "RooftopBuilding", Vector3.new(80, 0, -150), Vector3.new(130, roofY - 0.5, -100), COLORS.Concrete)
+	local roofY = ROOF_Y
+	local x0, x1, z0, z1, c = around("Rooftop", roofY)
+	block(parent, "RooftopBuilding", Vector3.new(x0, 0, z0), Vector3.new(x1, roofY - 0.5, z1), COLORS.Concrete)
 	local arena = buildArena(parent, {
 		Id = "Rooftop",
-		MinX = 80,
-		MaxX = 130,
-		MinZ = -150,
-		MaxZ = -100,
+		MinX = x0,
+		MaxX = x1,
+		MinZ = z0,
+		MaxZ = z1,
 		FloorY = roofY,
 		FloorColor = COLORS.Concrete,
 		FloorMaterial = Enum.Material.Concrete,
 		FenceColor = nil, -- no fence. Edges!
 	}, returnPads)
 	local folder = parent:FindFirstChild("Rooftop") :: Folder
-	for _, at in { { 92, -120, 3 }, { 115, -135, 3 }, { 118, -112, 3 }, { 100, -142, 2 } } do
-		local position = addObstacle(arena, at[1], at[2], at[3])
+	for _, at in { { -13, 5, 3 }, { 10, -10, 3 }, { 13, 13, 3 }, { -5, -17, 2 } } do
+		local position = addObstacle(arena, c.X + at[1], c.Z + at[2], at[3])
 		local unit = block(
 			folder,
 			"AirConditioner",
@@ -562,11 +590,11 @@ local function buildRooftop(parent: Instance, returnPads: { BasePart }): Arena
 		)
 		dress(folder, "ACUnit", spot(position.X, roofY, position.Z, Vector3.xAxis), 4, { unit })
 	end
-	local tower = addObstacle(arena, 124, -144, 3.5)
+	local tower = addObstacle(arena, c.X + 19, c.Z - 19, 3.5)
 	if not dress(folder, "WaterTower", spot(tower.X, roofY, tower.Z), 16, nil, { ByHeight = true, Solid = true }) then
 		table.remove(arena.Obstacles)
 	end
-	local chimney = addObstacle(arena, 86, -110, 1.6)
+	local chimney = addObstacle(arena, c.X - 19, c.Z + 15, 1.6)
 	if not dress(folder, "Chimney", spot(chimney.X, roofY, chimney.Z), 6, nil, { ByHeight = true, Solid = true }) then
 		table.remove(arena.Obstacles)
 	end
@@ -627,6 +655,26 @@ end
 -- The tools you can buy, laid out on a table next to the shop (decoration only, if imported)
 local SHOP_DISPLAY = { "GrabbingGloves", "Sneakers", "TapeGun", "ButterflyNet", "TapeRoll", "RubberStamp" }
 
+-- The hub plaza (everything in town faces +Z, toward the spawn at the south end)
+local PLAZA_MIN = Vector3.new(-90, 0, -60)
+local PLAZA_MAX = Vector3.new(90, 0, 95)
+-- Emoji on each zone's entrance banner
+local ZONE_ICONS: { [string]: string } = {
+	Backyard = "🏡",
+	Barn = "🐔",
+	Jungle = "🌴",
+	IceRink = "❄️",
+	Rooftop = "🏙️",
+}
+-- Where each zone's path leaves the plaza
+local PATH_STARTS: { [string]: Vector3 } = {
+	Backyard = Vector3.new(0, 0, -60),
+	Barn = Vector3.new(-50, 0, -60),
+	IceRink = Vector3.new(-80, 0, -60),
+	Jungle = Vector3.new(50, 0, -60),
+	Rooftop = Vector3.new(80, 0, -60),
+}
+
 function MapBuilder.Build(): Map
 	local existing = Workspace:FindFirstChild("GrayboxMap")
 	if existing then
@@ -636,86 +684,81 @@ function MapBuilder.Build(): Map
 	map.Name = "GrayboxMap"
 	map.Parent = Workspace
 
-	-- Ground
-	block(map, "Ground", Vector3.new(-170, -1, -175), Vector3.new(170, 0, 75), COLORS.Grass, {
-		Material = Enum.Material.Grass,
-	})
-
-	-- Hub town plaza + spawn
-	block(map, "Plaza", Vector3.new(-36, 0, 2), Vector3.new(36, 0.05, 56), COLORS.Stone, {
+	-- Hub town plaza + spawn (the island itself is terrain, made in Scenery.luau)
+	block(map, "Plaza", PLAZA_MIN, PLAZA_MAX + Vector3.new(0, 0.05, 0), COLORS.Stone, {
 		Material = Enum.Material.Cobblestone,
 	})
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(6, 1, 6)
-	spawn.Position = Vector3.new(0, 0.5, 45)
+	spawn.Position = Vector3.new(0, 0.5, 72)
 	spawn.Neutral = true
 	spawn.Duration = 0
 	spawn.Color = COLORS.PostBlue
 	spawn.Parent = map
-	dress(map, "SpawnPad", spot(0, 0, 45), 7, { spawn })
+	dress(map, "SpawnPad", spot(0, 0, 72), 7, { spawn })
 
-	-- Animal Pen counter (next to the Backyard gate)
-	local counter = block(map, "PenCounter", Vector3.new(-18, 0, 6), Vector3.new(-10, 3, 8), COLORS.Wood)
-	MapBuilder.Label(counter, "ANIMAL PEN", 4, COLORS.Yellow)
-	local penPrompt = prompt(counter, "Choose an Animal", "Animal Pen", 0.3)
-	dress(map, "PenCounter", spot(-14, 0, 7), 8.5, { counter })
-
-	-- Post Office, facing the plaza: the building, Postmaster Gruff in front of it, his counter, and the chute.
-	local building = block(map, "PostOfficeBuilding", Vector3.new(8, 0, 2), Vector3.new(28, 12, 12.5), COLORS.PostRed)
-	local roof = block(map, "PostOfficeRoof", Vector3.new(7, 12, 1), Vector3.new(29, 13, 13.5), COLORS.PostBlue)
+	-- Post Office, front and center: the building, Postmaster Gruff in front of it, his counter, and the chute.
+	local building =
+		block(map, "PostOfficeBuilding", Vector3.new(-10, 0, -44), Vector3.new(10, 12, -30), COLORS.PostRed)
+	local roof = block(map, "PostOfficeRoof", Vector3.new(-11, 12, -45), Vector3.new(11, 13, -29), COLORS.PostBlue)
 	MapBuilder.Label(building, "POST OFFICE", 8, COLORS.Yellow)
-	-- The building model is deep (16 studs at this size), so it's 18 wide and its front is at z = 14.3,
-	-- which keeps its back just clear of the Backyard fence.
-	local office = dress(map, "PostOffice", spot(18, 0, 7), 18, { building, roof }, { Solid = true })
+	-- The building model is deep (14 studs at this size), so it's 18 wide with its front at z = -30
+	local office = dress(map, "PostOffice", spot(0, 0, -37), 18, { building, roof }, { Solid = true })
 	if office then
-		ModelFit.Align(office, Vector3.zAxis, 14.3) -- its front door sits right behind Gruff
+		ModelFit.Align(office, Vector3.zAxis, -30) -- its front door sits right behind Gruff
 	end
-	block(map, "PostOfficeFloor", Vector3.new(8, 0, 12.5), Vector3.new(28, 0.3, 24), COLORS.Stone)
-	local gruff, gruffHat = buildGruff(map, spot(16, 0.3, 17))
-	local postCounter = block(map, "Counter", Vector3.new(11, 0.3, 20), Vector3.new(21, 3.8, 22), COLORS.Wood)
-	dress(map, "PostCounter", spot(16, 0.3, 21), 10.5, { postCounter })
-	local chute = block(map, "MailChute", Vector3.new(23, 0.3, 19), Vector3.new(27, 5, 23), COLORS.Chute)
+	block(map, "PostOfficeFloor", Vector3.new(-12, 0, -30), Vector3.new(14, 0.3, -19), COLORS.Stone)
+	local gruff, gruffHat = buildGruff(map, spot(-2, 0.3, -27))
+	local postCounter = block(map, "Counter", Vector3.new(-7, 0.3, -24), Vector3.new(3, 3.8, -22), COLORS.Wood)
+	dress(map, "PostCounter", spot(-2, 0.3, -23), 10.5, { postCounter })
+	local chute = block(map, "MailChute", Vector3.new(5, 0.3, -25), Vector3.new(9, 5, -21), COLORS.Chute)
 	MapBuilder.Label(chute, "MAIL CHUTE", 3.5, COLORS.Yellow)
 	-- Hold E here to mail your bag. (Each player's client shortens the hold and swaps in their chute's model.)
 	local chutePrompt = prompt(chute, "Mail Parcels", "Mail Chute", Config.Mail.ChuteById.Basic.HoldTime)
 	chutePrompt.MaxActivationDistance = 12
 
-	-- Gruff's orders board (right of the Post Office, facing the plaza)
-	local board = block(map, "OrdersBoard", Vector3.new(30, 0, 16), Vector3.new(36, 7, 17), COLORS.Wood)
+	-- Gruff's orders board (right of the Post Office)
+	local board = block(map, "OrdersBoard", Vector3.new(12, 0, -28), Vector3.new(18, 7, -27), COLORS.Wood)
 	MapBuilder.Label(board, "GRUFF'S ORDERS", 5, COLORS.Yellow)
 	local ordersPrompt = prompt(board, "Read Orders", "Gruff's Orders", 0.2)
-	dress(map, "OrdersBoard", spot(33, 0, 16.5), 6.5, { board })
+	dress(map, "OrdersBoard", spot(15, 0, -27.5), 6.5, { board })
 	-- A letter bobbing over the board so it catches your eye (it spins on each client: Animate.luau)
-	local letter = ModelFit.Spawn("PropModels", "Envelope", CFrame.new(33, 8.5, 16.5), 2, map)
+	local letter = ModelFit.Spawn("PropModels", "Envelope", CFrame.new(15, 8.5, -27.5), 2, map)
 	if letter then
 		letter.Name = "OrdersLetter"
 		letter:SetAttribute("Spin", true)
 	end
 
-	-- Supply Shop (behind the Animal Pen), with a table of the tools it sells
-	local shopCounter = block(map, "ShopCounter", Vector3.new(-18, 0, 20), Vector3.new(-10, 3, 22), COLORS.PostBlue)
+	-- Animal Pen (west side of the plaza)
+	local counter = block(map, "PenCounter", Vector3.new(-44, 0, -12), Vector3.new(-36, 3, -10), COLORS.Wood)
+	MapBuilder.Label(counter, "ANIMAL PEN", 4, COLORS.Yellow)
+	local penPrompt = prompt(counter, "Choose an Animal", "Animal Pen", 0.3)
+	dress(map, "PenCounter", spot(-40, 0, -11), 8.5, { counter })
+
+	-- Supply Shop (east side), with a table of the tools it sells
+	local shopCounter = block(map, "ShopCounter", Vector3.new(36, 0, -12), Vector3.new(44, 3, -10), COLORS.PostBlue)
 	MapBuilder.Label(shopCounter, "SUPPLY SHOP", 4, COLORS.Yellow)
 	local shopPrompt = prompt(shopCounter, "Shop", "Boxes, Tools, Stamps", 0.2)
-	dress(map, "ShopStall", spot(-14, 0, 21), 9.5, { shopCounter }, { Solid = true })
-	local displayTable = block(map, "DisplayTable", Vector3.new(-8.5, 0, 20), Vector3.new(-0.5, 2.6, 22), COLORS.Wood)
+	dress(map, "ShopStall", spot(40, 0, -11), 9.5, { shopCounter }, { Solid = true })
+	local displayTable = block(map, "DisplayTable", Vector3.new(47, 0, -12), Vector3.new(55, 2.6, -10), COLORS.Wood)
 	for index, name in SHOP_DISPLAY do
-		local x = -8.5 + (index - 0.5) * (8 / #SHOP_DISPLAY)
-		local item = ModelFit.Spawn("PropModels", name, spot(x, 2.6, 21), 1.25, displayTable)
+		local x = 47 + (index - 0.5) * (8 / #SHOP_DISPLAY)
+		local item = ModelFit.Spawn("PropModels", name, spot(x, 2.6, -11), 1.25, displayTable)
 		if item then
 			item:SetAttribute("Spin", true)
 		end
 	end
 
-	-- Scenery around the plaza (only if imported)
-	for _, at in { { -36, 26 }, { 36, 26 }, { -36, 54 }, { 36, 54 }, { 6, 26 } } do
+	-- Scenery right around the counters (only if imported)
+	for _, at in { { -16, -18 }, { 22, -18 }, { -50, -4 }, { 50, -4 } } do
 		dress(map, "Lamppost", spot(at[1], 0, at[2]), 9, nil, { ByHeight = true, Solid = true })
 	end
-	dress(map, "Bench", spot(-14, 0, 54, -Vector3.zAxis), 5, nil, { Solid = true })
-	dress(map, "Bench", spot(14, 0, 54, -Vector3.zAxis), 5, nil, { Solid = true })
-	dress(map, "Mailbox", spot(5, 0, 44, Vector3.xAxis), 3.5, nil, { ByHeight = true, Solid = true })
-	dress(map, "Planter", spot(-28, 0, 14, Vector3.xAxis), 5, nil, { Solid = true })
-	dress(map, "Planter", spot(28, 0, 44), 5, nil, { Solid = true })
+	dress(map, "Bench", spot(-16, 0, 48, Vector3.xAxis), 5, nil, { Solid = true })
+	dress(map, "Bench", spot(16, 0, 48, -Vector3.xAxis), 5, nil, { Solid = true })
+	dress(map, "Mailbox", spot(6, 0, 70, -Vector3.zAxis), 3.5, nil, { ByHeight = true, Solid = true })
+	dress(map, "Planter", spot(-26, 0, -18), 5, nil, { Solid = true })
+	dress(map, "Planter", spot(30, 0, -18), 5, nil, { Solid = true })
 
 	-- Arenas
 	local arenaFolder = Instance.new("Folder")
@@ -735,44 +778,84 @@ function MapBuilder.Build(): Map
 		arenas[arena.Id] = arena
 	end
 
-	-- Travel pads in town: one per arena, in a row across the plaza
+	-- The Rooftop can't be walked up to, so its street has an elevator pad up to the roof
+	local liftPads: { [string]: BasePart } = {}
+	do
+		local l = ARENA_LAYOUT.Rooftop
+		local at = l.Center + Vector3.new(0, 0, l.HalfZ + 5)
+		local pad = part(map, {
+			Name = "ElevatorPad",
+			Size = Vector3.new(6, 1, 6),
+			Position = at + Vector3.new(0, 0.5, 0),
+			Color = Config.Arenas.ById.Rooftop.Color,
+			Material = Enum.Material.Neon,
+		})
+		MapBuilder.Label(pad, "ELEVATOR TO THE ROOF", 3, COLORS.Yellow)
+		tint(dress(map, "TravelPad", spot(at.X, 0, at.Z), 7, { pad }), "Center", Config.Arenas.ById.Rooftop.Color)
+		liftPads.Rooftop = pad
+	end
+
+	-- Travel pads in town: one per arena, in a row across the plaza (walking there works too)
 	local travelPads: { [string]: BasePart } = {}
 	for index, def in Config.Arenas.List do
-		local x = -32 + (index - 1) * 16
+		local x = -40 + (index - 1) * 20
 		local pad = part(map, {
 			Name = `TravelPad_{def.Id}`,
 			Size = Vector3.new(6, 1, 6),
-			Position = Vector3.new(x, 0.5, 32),
+			Position = Vector3.new(x, 0.5, 18),
 			Color = def.Color,
 			Material = Enum.Material.Neon,
 		})
 		local tiers = table.concat(def.Tiers, " & ")
 		MapBuilder.Label(pad, `{def.DisplayName} (tier {tiers})`, 3, COLORS.Yellow)
-		tint(dress(map, "TravelPad", spot(x, 0, 32), 7, { pad }), "Center", def.Color)
+		tint(dress(map, "TravelPad", spot(x, 0, 18), 7, { pad }), "Center", def.Color)
 		travelPads[def.Id] = pad
 	end
 
 	-- Leaderboards on the west edge of the plaza, facing into town (LeaderboardService draws on them)
+	local LEADERBOARD_X = -79.1 -- where the boards' faces are
 	local leaderboards: { [string]: BasePart } = {}
 	for index, id in { "FastestTiger", "FiveStamps", "Rarest" } do
-		local z = 34 + (index - 1) * 10
+		local z = 12 + (index - 1) * 12
+		local x = LEADERBOARD_X
 		local face =
-			block(map, `Leaderboard_{id}`, Vector3.new(-42, 0, z - 4.5), Vector3.new(-41, 11, z + 4.5), COLORS.PostBlue)
-		local stand = dress(map, "LeaderboardStand", spot(-42.5, 0, z, Vector3.xAxis), 9.5, { face })
+			block(map, `Leaderboard_{id}`, Vector3.new(x - 1, 0, z - 4.5), Vector3.new(x, 11, z + 4.5), COLORS.PostBlue)
+		local stand = dress(map, "LeaderboardStand", spot(x - 1.5, 0, z, Vector3.xAxis), 9.5, { face })
 		if stand then
-			ModelFit.Align(stand, Vector3.xAxis, -41.1)
+			ModelFit.Align(stand, Vector3.xAxis, x)
 			-- Shrink the (invisible) score part to fit exactly on the stand's dark board. The numbers come
 			-- from art/blender_scripts/town.py: the stand is 9 wide, its board 8.2 x 7.6 centered 4.6 up,
 			-- set 0.63 back from the front of the plinth.
 			local _, size = stand:GetBoundingBox()
 			local k = math.max(size.X, size.Z) / 9
 			face.Size = Vector3.new(0.2, 7.6 * k, 8.2 * k)
-			face.Position = Vector3.new(-41.1 - 0.63 * k - 0.08, 4.6 * k, z)
+			face.Position = Vector3.new(x - 0.63 * k - 0.08, 4.6 * k, z)
 		end
 		leaderboards[id] = face
 	end
 
-	local townSpot = Vector3.new(0, 3, 40)
+	-- Everything that's just for looks: the island, ocean and mountains, terraces, paths, zone themes
+	local zones: { Scenery.Zone } = {}
+	for _, def in Config.Arenas.List do
+		local l = ARENA_LAYOUT[def.Id]
+		if l then
+			local gateZ = l.Center.Z + l.HalfZ + (if def.Id == "Rooftop" then 2 else 0)
+			table.insert(zones, {
+				Id = def.Id,
+				Name = def.DisplayName,
+				Color = def.Color,
+				Icon = ZONE_ICONS[def.Id] or "",
+				Center = l.Center,
+				HalfX = l.HalfX,
+				HalfZ = l.HalfZ,
+				FloorY = if def.Id == "Rooftop" then ROOF_Y else 0,
+				Gate = Vector3.new(l.Center.X, 0, gateZ),
+			})
+		end
+	end
+	Scenery.Build(map, { PlazaMin = PLAZA_MIN, PlazaMax = PLAZA_MAX, Zones = zones, PathStarts = PATH_STARTS })
+
+	local townSpot = Vector3.new(0, 3, 66)
 	return {
 		Leaderboards = leaderboards,
 		PenPrompt = penPrompt,
@@ -780,6 +863,7 @@ function MapBuilder.Build(): Map
 		Arenas = arenas,
 		TownSpawn = CFrame.lookAt(townSpot, townSpot - Vector3.zAxis),
 		TravelPads = travelPads,
+		LiftPads = liftPads,
 		ReturnPads = returnPads,
 		Chute = chute,
 		ChutePrompt = chutePrompt,

@@ -23,12 +23,6 @@ local function reply(player: Player, text: string)
 	Remotes.Notify:FireClient(player, "Message", { Speaker = "Supply Shop", Text = text })
 end
 
-local function isNear(player: Player, part: BasePart): boolean
-	local character = player.Character
-	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	return root ~= nil and (root.Position - part.Position).Magnitude <= 20
-end
-
 local function onShopAction(player: Player, action: unknown, id: unknown)
 	local profile = DataService.Get(player)
 	if not profile or typeof(action) ~= "string" then
@@ -36,12 +30,8 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	end
 	local itemId = if typeof(id) == "string" then id else ""
 
-	-- Choosing your next-job stamp works anywhere. Everything else happens at the counter.
-	if action ~= "SelectStamp" and not isNear(player, map.ShopCounter) then
-		reply(player, "Come back to the Supply Shop counter for that.")
-		return
-	end
-
+	-- (The shop works from anywhere: the SHOP button opens it, and the map is too big to walk back each time.
+	-- Coins and everything else are still checked below.)
 	if action == "BuyBox" then
 		local box = Config.Boxes.ById[itemId]
 		if not box or profile.Boxes[itemId] then
