@@ -14,11 +14,12 @@ local ModelFit = {}
 
 -- floor: where the model's bottom-center should be (and which way it should face)
 -- width: how wide (X or Z, whichever is bigger) it should be, in studs
-function ModelFit.Fit(model: Model, floor: CFrame, width: number)
+-- byHeight: true = `width` is the height instead (better for tall, thin things like lampposts)
+function ModelFit.Fit(model: Model, floor: CFrame, width: number, byHeight: boolean?)
 	local _, size = model:GetBoundingBox()
-	local widest = math.max(size.X, size.Z)
-	if widest > 0 then
-		model:ScaleTo(model:GetScale() * width / widest)
+	local measured = if byHeight then size.Y else math.max(size.X, size.Z)
+	if measured > 0 then
+		model:ScaleTo(model:GetScale() * width / measured)
 	end
 
 	local yaw = model:GetAttribute("YawOffset")
@@ -61,6 +62,59 @@ function ModelFit.Paint(model: Model, artName: string)
 			end
 		end
 	end
+end
+
+export type SpawnOptions = {
+	ByHeight: boolean?, -- `size` is the height, not the width
+	Solid: boolean?, -- players and animals bump into it
+}
+
+-- Makes a colored, fitted copy of ReplicatedStorage > <folderName> > <name> (e.g. "MapModels", "Barn"),
+-- as decoration: anchored, invisible to clicks and raycasts, and walk-through unless options.Solid.
+-- Returns nil when you haven't imported that model yet, so callers can keep their plain-block fallback.
+function ModelFit.Spawn(
+	folderName: string,
+	name: string,
+	floor: CFrame,
+	size: number,
+	parent: Instance?,
+	options: SpawnOptions?
+): Model?
+	local solid = options ~= nil and options.Solid == true
+	local folder = ReplicatedStorage:FindFirstChild(folderName)
+	local template = folder and folder:FindFirstChild(name)
+	local model: Model
+	if template and template:IsA("Model") then
+		model = template:Clone()
+	elseif template and template:IsA("BasePart") then
+		-- Imported as a single mesh instead of a model: wrap it
+		model = Instance.new("Model")
+		model.Name = name
+		template:Clone().Parent = model
+	else
+		return nil
+	end
+	ModelFit.Paint(model, name)
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.Anchored = true
+			part.CanCollide = solid
+			part.CanQuery = false
+			part.CanTouch = false
+		end
+	end
+	ModelFit.Fit(model, floor, size, options ~= nil and options.ByHeight)
+	model.Parent = parent
+	return model
+end
+
+-- Slides a model along one axis so its bounding box's face on that side lands at `value`.
+-- e.g. Align(barn, Vector3.zAxis, -52) puts the barn's +Z face at z = -52 (just behind a fence).
+function ModelFit.Align(model: Model, axis: Vector3, value: number)
+	local box, size = model:GetBoundingBox()
+	local extent = math.abs(axis.X) * size.X + math.abs(axis.Y) * size.Y + math.abs(axis.Z) * size.Z
+	local face = box.Position:Dot(axis) + extent / 2
+	model:PivotTo(model:GetPivot() + axis * (value - face))
 end
 
 return ModelFit

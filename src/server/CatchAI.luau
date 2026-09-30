@@ -230,6 +230,11 @@ local function dropEgg(s: Session)
 	egg.Position = st.Pos + Vector3.new(0, arenaOf(s).FloorY + 0.5, 0)
 	egg.Parent = folder
 	Debris:AddItem(egg, 20)
+	-- Your Blender egg (PropModels > Egg), if imported. The ball stays, invisible, as the pickup.
+	local floor = CFrame.new(egg.Position - Vector3.new(0, 0.5, 0))
+	if ModelFit.Spawn("PropModels", "Egg", floor, 1.1, egg, { ByHeight = true }) then
+		egg.Transparency = 1
+	end
 
 	local taken = false
 	egg.Touched:Connect(function(hit)
