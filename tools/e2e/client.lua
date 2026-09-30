@@ -136,6 +136,17 @@ local function run()
 		end
 		local seams = (lastBoxStart and lastBoxStart.SeamCount) or 2
 		log(lastBoxStart ~= nil, "BoxStart data arrived (" .. seams .. " seams)")
+		local boxGui = gui:FindFirstChild("BoxingScreen")
+		log(boxGui ~= nil and boxGui.Enabled, "BOX screen is showing")
+		local viewportModel = false
+		for _, d in (boxGui and boxGui:GetDescendants()) or {} do
+			if d:IsA("ViewportFrame") and d:FindFirstChildOfClass("Model") then
+				viewportModel = true
+			end
+		end
+		log(viewportModel, "BOX screen shows the 3D animal")
+		local jobBox = #CollectionService:GetTagged("JobBox") > 0
+		log(jobBox, "the box in the arena is tagged for the anger wiggle")
 		for seam = 1, seams do
 			for _ = 1, 6 do
 				remotes.BoxingInput:FireServer("Pet", sweet)
@@ -224,6 +235,16 @@ local function run()
 		end, 3), "bought the " .. chute .. " chute")
 		task.wait(0.2)
 	end
+	task.wait(0.5)
+	local rocketModel = false
+	for _, d in Workspace:GetChildren() do
+		if d:IsA("Model") and d.Name == "MailChuteRocket" then
+			rocketModel = true
+		end
+	end
+	log(rocketModel, "your chute now shows the Rocket Chute model")
+	local board = map:FindFirstChild("Leaderboard_FiveStamps")
+	log(board ~= nil and board:FindFirstChild("Board") ~= nil, "leaderboards are drawn")
 	local messages = events.Message or 0
 	remotes.MailAnywhere:FireServer()
 	log(waitFor(function()
