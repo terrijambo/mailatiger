@@ -36,11 +36,13 @@ end
 local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local notify = remotes:WaitForChild("Notify")
 local events = {}
-local lastBoxStart = nil
+local lastBoxStart, lastParcel = nil, nil
 notify.OnClientEvent:Connect(function(kind, data)
 	events[kind] = (events[kind] or 0) + 1
 	if kind == "BoxStart" then
 		lastBoxStart = data
+	elseif kind == "Parcel" then
+		lastParcel = data
 	end
 end)
 
@@ -97,6 +99,12 @@ local function run()
 	log(gui:WaitForChild("Tutorial", 8) ~= nil, "tutorial started for a new player")
 	local startCoins = profile().Coins
 	sampling = true
+	log(waitFor(function()
+		return #(profile().Orders or {}) == 3
+	end, 5), "Gruff's orders are ready (3)")
+	log(waitFor(function()
+		return profile().PaycheckStreak == 1
+	end, 10), "daily paycheck paid (streak day 1)")
 
 	-- 1. Pick a Hamster at the Pen
 	root.CFrame = map.PenCounter.CFrame * CFrame.new(0, 2, 5)
@@ -404,6 +412,52 @@ local function run()
 		end, 5), "Rocket-mailed the chicken from the arena")
 	else
 		log(false, "could not grab the chicken")
+	end
+
+	-- 12. A Wooden Crate and a FRAGILE stamp on a Hamster job
+	goTo(map.ShopCounter)
+	remotes.ShopAction:FireServer("BuyBox", "Wood")
+	log(waitFor(function()
+		return profile().EquippedBox == "Wood"
+	end, 3), "bought and equipped the Wooden Crate")
+	task.wait(0.2)
+	remotes.ShopAction:FireServer("BuyStamp", "Fragile")
+	log(waitFor(function()
+		return profile().SelectedStamp == "Fragile"
+	end, 3), "FRAGILE stamp selected for the next job")
+	goTo(map.PenCounter)
+	lastBoxStart = nil
+	remotes.RequestAnimal:FireServer("Hamster", false)
+	waitFor(function()
+		return player:GetAttribute("Stage") == "Catch"
+	end, 5)
+	log(profile().SelectedStamp == nil, "the stamp was used up by the job")
+	if catchMine(25) then
+		waitFor(function()
+			return lastBoxStart ~= nil
+		end, 3)
+		log(lastBoxStart.BoxId == "Wood", "the job uses the Wooden Crate")
+		local sweet = 1
+		for i, spot in lastBoxStart.Spots do
+			if spot.Kind == "Sweet" then
+				sweet = i
+				break
+			end
+		end
+		lastParcel = nil
+		for seam = 1, lastBoxStart.SeamCount do
+			for _ = 1, 8 do
+				remotes.BoxingInput:FireServer("Pet", sweet)
+				task.wait(0.1)
+			end
+			remotes.BoxingInput:FireServer("Tape", seam)
+			task.wait(0.4)
+		end
+		log(waitFor(function()
+			return lastParcel ~= nil
+		end, 5) and lastParcel.Stamp == "FRAGILE", "the parcel is stamped FRAGILE")
+	else
+		log(false, "could not grab the second hamster")
 	end
 
 	log(true, "events seen: " .. HttpService:JSONEncode(events))

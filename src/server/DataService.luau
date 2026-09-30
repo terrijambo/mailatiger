@@ -66,6 +66,8 @@ local DataService = {}
 
 local loadedEvent = Instance.new("BindableEvent")
 -- Fires (player, profile) once a player's data is ready.
+-- CAREFUL: the profile passed along is a COPY (Roblox events copy tables). To change the player's save,
+-- use DataService.Get(player) inside the handler.
 DataService.Loaded = loadedEvent.Event
 
 local profiles: { [Player]: Profile } = {}

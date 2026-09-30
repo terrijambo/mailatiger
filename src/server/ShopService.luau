@@ -151,8 +151,9 @@ function ShopService.Start(builtMap: MapBuilder.Map)
 	Remotes.Listen(Remotes.ShopAction, 8, onShopAction)
 
 	-- New players (and anyone whose orders expired while they were away) get fresh orders on join
-	DataService.Loaded:Connect(function(player: Player, profile: DataService.Profile)
-		if Orders.Refresh(profile) then
+	DataService.Loaded:Connect(function(player: Player)
+		local profile = DataService.Get(player) -- the real save (the event only passes a copy)
+		if profile and Orders.Refresh(profile) then
 			Economy.Sync(player)
 		end
 	end)
