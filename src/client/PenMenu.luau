@@ -112,6 +112,15 @@ function PenMenu.Start()
 			ZIndex = 4,
 			Visible = false,
 		})
+		-- Which zone it lives in (bottom-left of the picture)
+		local arena = Config.Arenas.ByTier[animal.Tier]
+		if arena then
+			Ui.icon(card, `Zone_{arena.Id}`, {
+				Position = UDim2.fromOffset(4, 58),
+				Size = UDim2.fromOffset(30, 30),
+				ZIndex = 3,
+			})
+		end
 		-- Tier badge in the corner
 		local badge = Ui.outlined(card, {
 			Position = UDim2.fromOffset(6, 4),

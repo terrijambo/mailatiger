@@ -84,54 +84,52 @@ Store:
 - `Store_PriorityStamps.png`
 - `Store_GruffCoffee.png`
 
-## Remaining Priority B
-
 Diamond upgrades:
 
-- `Upgrade_GoldenPaws`
-- `Upgrade_QuickStudy`
-- `Upgrade_DeepPockets`
-- `Upgrade_CalmHands`
-- `Upgrade_PayRaise`
-- `Upgrade_BusyDesk`
-- `Upgrade_RebirthKit`
+- `Upgrade_GoldenPaws.png`
+- `Upgrade_QuickStudy.png`
+- `Upgrade_DeepPockets.png`
+- `Upgrade_CalmHands.png`
+- `Upgrade_PayRaise.png`
+- `Upgrade_BusyDesk.png`
+- `Upgrade_RebirthKit.png`
 
-## Remaining Priority C
+## Completed Priority C
 
 Zones:
 
-- `Zone_Backyard`
-- `Zone_Barn`
-- `Zone_Jungle`
-- `Zone_IceRink`
-- `Zone_Rooftop`
+- `Zone_Backyard.png`
+- `Zone_Barn.png`
+- `Zone_Jungle.png`
+- `Zone_IceRink.png`
+- `Zone_Rooftop.png`
 
 Animals:
 
-- `Animal_Hamster`
-- `Animal_Bunny`
-- `Animal_Goldfish`
-- `Animal_Hedgehog`
-- `Animal_Parrot`
-- `Animal_Chicken`
-- `Animal_Goat`
-- `Animal_Pig`
-- `Animal_Skunk`
-- `Animal_Monkey`
-- `Animal_Kangaroo`
-- `Animal_Porcupine`
-- `Animal_Penguin`
-- `Animal_Octopus`
-- `Animal_Crocodile`
-- `Animal_Gorilla`
-- `Animal_Bear`
-- `Animal_Tiger`
-- `Animal_Giraffe`
-- `Animal_Elephant`
-- `Animal_Whale`
-- `Animal_Yeti`
-- `Animal_Dragon`
-- `Animal_Alien`
-- `Animal_Unicorn`
-- `Animal_Gruff`
+- `Animal_Hamster.png`
+- `Animal_Bunny.png`
+- `Animal_Goldfish.png`
+- `Animal_Hedgehog.png`
+- `Animal_Parrot.png`
+- `Animal_Chicken.png`
+- `Animal_Goat.png`
+- `Animal_Pig.png`
+- `Animal_Skunk.png`
+- `Animal_Monkey.png`
+- `Animal_Kangaroo.png`
+- `Animal_Porcupine.png`
+- `Animal_Penguin.png`
+- `Animal_Octopus.png`
+- `Animal_Crocodile.png`
+- `Animal_Gorilla.png`
+- `Animal_Bear.png`
+- `Animal_Tiger.png`
+- `Animal_Giraffe.png`
+- `Animal_Elephant.png`
+- `Animal_Whale.png`
+- `Animal_Yeti.png`
+- `Animal_Dragon.png`
+- `Animal_Alien.png`
+- `Animal_Unicorn.png`
+- `Animal_Gruff.png`
 

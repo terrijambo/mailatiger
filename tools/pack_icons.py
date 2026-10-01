@@ -7,12 +7,17 @@ Writes:
     art/ui_atlas/icons_sheet_1.png, _2, ...   upload these to Roblox (Studio: Asset Manager -> Bulk Import)
     src/shared/Config/IconAtlas.luau          which cell of which sheet each icon is in (generated, don't edit)
 
-Then paste each sheet's image id into src/shared/Config/IconSheets.luau (same order). Adding or renaming an
-icon reshuffles the sheets, so re-upload all of them after re-running this.
+Then paste each sheet's image id into src/shared/Config/IconSheets.luau (same order).
+
+Icons that are already packed keep their spot, and new icons go onto NEW sheets after the last one, so
+sheets you've already uploaded never change: you only upload the new sheets. To start over and pack
+everything tightly (then re-upload every sheet), run:  python tools/pack_icons.py --repack
 """
 
 import glob
 import os
+import re
+import sys
 
 from PIL import Image
 
@@ -28,24 +33,52 @@ PER_ROW = SHEET // CELL
 PER_SHEET = PER_ROW * PER_ROW
 
 
+def existing_cells():
+    """key -> (sheet, slot) from the last run's IconAtlas.luau"""
+    found = {}
+    if not os.path.exists(LUAU):
+        return found
+    pattern = re.compile(r"^\t(\w+) = \{ Sheet = (\d+), X = (\d+), Y = (\d+) \},$")
+    with open(LUAU, encoding="utf-8") as f:
+        for line in f:
+            match = pattern.match(line.rstrip("\n"))
+            if match:
+                key, sheet, x, y = match.group(1), int(match.group(2)), int(match.group(3)), int(match.group(4))
+                found[key] = (sheet, (y - PAD) // CELL * PER_ROW + (x - PAD) // CELL)
+    return found
+
+
 def main():
     files = sorted(glob.glob(os.path.join(SOURCE, "*.png")))
+    keys = [os.path.splitext(os.path.basename(path))[0] for path in files]
+    path_of = dict(zip(keys, files))
+    keep = {} if "--repack" in sys.argv else {k: v for k, v in existing_cells().items() if k in path_of}
+
+    # Where every icon goes: kept icons stay put, new ones fill new sheets after the last used sheet
+    placement = dict(keep)
+    next_sheet = max([sheet for sheet, _ in keep.values()], default=0) + 1
+    next_slot = 0
+    for key in keys:
+        if key not in placement:
+            if next_slot == PER_SHEET:
+                next_sheet += 1
+                next_slot = 0
+            placement[key] = (next_sheet, next_slot)
+            next_slot += 1
+
     os.makedirs(OUT, exist_ok=True)
     for old in glob.glob(os.path.join(OUT, "icons_sheet_*.png")):
         os.remove(old)
-
+    sheet_count = max(sheet for sheet, _ in placement.values())
+    sheets = [Image.new("RGBA", (SHEET, SHEET), (0, 0, 0, 0)) for _ in range(sheet_count)]
     cells = []
-    sheets = []
-    for index, path in enumerate(files):
-        sheet_index = index // PER_SHEET
-        if sheet_index == len(sheets):
-            sheets.append(Image.new("RGBA", (SHEET, SHEET), (0, 0, 0, 0)))
-        slot = index % PER_SHEET
+    for key in sorted(placement, key=lambda k: (placement[k], k)):
+        sheet, slot = placement[key]
         x, y = (slot % PER_ROW) * CELL, (slot // PER_ROW) * CELL
-        icon = Image.open(path).convert("RGBA").resize((CELL - 2 * PAD, CELL - 2 * PAD), Image.LANCZOS)
-        sheets[sheet_index].alpha_composite(icon, (x + PAD, y + PAD))
-        key = os.path.splitext(os.path.basename(path))[0]
-        cells.append((key, sheet_index + 1, x + PAD, y + PAD))
+        icon = Image.open(path_of[key]).convert("RGBA").resize((CELL - 2 * PAD, CELL - 2 * PAD), Image.LANCZOS)
+        sheets[sheet - 1].alpha_composite(icon, (x + PAD, y + PAD))
+        cells.append((key, sheet, x + PAD, y + PAD))
+    new_sheets = sorted({placement[k][0] for k in keys if k not in keep})
 
     for number, sheet in enumerate(sheets, start=1):
         sheet.save(os.path.join(OUT, f"icons_sheet_{number}.png"))
@@ -74,6 +107,8 @@ def main():
     with open(LUAU, "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines))
     print(f"{len(cells)} icons -> {len(sheets)} sheets in {OUT}")
+    if new_sheets:
+        print("Upload these (new or changed):", ", ".join(f"icons_sheet_{n}.png" for n in new_sheets))
 
 
 if __name__ == "__main__":

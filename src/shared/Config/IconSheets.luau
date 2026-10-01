@@ -12,4 +12,7 @@ return {
 	"rbxassetid://139025452598007", -- icons_sheet_2.png
 	"rbxassetid://134256527637959", -- icons_sheet_3.png
 	"rbxassetid://83772096277078", -- icons_sheet_4.png
+	"", -- icons_sheet_5.png (animals)
+	"", -- icons_sheet_6.png (animals, upgrades)
+	"", -- icons_sheet_7.png (upgrades, zones)
 } :: { string }
