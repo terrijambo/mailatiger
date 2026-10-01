@@ -398,6 +398,41 @@ function Hud.Start()
 		DisplayOrder = 6,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	}, gui.Parent)
+	-- Coins (or diamonds) burst out from the middle of the screen and fly into their counter
+	local function flyInto(iconKey: string, count: number, target: GuiObject)
+		local view = popupLayer.AbsoluteSize
+		local from = Vector2.new(view.X / 2, view.Y * 0.45)
+		local size = math.floor(40 * Ui.screenScale())
+		for i = 1, count do
+			local icon = Ui.icon(popupLayer, iconKey, {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromOffset(from.X, from.Y),
+				Size = UDim2.fromOffset(size, size),
+				ZIndex = 20,
+			})
+			-- Scatter out first...
+			local angle = math.random() * math.pi * 2
+			local spread = Vector2.new(math.cos(angle), math.sin(angle)) * (60 + math.random() * 90)
+			local out = from + spread
+			TweenService:Create(icon, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Position = UDim2.fromOffset(out.X, out.Y),
+			}):Play()
+			-- ...then swoop into the counter, one after another
+			task.delay(0.3 + i * 0.05, function()
+				local goal = target.AbsolutePosition + Vector2.new(22, target.AbsoluteSize.Y / 2)
+				local fly =
+					TweenService:Create(icon, TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+						Position = UDim2.fromOffset(goal.X, goal.Y),
+						Size = UDim2.fromOffset(size * 0.6, size * 0.6),
+					})
+				fly:Play()
+				fly.Completed:Once(function()
+					icon:Destroy()
+				end)
+			end)
+		end
+	end
+
 	local toast = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 124),
@@ -632,7 +667,8 @@ function Hud.Start()
 				Ui.GREEN
 			)
 		elseif kind == "MailReceipt" then
-			-- You mailed your bag at the chute
+			-- You mailed your bag at the chute: coins fly into your counter
+			flyInto("Hud_Coins", math.clamp(6 + data.Count * 2, 8, 18), coinRow)
 			local extras = if data.OrderBonus > 0 then `   +{Format.Short(data.OrderBonus)} from orders!` else ""
 			local plural = if data.Count == 1 then "parcel" else "parcels"
 			showToast(
@@ -674,6 +710,7 @@ function Hud.Start()
 		elseif kind == "LevelUp" then
 			showLevelUp(data.Level, data.Coins, data.Diamonds or 0, data.Unlocks or {})
 		elseif kind == "Diamonds" then
+			flyInto("Hud_Diamonds", math.clamp(data.Amount, 3, 14), diamondRow)
 			-- A floating "+40 💎" by the diamond counter
 			local float = Ui.outlined(diamondRow, {
 				Position = UDim2.fromOffset(120, -4),

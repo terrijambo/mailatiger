@@ -206,17 +206,22 @@ function BoxingScreen.Start()
 	})
 
 	-- The open box: two flaps folded out, and the front face you tape
+	local flaps: { [number]: Frame } = {}
+	local function openFlap(flap: Frame, side: number)
+		flap.Position = UDim2.fromScale(0.5 + side * 0.34, 0.41)
+		flap.Size = UDim2.fromScale(0.2, 0.06)
+		flap.Rotation = side * -22
+	end
 	for _, side in { -1, 1 } do
 		local flap = Ui.make("Frame", {
 			AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(0.5 + side * 0.34, 0.41),
-			Size = UDim2.fromScale(0.2, 0.06),
-			Rotation = side * -22,
 			BackgroundColor3 = CARDBOARD:Lerp(DARK, 0.15),
 			ZIndex = 4,
 		}, scene)
+		openFlap(flap, side)
 		Ui.round(flap, 6)
 		Ui.make("UIStroke", { Thickness = 3, Color = DARK }, flap)
+		flaps[side] = flap
 	end
 	local boxCard = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 1),
@@ -238,6 +243,76 @@ function BoxingScreen.Start()
 		Text = "",
 	})
 	local popping = false
+	local boxBounce = Ui.make("UIScale", { Scale = 1 }, boxCard)
+
+	-- DANGER: red edges that pulse while the animal is about to blow (anger 75+)
+	local danger: { Frame } = {}
+	local edges: { { any } } = {
+		{ UDim2.fromScale(0, 0), UDim2.fromScale(1, 0.18), 90 },
+		{ UDim2.fromScale(0, 0.82), UDim2.fromScale(1, 0.18), -90 },
+		{ UDim2.fromScale(0, 0), UDim2.fromScale(0.12, 1), 0 },
+		{ UDim2.fromScale(0.88, 0), UDim2.fromScale(0.12, 1), 180 },
+	}
+	for _, edge in edges do
+		local frame = Ui.make("Frame", {
+			Position = edge[1],
+			Size = edge[2],
+			BackgroundColor3 = ANGRY,
+			BorderSizePixel = 0,
+			BackgroundTransparency = 1,
+			ZIndex = 1,
+		}, backdrop)
+		Ui.make("UIGradient", {
+			Rotation = edge[3],
+			Transparency = NumberSequence.new(0, 1),
+		}, frame)
+		table.insert(danger, frame)
+	end
+	local dangerOn = false
+
+	-- A red flash over the animal (touched an angry spot)
+	local hurtFlash = Ui.make("Frame", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundColor3 = ANGRY,
+		BackgroundTransparency = 1,
+		ZIndex = 6,
+	}, animalCard)
+	Ui.round(hurtFlash, 1000)
+
+	-- Big stamped words: GOTCHA! when the box opens, SEALED! when the last strip goes on
+	local stampWord = Ui.make("TextLabel", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.62),
+		Size = UDim2.fromScale(0.7, 0.2),
+		BackgroundTransparency = 1,
+		Font = Ui.TITLE_FONT,
+		TextScaled = true,
+		TextColor3 = ANGRY,
+		Rotation = -8,
+		Visible = false,
+		ZIndex = 40,
+		Text = "",
+	}, scene)
+	local stampStroke = Ui.make("UIStroke", { Thickness = 4, Color = Ui.WHITE }, stampWord)
+	local function slam(text: string, color: Color3, hold: number)
+		stampWord.Text = text
+		stampWord.TextColor3 = color
+		stampWord.Visible = true
+		stampWord.TextTransparency = 0
+		stampStroke.Transparency = 0
+		stampWord.Size = UDim2.fromScale(1.6, 0.45)
+		TweenService:Create(stampWord, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Size = UDim2.fromScale(0.7, 0.2),
+		}):Play()
+		task.delay(hold, function()
+			if stampWord.Text ~= text then
+				return
+			end
+			TweenService:Create(stampWord, TweenInfo.new(0.25), { TextTransparency = 1 }):Play()
+			TweenService:Create(stampStroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
+		end)
+	end
+	local sealing = false
 
 	-- Co-op roles: "Both" when solo. In a crew you only pet OR tape, and the other half is shaded.
 	local role = "Both"
@@ -416,6 +491,14 @@ function BoxingScreen.Start()
 			help.Text ..= "  ·  Left stick moves the hand, hold A"
 		end
 
+		-- Box open again, nothing stamped yet
+		sealing = false
+		for side, flap in flaps do
+			openFlap(flap, side)
+		end
+		stampWord.Visible = false
+		slam("GOTCHA!", Ui.GOLD, 0.6)
+
 		-- POP! The animal springs up out of the box
 		popping = true
 		animalCard.Position = ANIMAL_HIDDEN
@@ -465,12 +548,24 @@ function BoxingScreen.Start()
 	local function refreshAnger()
 		local anger = (player:GetAttribute("Anger") :: number?) or 0
 		local fraction = math.clamp(anger / 100, 0, 1)
-		meterFill.Size = UDim2.fromScale(fraction, 1)
+		TweenService:Create(meterFill, TweenInfo.new(0.15, Enum.EasingStyle.Quad), {
+			Size = UDim2.fromScale(fraction, 1),
+		}):Play()
+		dangerOn = anger >= 75
 		meterFill.BackgroundColor3 = Ui.GREEN:Lerp(ANGRY, fraction)
 		meterText.Text = if anger >= 75 then `ANGER {anger}  - PET IT!!` else `ANGER {anger}`
 		face.Text = if anger >= 75 then "ಠ 益 ಠ" elseif anger >= 40 then "¬ _ ¬" else "• ᴥ •"
 	end
 	player:GetAttributeChangedSignal("Anger"):Connect(refreshAnger)
+	RunService.RenderStepped:Connect(function()
+		if not gui.Enabled then
+			return
+		end
+		local strength = if dangerOn and not sealing then 0.45 + 0.25 * math.sin(os.clock() * 9) else 0
+		for _, frame in danger do
+			frame.BackgroundTransparency = 1 - strength
+		end
+	end)
 
 	-- Mouse / touch
 	local function pointerMoved(screen: Vector2)
@@ -674,12 +769,89 @@ function BoxingScreen.Start()
 	end)
 
 	-- Show the screen only during the BOX stage
+	local function allTaped(): boolean
+		if #seams == 0 then
+			return false
+		end
+		for index = 1, #seams do
+			if not taped[index] then
+				return false
+			end
+		end
+		return true
+	end
+	local sealFinale: () -> ()
 	player:GetAttributeChangedSignal("Stage"):Connect(function()
-		gui.Enabled = player:GetAttribute("Stage") == "Box"
+		if sealing then
+			return -- the SEALED! finale closes the screen itself
+		end
+		local boxing = player:GetAttribute("Stage") == "Box"
+		if not boxing and gui.Enabled and allTaped() then
+			sealFinale() -- finished the box: show it getting sealed before closing
+			return
+		end
+		gui.Enabled = boxing
 		if not gui.Enabled then
 			mode = nil
 		end
 	end)
+
+	-- Each strip of tape: a bright flash along the seam, and the box bounces
+	local function tapeFlash(index: number)
+		local seam = seams[index]
+		if not seam then
+			return
+		end
+		local flash = line(boxCard, seam.A, seam.B, 34, Color3.new(1, 1, 1), 8)
+		TweenService:Create(flash, TweenInfo.new(0.35), {
+			BackgroundTransparency = 1,
+			Size = flash.Size + UDim2.fromOffset(0, 16),
+		}):Play()
+		task.delay(0.4, function()
+			flash:Destroy()
+		end)
+		boxBounce.Scale = 1.07
+		TweenService:Create(boxBounce, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Scale = 1,
+		}):Play()
+		local done = 0
+		for _, isTaped in taped do
+			if isTaped then
+				done += 1
+			end
+		end
+		local center = boxCard.AbsolutePosition + boxCard.AbsoluteSize * (seam.A + seam.B) / 2
+		floatText(if done == #seams then "ALL TAPED!" else `{done}/{#seams}`, center, Ui.GOLD)
+	end
+
+	-- The finale: the animal ducks in, the flaps fold shut, SEALED! stamps on, then the screen closes
+	sealFinale = function()
+		sealing = true
+		mode = nil
+		for side, flap in flaps do
+			TweenService:Create(flap, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(0.5 + side * 0.14, 0.45),
+				Size = UDim2.fromScale(0.28, 0.07),
+				Rotation = 0,
+			}):Play()
+		end
+		TweenService:Create(animalCard, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+			Position = ANIMAL_HIDDEN,
+		}):Play()
+		task.delay(0.25, function()
+			slam("SEALED!", ANGRY, 0.7)
+			boxBounce.Scale = 0.9
+			TweenService:Create(boxBounce, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Scale = 1,
+			}):Play()
+		end)
+		task.delay(1.1, function()
+			if sealing then
+				sealing = false
+				gui.Enabled = player:GetAttribute("Stage") == "Box"
+			end
+		end)
+	end
 
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })
 		if kind == "BoxStart" then
@@ -692,6 +864,7 @@ function BoxingScreen.Start()
 		elseif kind == "SeamTaped" then
 			taped[data.Seam] = true
 			drawSeams()
+			tapeFlash(data.Seam)
 		elseif kind == "Peel" then
 			taped[data.Seam] = false
 			drawSeams()
@@ -699,11 +872,22 @@ function BoxingScreen.Start()
 			help.Text = "It peeled a strip of tape off! Re-tape that seam!"
 		elseif kind == "AngryTouch" then
 			shake(animalCard)
+			hurtFlash.BackgroundTransparency = 0.35
+			TweenService:Create(hurtFlash, TweenInfo.new(0.4), { BackgroundTransparency = 1 }):Play()
 			help.Text = "OW! Not there! Rub the ♥ spots!"
 		elseif kind == "Thump" then
 			shake(boxCard)
 			shake(meterBack)
-		elseif kind == "BoxDone" or kind == "Launch" then
+		elseif kind == "BoxDone" then
+			if sealing then
+				return
+			elseif allTaped() and gui.Enabled then
+				sealFinale()
+			else
+				gui.Enabled = false
+			end
+		elseif kind == "Launch" then
+			sealing = false
 			gui.Enabled = false
 		end
 	end)

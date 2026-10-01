@@ -36,6 +36,8 @@ type CritterRig = {
 	TwitchStart: number,
 	TwitchSign: number,
 	Hidden: boolean,
+	Dust: ParticleEmitter, -- puffs kicked up while it runs
+	StillFor: number, -- seconds it's been standing still (a sudden dash after a rest pops a "!")
 }
 
 type BoxRig = {
@@ -75,6 +77,21 @@ local function addCritter(ball: Instance)
 		end
 	end
 	local _, size = model:GetBoundingBox()
+	-- Dust puffs at its feet (only emitted while running, see updateCritter)
+	local feet = Instance.new("Attachment")
+	feet.Name = "Feet"
+	feet.Position = Vector3.new(0, -ball.Size.Y / 2 + 0.3, 0)
+	feet.Parent = ball
+	local dust = Instance.new("ParticleEmitter")
+	dust.Color = ColorSequence.new(Color3.fromRGB(235, 225, 205))
+	dust.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.6), NumberSequenceKeypoint.new(1, 1.8) })
+	dust.Transparency = NumberSequence.new(0.35, 1)
+	dust.Lifetime = NumberRange.new(0.4, 0.7)
+	dust.Speed = NumberRange.new(1, 3)
+	dust.SpreadAngle = Vector2.new(70, 70)
+	dust.Acceleration = Vector3.new(0, 3, 0)
+	dust.Rate = 0
+	dust.Parent = feet
 	critters[ball] = {
 		Ball = ball,
 		Model = model,
@@ -89,6 +106,8 @@ local function addCritter(ball: Instance)
 		TwitchStart = -10,
 		TwitchSign = 1,
 		Hidden = false,
+		Dust = dust,
+		StillFor = 0,
 	}
 end
 
@@ -96,6 +115,10 @@ local function removeCritter(ball: Instance)
 	local rig = critters[ball :: BasePart]
 	if rig then
 		rig.Model:Destroy()
+		local feet = rig.Dust.Parent
+		if feet then
+			feet:Destroy()
+		end
 		critters[ball :: BasePart] = nil
 	end
 end
@@ -117,6 +140,35 @@ local function updateCritter(rig: CritterRig, dt: number, now: number)
 	rig.Speed += (flatSpeed - rig.Speed) * math.min(1, dt * 10)
 	local running = rig.Speed > 1.5
 	local h = rig.Height
+
+	-- Dust while running (more the faster it goes)
+	rig.Dust.Rate = if running and not hidden then math.clamp(rig.Speed * 1.5, 4, 30) else 0
+	-- "!" when it bolts after standing still for a moment
+	if running then
+		if rig.StillFor > 1 and not hidden then
+			local mark = Instance.new("BillboardGui")
+			mark.Size = UDim2.fromOffset(60, 60)
+			mark.StudsOffsetWorldSpace = Vector3.new(0, h + 1.5, 0)
+			mark.AlwaysOnTop = true
+			mark.MaxDistance = 90
+			local text = Instance.new("TextLabel")
+			text.Size = UDim2.fromScale(1, 1)
+			text.BackgroundTransparency = 1
+			text.Font = Enum.Font.LuckiestGuy
+			text.TextScaled = true
+			text.TextColor3 = Color3.fromRGB(255, 70, 70)
+			text.TextStrokeTransparency = 0
+			text.Text = "!"
+			text.Parent = mark
+			mark.Parent = ball
+			task.delay(0.7, function()
+				mark:Destroy()
+			end)
+		end
+		rig.StillFor = 0
+	else
+		rig.StillFor += dt
+	end
 
 	local lift, pitch, yaw, roll, stretch = 0, 0, 0, 0, 0
 	if running then
