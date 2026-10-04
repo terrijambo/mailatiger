@@ -55,5 +55,17 @@ lune run tools/smoke/merge.luau "$TMP/build.rbxl" "$TMP/place_copy.rbxl" "$TMP/m
 	echo 'print("E2E DONE")'
 } > "$TMP/driver.lua"
 
-(cd "$TMP" && run-in-roblox --place merged.rbxl --script driver.lua) | grep -E "^(E2E|UI) " || true
+# run-in-roblox can get stuck relaying a message it can't encode, so it gets a time limit, and if its output
+# is missing the results are read back from Studio's own log file instead
+(cd "$TMP" && timeout 420 run-in-roblox --place merged.rbxl --script driver.lua) > "$TMP/out.txt" 2>&1 || true
+if grep -q "^E2E DONE" "$TMP/out.txt"; then
+	grep -E "^(E2E|UI) " "$TMP/out.txt"
+else
+	LOG="$(ls -t "$LOCALAPPDATA"/Roblox/logs/*Studio*_last.log | head -1)"
+	grep -a "CreatorOutput\] \(E2E\|UI\) " "$LOG" | sed 's/.*CreatorOutput\] //'
+fi
+# Close the test Studio if it's still open (only the throwaway test place, never your own game)
+for pid in $(tasklist //V //FO CSV 2>/dev/null | grep "run-in-roblox-place" | cut -d, -f2 | tr -d '"'); do
+	taskkill //PID "$pid" //F > /dev/null 2>&1 || true
+done
 rm -rf "$TMP"
