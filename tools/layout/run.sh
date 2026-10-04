@@ -20,4 +20,5 @@ rojo build -o "$TMP/build.rbxl" > /dev/null
 lune run tools/smoke/merge.luau "$TMP/build.rbxl" "$TMP/place_copy.rbxl" "$TMP/merged.rbxl" > /dev/null
 run-in-roblox --place "$TMP/merged.rbxl" --script tools/layout/dump.lua > "$TMP/dump.txt"
 grep "LAYOUT build" "$TMP/dump.txt" || true
-python tools/layout/check.py "$TMP/dump.txt" tools/layout/map.png
+cp "$TMP/dump.txt" tools/layout/dump.txt
+python tools/layout/check.py tools/layout/dump.txt tools/layout/map.png

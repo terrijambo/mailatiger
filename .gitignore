@@ -26,3 +26,4 @@ __pycache__/
 
 # Layout check picture
 tools/layout/map.png
+tools/layout/dump.txt

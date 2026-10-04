@@ -56,6 +56,23 @@ def group(item):
     return "/".join(bits[:-1]) if len(bits) > 1 else bits[0]
 
 
+ROUND = {"SnowHill"}  # balls: their box corners are empty, so test against the real sphere
+
+
+def round_miss(a, b):
+    """True when one of the two is a ball whose actual sphere doesn't reach the other's box"""
+    for ball, other in ((a, b), (b, a)):
+        if ball["name"] in ROUND:
+            box = ball["box"]
+            center = [(box[0] + box[3]) / 2, (box[1] + box[4]) / 2, (box[2] + box[5]) / 2]
+            radius = (box[3] - box[0]) / 2
+            o = other["box"]
+            closest = [min(max(center[i], o[i]), o[i + 3]) for i in range(3)]
+            distance = sum((closest[i] - center[i]) ** 2 for i in range(3)) ** 0.5
+            return distance > radius - 0.5
+    return False
+
+
 def is_ground(item):
     name = item["name"]
     if name in GROUND:
@@ -86,6 +103,17 @@ def main():
                 problems.append((label, thing["path"], road["path"], thing["box"]))
                 break
 
+    # Lampposts poking into anything at any height (tree branches, signs...)
+    for lamp in items:
+        if lamp["name"] != "LampPole":
+            continue
+        for thing in items:
+            if thing is lamp or is_ground(thing) or thing["name"] in ("Lamp", "LampPole"):
+                continue
+            if overlap(lamp["box"], thing["box"], 0.05):
+                problems.append(("LAMP HIT", lamp["path"], thing["path"], lamp["box"]))
+                break
+
     # Solid things poking into each other (different groups only; parts of one thing overlap on purpose)
     cell = 20
     grid = defaultdict(list)
@@ -105,7 +133,7 @@ def main():
                 seen.add(key)
                 if group(a) == group(b):
                     continue
-                if overlap(a["box"], b["box"], 0.4) and area(a["box"], b["box"]) > 2:
+                if overlap(a["box"], b["box"], 0.4) and area(a["box"], b["box"]) > 2 and not round_miss(a, b):
                     problems.append(("OVERLAP", a["path"], b["path"], a["box"]))
 
     for kind, a, b, box in sorted(problems):
@@ -142,7 +170,7 @@ def main():
             color = (250, 250, 250)
         elif name in ("LampPole", "Lamp"):
             color = (255, 230, 120)
-        elif name in ("Trunk", "Leaves", "PineLayer", "Frond", "PalmTrunk"):
+        elif name in ("Trunk", "Leaves", "Needles", "Snow", "Frond", "PalmTrunk"):
             color = (60, 150, 60)
         elif is_ground(item):
             color = (150, 200, 120)

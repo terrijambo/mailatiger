@@ -219,6 +219,24 @@ end
 
 -- The island: flat smooth ground at exactly y = 0 (terrain bulges above its fill line, which buried the
 -- plaza and half-sank the props), a sandy beach step around it, and flat colored ground under each zone.
+-- Snowy hills (smooth white domes) around the winter zone: { x, z offset from the Ice Rink's center, radius }
+local SNOW_HILLS = { { -80, -40, 28 }, { -80, 30, 22 }, { 70, -45, 30 }, { 90, 20, 20 }, { 0, -85, 34 } }
+
+-- Is this spot on one of the snow hills (so trees and rocks don't get half-buried in them)?
+local function onSnowHill(layout: Layout, p: Vector3, pad: number): boolean
+	for _, zone in layout.Zones do
+		if zone.Id == "IceRink" then
+			for _, h in SNOW_HILLS do
+				local dx, dz = p.X - (zone.Center.X + h[1]), p.Z - (zone.Center.Z + h[2])
+				if math.sqrt(dx * dx + dz * dz) < h[3] + pad then
+					return true
+				end
+			end
+		end
+	end
+	return false
+end
+
 local function buildGround(parent: Instance, layout: Layout)
 	local folder = Instance.new("Folder")
 	folder.Name = "Ground"
@@ -247,7 +265,7 @@ local function buildGround(parent: Instance, layout: Layout)
 		-- Snowy hills (smooth white domes) around the winter zone
 		if zone.Id == "IceRink" then
 			local c = zone.Center
-			for _, h in { { -80, -40, 28 }, { -70, 30, 22 }, { 70, -45, 30 }, { 90, 20, 20 }, { 0, -85, 34 } } do
+			for _, h in SNOW_HILLS do
 				part(folder, {
 					Name = "SnowHill",
 					Shape = Enum.PartType.Ball,
@@ -756,7 +774,9 @@ local function buildHub(parent: Instance, layout: Layout)
 	-- Plaza lampposts around the edge
 	for _, x in { min.X + 6, max.X - 6 } do
 		for z = min.Z + 20, max.Z - 10, 30 do
-			lamppost(folder, Vector3.new(x, 0, z))
+			if not (x < 0 and z > 0 and z < 45) then -- (the leaderboards stand there on the west side)
+				lamppost(folder, Vector3.new(x, 0, z))
+			end
 		end
 	end
 
@@ -1030,13 +1050,25 @@ local function jungleTheme(parent: Instance, zone: Zone)
 	end
 end
 
+-- The street grid being built (set in Scenery.Build), so zone themes can keep their trees off the roads
+local currentRoads: { Road } = {}
+
 local function winterTheme(parent: Instance, zone: Zone)
 	local c = zone.Center
 	for i = 1, 16 do
 		local angle = i / 16 * math.pi * 2
 		local rx, rz = zone.HalfX + 22 + (i % 3) * 8, zone.HalfZ + 22 + (i % 2) * 10
 		local at = Vector3.new(c.X + math.cos(angle) * rx, 0, c.Z + math.sin(angle) * rz)
-		if at.Z < c.Z + zone.HalfZ + 6 or math.abs(at.X - c.X) > 20 then -- keep the gate clear
+		local clear = at.Z < c.Z + zone.HalfZ + 6 or math.abs(at.X - c.X) > 20 -- keep the gate clear
+		if clear and not onAnyRoad(currentRoads, at, 12) then -- (and the branches off the sidewalks)
+			-- On a snow hill, the pine stands on the hill's surface instead of poking out of it
+			for _, h in SNOW_HILLS do
+				local dx, dz = at.X - (c.X + h[1]), at.Z - (c.Z + h[2])
+				local d2 = dx * dx + dz * dz
+				if d2 < h[3] * h[3] then
+					at = Vector3.new(at.X, math.max(at.Y, -h[3] * 0.45 + math.sqrt(h[3] * h[3] - d2) - 0.5), at.Z)
+				end
+			end
 			pine(parent, at, 16 + (i % 4) * 4, true)
 		end
 	end
@@ -1160,7 +1192,7 @@ local THEMES: { [string]: (Instance, Zone) -> () } = {
 local function scatter(parent: Instance, layout: Layout, roads: { Road })
 	local random = Random.new(20260930)
 	local function nearPath(p: Vector3): boolean
-		return onAnyRoad(roads, p, 8) -- (8 studs of grass between a road and any tree or rock)
+		return onAnyRoad(roads, p, 12) -- (room for a big tree's branches between it and the road)
 	end
 	local function blocked(p: Vector3): boolean
 		local min, max = layout.PlazaMin, layout.PlazaMax
@@ -1176,7 +1208,7 @@ local function scatter(parent: Instance, layout: Layout, roads: { Road })
 				return true
 			end
 		end
-		return nearPath(p)
+		return nearPath(p) or onSnowHill(layout, p, 4)
 	end
 	local flowerColors = {
 		Color3.fromRGB(255, 120, 150),
@@ -1318,6 +1350,7 @@ function Scenery.Build(parent: Instance, layout: Layout)
 	wild.Name = "Wilderness"
 	wild.Parent = folder
 	local roads = roadNetwork(layout)
+	currentRoads = roads
 	scatter(wild, layout, roads)
 	signpost(folder, Vector3.new(26, 0, layout.PlazaMin.Z + 6), layout)
 
