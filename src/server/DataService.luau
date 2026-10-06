@@ -88,8 +88,9 @@ export type Profile = {
 	GoldenMailed: number,
 	Challenges: ChallengeState,
 	-- This week's leaderboard stats (reset when a new week starts)
-	WeekStats: { Week: number, FiveStamps: number },
+	WeekStats: { Week: number, FiveStamps: number, BossWins: number? },
 	BossWins: number, -- hourly bosses beaten
+	BossKills: { [string]: number }, -- by boss animal id (the boss collection in the Bag)
 	LuckyNext: boolean, -- the next job is a guaranteed Shiny (a boss reward)
 }
 
@@ -145,6 +146,7 @@ local function newProfile(): Profile
 		Challenges = { Day = 0, Daily = {}, Week = 0, Weekly = {}, Streak = 0, LastAllDay = 0 },
 		WeekStats = { Week = 0, FiveStamps = 0 },
 		BossWins = 0,
+		BossKills = {},
 		LuckyNext = false,
 	}
 end

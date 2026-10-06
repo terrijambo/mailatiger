@@ -215,7 +215,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		profile.Mailed += 1
 		local week = Config.Challenges.Week(os.time())
 		if profile.WeekStats.Week ~= week then
-			profile.WeekStats = { Week = week, FiveStamps = 0 }
+			profile.WeekStats = { Week = week, FiveStamps = 0, BossWins = 0 }
 		end
 		if parcel.Stars == 5 then
 			profile.FiveStampJobs += 1

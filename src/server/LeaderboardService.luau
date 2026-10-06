@@ -54,6 +54,19 @@ local BOARDS: { Board } = {
 		end,
 	},
 	{
+		Id = "BossHunters",
+		Title = "⚔️ BOSS HUNTERS THIS WEEK",
+		Ascending = false,
+		Weekly = true,
+		Score = function(profile: Profile)
+			local stats = profile.WeekStats
+			return if stats.Week == Config.Challenges.Week(os.time()) then stats.BossWins or 0 else 0
+		end,
+		Format = function(value: number)
+			return `{value} boss{if value == 1 then "" else "es"}`
+		end,
+	},
+	{
 		Id = "Rarest",
 		Title = "🌟 GOLDEN ANIMALS",
 		StoreKey = "Golden", -- (a fresh store: the old Rarest scores meant something else)

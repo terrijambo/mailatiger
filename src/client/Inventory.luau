@@ -20,7 +20,7 @@ local player = Players.LocalPlayer
 
 local Inventory = {}
 
-local TABS = { "Trolls", "Boxes", "Stamps", "Tools", "Animals" }
+local TABS = { "Trolls", "Boxes", "Stamps", "Tools", "Animals", "Bosses" }
 
 function Inventory.Start()
 	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
@@ -99,6 +99,31 @@ function Inventory.Start()
 		end
 		local data = Profile.Get()
 
+		if current == "Bosses" then
+			-- The boss collection: every hourly boss, and how often you've helped box it
+			Ui.make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, list)
+			local kills = (data :: any).BossKills or {}
+			for index, boss in Config.Events.Boss.Bosses do
+				local count = kills[boss.AnimalId] or 0
+				local card = row(
+					index,
+					`Animal_{boss.AnimalId}`,
+					boss.DisplayName,
+					if count > 0
+						then `Boxed ×{count}. The crown goes to the top helper each time.`
+						else "Not boxed yet. Bosses land on the hour: step on the red BOSS pad!"
+				)
+				rowButton(
+					card,
+					if count > 0 then `👑 ×{count}` else "???",
+					if count > 0 then Ui.GOLD else Ui.GREY,
+					nil
+				)
+			end
+			local title = (window:FindFirstChild("TitleBar") :: Frame):FindFirstChild("Title") :: TextLabel
+			title.Text = "Your Bag  ·  Bosses"
+			return
+		end
 		if current == "Animals" then
 			-- The collection: a grid of every animal
 			Ui.make("UIGridLayout", {

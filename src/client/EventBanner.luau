@@ -194,7 +194,115 @@ function EventBanner.Start()
 		Text = "⚔️ THE BIG ONE ⚔️  ·  red BOSS pad in the plaza",
 	})
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
+	-- The victory screen: the top 3 helpers with their avatars (for everyone near the arena)
+	local victory = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.45),
+		Size = UDim2.fromOffset(460, 300),
+		BackgroundColor3 = Color3.fromRGB(40, 25, 60),
+		BackgroundTransparency = 0.05,
+		Visible = false,
+	}, titleLayer)
+	Ui.round(victory, 18)
+	Ui.border(victory, 4)
+	local victoryScale = Ui.autoScale(victory)
+	local victoryTitle = Ui.outlined(victory, {
+		Position = UDim2.fromOffset(0, 10),
+		Size = UDim2.new(1, 0, 0, 48),
+		TextScaled = true,
+		TextColor3 = Ui.GOLD,
+		Text = "",
+	})
+	local rows: { Frame } = {}
+	local MEDALS = { "🥇", "🥈", "🥉" }
+	for i = 1, 3 do
+		local row = Ui.make("Frame", {
+			Position = UDim2.fromOffset(20, 64 + (i - 1) * 74),
+			Size = UDim2.new(1, -40, 0, 66),
+			BackgroundColor3 = Color3.fromRGB(70, 50, 100),
+		}, victory)
+		Ui.round(row, 12)
+		Ui.make("ImageLabel", {
+			Name = "Face",
+			Position = UDim2.fromOffset(6, 3),
+			Size = UDim2.fromOffset(60, 60),
+			BackgroundColor3 = Color3.fromRGB(30, 20, 45),
+			Image = "",
+		}, row)
+		Ui.outlined(row, {
+			Name = "Name",
+			Position = UDim2.fromOffset(76, 6),
+			Size = UDim2.new(1, -86, 0, 30),
+			TextSize = 24,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Text = "",
+		})
+		Ui.outlined(row, {
+			Name = "Share",
+			Position = UDim2.fromOffset(76, 36),
+			Size = UDim2.new(1, -86, 0, 24),
+			Font = Ui.FONT,
+			TextSize = 16,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			Text = MEDALS[i],
+		})
+		table.insert(rows, row)
+	end
+	local function nearArena(): boolean
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not root then
+			return false
+		end
+		local offset = root.Position - Events.Boss.ArenaCenter
+		return math.abs(offset.X) < 150 and math.abs(offset.Z) < 150
+	end
+	local function showVictory(data: { [string]: any })
+		local ranking = data.Ranking or {}
+		if #ranking == 0 or not nearArena() then
+			return
+		end
+		victoryTitle.Text = `🏆 {data.Boss} BOXED! 🏆`
+		for i, row in rows do
+			local entry = ranking[i]
+			row.Visible = entry ~= nil
+			if entry then
+				(row:FindFirstChild("Name") :: TextLabel).Text =
+					`{MEDALS[i]} {entry.Name}{if i == 1 then "  👑" else ""}`
+				(row:FindFirstChild("Share") :: TextLabel).Text = `{entry.Share}% of the top helper's work`
+				local face = row:FindFirstChild("Face") :: ImageLabel
+				face.Image = ""
+				task.spawn(function()
+					local ok, image = pcall(
+						Players.GetUserThumbnailAsync,
+						Players,
+						entry.UserId,
+						Enum.ThumbnailType.HeadShot,
+						Enum.ThumbnailSize.Size100x100
+					)
+					if ok then
+						face.Image = image
+					end
+				end)
+			end
+		end
+		victory.Size = UDim2.fromOffset(460, 74 + #ranking * 74)
+		victory.Visible = true
+		local full = Ui.screenScale()
+		victoryScale.Scale = full * 0.6
+		TweenService:Create(victoryScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Scale = full,
+		}):Play()
+		task.delay(6, function()
+			victory.Visible = false
+		end)
+	end
+
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })
+		if kind == "BossWin" then
+			showVictory(data)
+			return
+		end
 		if kind ~= "BossTitle" then
 			return
 		end

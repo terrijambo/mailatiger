@@ -62,6 +62,11 @@ local sounds: { [string]: Sound } = {
 	Troll_TapeBomb = { Id = "rbxassetid://3149249837", Volume = 1, Pitch = 1.3, Heard = "Everyone" }, -- (borrows VineBoom)
 	Troll_AirHorn = { Id = "rbxassetid://9120031442", Volume = 1.2, Pitch = 1.8, Heard = "Everyone" }, -- (borrows Roar)
 
+	-- Hourly boss fights. NEW SLOTS that borrow other sounds for now (docs/BOSS_VISUALS_ROADMAP.md, Phase 6)
+	BossMusic = { Id = "rbxassetid://17422163655", Volume = 0.35, Pitch = 0.9 }, -- the fight theme (loops; borrows MusicArena)
+	BossStomp = { Id = "rbxassetid://16480560696", Volume = 1.4, Pitch = 0.6, Heard = "Everyone" }, -- (borrows StampThud)
+	CrowdCheer = { Id = "rbxassetid://127645268874265", Volume = 0.8, Pitch = 0.8 }, -- the stands go wild (borrows CoinJingle)
+
 	-- Background music (loops)
 	MusicTown = { Id = "rbxassetid://15930255433", Volume = 0.25 }, -- walking around town ("Retro Flute Music")
 	MusicArena = { Id = "rbxassetid://17422163655", Volume = 0.25 }, -- chasing an animal ("Cloud Blitz")

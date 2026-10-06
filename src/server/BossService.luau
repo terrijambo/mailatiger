@@ -27,6 +27,7 @@ local BossArena = require(script.Parent.BossArena)
 local BoxingService = require(script.Parent.BoxingService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local LeaderboardService = require(script.Parent.LeaderboardService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local Remotes = require(script.Parent.Remotes)
 local Travel = require(script.Parent.Travel)
@@ -262,7 +263,7 @@ local function buildArena(map: MapBuilder.Map)
 		)
 	end
 	platformTop = 0
-	BossArena.Build(arena, c, size)
+	map.Leaderboards.BossHunters = BossArena.Build(arena, c, size)
 	-- The pad home
 	local home = block(
 		"BackToTown",
@@ -393,6 +394,12 @@ local function finish(won: boolean)
 				local coins = math.round(Economy.BestBaseValue(player) * Boss.Jobs * (0.5 + 0.5 * share))
 				profile.Diamonds += diamonds
 				profile.BossWins += 1
+				profile.BossKills[f.AnimalId] = (profile.BossKills[f.AnimalId] or 0) + 1
+				local week = Config.Challenges.Week(os.time())
+				if profile.WeekStats.Week ~= week then
+					profile.WeekStats = { Week = week, FiveStamps = 0, BossWins = 0 }
+				end
+				profile.WeekStats.BossWins = (profile.WeekStats.BossWins or 0) + 1
 				profile.LuckyNext = true -- their next job is a Shiny
 				Economy.AddCoins(player, coins, "Boss")
 				Remotes.Notify:FireClient(player, "Diamonds", { Amount = diamonds, Source = "Boss" })
@@ -429,9 +436,30 @@ local function finish(won: boolean)
 			BossArena.SetScoreboard("NEXT BOSS: ON THE HOUR")
 		end
 	end)
+	-- The top 3 helpers, for the victory screen
+	local ranking = {}
+	for player, work in f.Work do
+		if player.Parent and work > 0 then
+			table.insert(ranking, {
+				Name = player.DisplayName,
+				UserId = player.UserId,
+				Share = math.floor(work / math.max(top, 0.01) * 100),
+			})
+		end
+		if won and player.Parent then
+			LeaderboardService.Submit(player)
+		end
+	end
+	table.sort(ranking, function(a, b)
+		return a.Share > b.Share
+	end)
+	while #ranking > 3 do
+		table.remove(ranking)
+	end
 	Remotes.Notify:FireAllClients(if won then "BossWin" else "BossLose", {
 		Boss = f.Name,
 		Top = if won and topPlayer then topPlayer.DisplayName else nil,
+		Ranking = ranking,
 	})
 end
 
@@ -555,7 +583,7 @@ local function stomp(f: Fight?)
 		if fight ~= f then
 			return
 		end
-		Sfx.Play("Bonk", f.Ball)
+		Sfx.Play("BossStomp", f.Ball)
 		for _, player in playersHere() do
 			local root = rootOf(player)
 			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")

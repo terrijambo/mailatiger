@@ -1,5 +1,7 @@
 # Boss fights: making them look as good as they play
 
+**Status (2026-10-06): Phases 1–5 built**, plus the Phase 6 sound slots (borrowing other sounds until you pick real ones; see `docs/SOUNDS_TO_REPLACE.md`). The optional art (a 3D crown, title cards, portraits) isn't in yet. The crown is still a text tag.
+
 The boss fight works: pin it, box it, MEGA VINE BOOM, rewards. It looks plain, though: a scaled-up animal on a flat green island with yellow balls for handles. This roadmap turns it into the moment players screenshot and come back for every hour.
 
 Nothing here changes the rules. It's all looks, sound and camera. Each phase is shippable on its own.

@@ -86,8 +86,9 @@ local function fan(parent: Instance, at: CFrame, index: number)
 	CollectionService:AddTag(model, "BossCrowd")
 end
 
--- The permanent dressing: stands, crowd, floodlights, banners and the scoreboard
-function BossArena.Build(parent: Instance, center: Vector3, size: number)
+-- The permanent dressing: stands, crowd, floodlights, banners, the scoreboard and the Boss Hunters board.
+-- Returns the part the Boss Hunters leaderboard is drawn on (its +X face looks into the arena).
+function BossArena.Build(parent: Instance, center: Vector3, size: number): BasePart
 	local half = size / 2
 	local steps = 4
 	-- Stands on the north, east and west sides (south is the way in)
@@ -173,6 +174,23 @@ function BossArena.Build(parent: Instance, center: Vector3, size: number)
 	local label = sign(board, Enum.NormalId.Front, "NEXT BOSS: ON THE HOUR", Color3.fromRGB(255, 220, 90))
 	label.Font = Enum.Font.FredokaOne
 	scoreboard = label
+
+	-- The Boss Hunters board, on the west side near the way in (LeaderboardService draws on its +X face)
+	local hunterAt = center + Vector3.new(-half + 4, 0, half - 22)
+	block(
+		parent,
+		"HunterBoardStand",
+		CFrame.new(hunterAt + Vector3.new(-0.8, 6.5, 0)),
+		Vector3.new(1, 13, 12),
+		Color3.fromRGB(150, 25, 35)
+	)
+	return block(
+		parent,
+		"HunterBoard",
+		CFrame.new(hunterAt + Vector3.new(0, 7, 0)),
+		Vector3.new(0.2, 10, 10),
+		Color3.fromRGB(30, 40, 80)
+	)
 end
 
 function BossArena.SetBanners(text: string)
