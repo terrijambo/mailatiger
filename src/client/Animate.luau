@@ -39,6 +39,7 @@ type CritterRig = {
 	Dust: ParticleEmitter, -- puffs kicked up while it runs
 	StillFor: number, -- seconds it's been standing still (a sudden dash after a rest pops a "!")
 	Boss: Highlight?, -- hourly bosses: a glowing outline that turns red when it's about to blow
+	Smooth: CFrame?, -- (bosses) a smoothed copy of the ball's position, so the giant doesn't jitter
 }
 
 -- Hourly bosses: what swirls around each one
@@ -106,18 +107,6 @@ local function addCritter(ball: Instance)
 		light.Range = 40
 		light.Brightness = 2
 		light.Parent = ball
-		local crown = Instance.new("BillboardGui")
-		crown.Name = "BossCrown"
-		crown.Size = UDim2.fromScale(ball.Size.X * 0.35, ball.Size.X * 0.35) -- (scale = studs on a billboard)
-		crown.StudsOffset = Vector3.new(0, ball.Size.Y * 0.75, 0)
-		crown.LightInfluence = 0
-		local icon = Instance.new("TextLabel")
-		icon.Size = UDim2.fromScale(1, 1)
-		icon.BackgroundTransparency = 1
-		icon.TextScaled = true
-		icon.Text = "👑"
-		icon.Parent = crown
-		crown.Parent = ball
 	end
 
 	local variant = ball:GetAttribute("Variant")
@@ -275,9 +264,17 @@ local function updateCritter(rig: CritterRig, dt: number, now: number)
 	local bossOutline = rig.Boss
 	if bossOutline then
 		if Workspace:GetAttribute("BossPhase") == "Box" then
-			lift, pitch, roll = -h * 0.12, 0, math.sin(now * 25) * 0.02
-			stretch = -0.15
+			-- pinned: squashed and trembling (standing on the floor, not sunk into it)
+			lift, pitch, yaw, roll = 0, 0, 0, math.sin(now * 25) * 0.015
+			stretch = -0.08
 		else
+			-- A giant doesn't hop like a hamster: a heavy, swaying stomp
+			if running then
+				lift = math.abs(math.sin(rig.Phase * 0.5)) * h * 0.035
+				pitch = -0.04
+				roll = math.sin(rig.Phase * 0.5) * 0.05
+				stretch = 0
+			end
 			local held = Workspace:GetAttribute("BossHeld")
 			local need = Workspace:GetAttribute("BossNeed")
 			local strain = if typeof(held) == "number"
@@ -294,7 +291,15 @@ local function updateCritter(rig: CritterRig, dt: number, now: number)
 			else 1
 	end
 	rig.Model:ScaleTo(rig.BaseScale * (1 + stretch))
-	rig.Model:PivotTo(ball.CFrame * rig.Offset * CFrame.new(0, lift, 0) * CFrame.Angles(pitch, yaw, roll))
+	local base = ball.CFrame
+	if bossOutline then
+		-- (the server moves the ball in small steps; glide between them)
+		local smooth = rig.Smooth or base
+		smooth = smooth:Lerp(base, math.min(1, dt * 8))
+		rig.Smooth = smooth
+		base = smooth
+	end
+	rig.Model:PivotTo(base * rig.Offset * CFrame.new(0, lift, 0) * CFrame.Angles(pitch, yaw, roll))
 end
 
 ---------------------------------------------------------------------------------------------------

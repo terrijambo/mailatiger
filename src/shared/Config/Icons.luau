@@ -26,7 +26,7 @@ local icons: { [string]: Icon } = {
 	Button_Upgrades = icon("💎"),
 	Button_Settings = icon("⚙️"),
 	Button_Invite = icon("👋"),
-	Button_Menu = icon("☰"),
+	Button_Menu = icon("📬"), -- (Roblox can't draw "☰"; a mailbox fits the game anyway)
 
 	-- HUD
 	Hud_Coins = icon("💰"),
