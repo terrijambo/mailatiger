@@ -635,10 +635,13 @@ local function run()
 	log(waitFor(function()
 		return stuff and stuff:FindFirstChild("StampedeCritter") ~= nil
 	end, 3), "stampede animals are running")
-	local critter = stuff and stuff:FindFirstChild("StampedeCritter")
 	local coinsBefore = profile().Coins
-	if critter then
-		-- (walk up to it first: a prompt only works once you're in range)
+	-- (they run fast, so try up to 3 of them: walk up to one, then hold the grab while sticking to it)
+	for _ = 1, 3 do
+		local critter = stuff and stuff:FindFirstChild("StampedeCritter")
+		if not critter or profile().Coins > coinsBefore then
+			break
+		end
 		local stick = game:GetService("RunService").Heartbeat:Connect(function()
 			local character = player.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart")
@@ -649,6 +652,7 @@ local function run()
 		task.wait(0.6)
 		stick:Disconnect()
 		holdPrompt(critter:FindFirstChildOfClass("ProximityPrompt"), critter)
+		task.wait(0.5)
 	end
 	log(waitFor(function()
 		return profile().Coins > coinsBefore
@@ -661,8 +665,9 @@ local function run()
 		return Workspace:GetAttribute("BossPhase") == "Pin"
 	end, 3), "the boss landed")
 	local arena = Workspace:FindFirstChild("BossArena")
+	-- (it crash-lands in a parcel first: wait for it)
+	local bossBall = arena and arena:WaitForChild("Boss", 6)
 	local handle = arena and arena:FindFirstChild("BossHandle")
-	local bossBall = arena and arena:FindFirstChild("Boss")
 	local pinned = false
 	if handle and bossBall then
 		local prompt = handle:FindFirstChildOfClass("ProximityPrompt")
