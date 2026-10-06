@@ -754,11 +754,11 @@ local function buildHub(parent: Instance, layout: Layout)
 		end
 		return p
 	end
-	local function water(name: string, y: number, diameter: number, height: number, curtain: boolean): BasePart
+	local function water(name: string, y: number, diameter: number, height: number): BasePart
 		return disc(name, y, diameter, height, WATER, {
 			Material = Enum.Material.Glass,
-			Transparency = if curtain then 0.72 else 0.35,
-			Reflectance = if curtain then 0 else 0.15,
+			Transparency = 0.35,
+			Reflectance = 0.15,
 			CanCollide = false,
 			CastShadow = false,
 		})
@@ -788,7 +788,7 @@ local function buildHub(parent: Instance, layout: Layout)
 			Color = C.White,
 		})
 	end
-	local poolWater = water("FountainWater", FLOOR + 0.2, 21.4, RIM_TOP - 0.6 - FLOOR - 0.2, false)
+	local poolWater = water("FountainWater", FLOOR + 0.2, 21.4, RIM_TOP - 0.6 - FLOOR - 0.2)
 
 	-- Wishes: coins on the bottom of the pool
 	local random = Random.new(47)
@@ -807,25 +807,24 @@ local function buildHub(parent: Instance, layout: Layout)
 		})
 	end
 
-	-- Lower column, middle bowl, and the water curtain spilling from it into the pool
+	-- Lower column and the middle bowl, full to the brim (the water sits just above a thin white lip, so
+	-- the two never fight over the same surface)
 	disc("FountainPillar", FLOOR, 3.2, 6.2 - FLOOR, SANDSTONE)
 	disc("FountainBand", 3.2, 3.6, 0.4, C.Gold)
 	disc("FountainBowlFoot", 5.6, 5, 0.6, SANDSTONE_DARK)
 	disc("FountainBowl", 6.2, 11, 1.1, SANDSTONE)
-	disc("FountainBowlLip", 7.3, 11.4, 0.25, C.White)
-	water("FountainBowlWater", 7.3, 10, 0.3, false)
-	water("FountainCurtain", RIM_TOP - 0.6, 10.9, 6.2 - (RIM_TOP - 0.6), true)
+	disc("FountainBowlLip", 7.3, 11.4, 0.1, C.White)
+	water("FountainBowlWater", 7.3, 10.4, 0.25)
 
-	-- Upper column, top bowl and its curtain
+	-- Upper column and the top bowl
 	disc("FountainUpperPillar", 7.3, 1.8, 2.6, SANDSTONE)
 	disc("FountainUpperBand", 8.4, 2.2, 0.3, C.Gold)
 	disc("FountainTopBowl", 9.9, 5.2, 0.8, SANDSTONE)
-	disc("FountainTopLip", 10.7, 5.5, 0.2, C.White)
-	water("FountainTopWater", 10.6, 4.6, 0.3, false)
-	water("FountainTopCurtain", 7.6, 5.1, 9.9 - 7.6, true)
+	disc("FountainTopLip", 10.7, 5.5, 0.1, C.White)
+	water("FountainTopWater", 10.7, 4.8, 0.2)
 
-	-- The gold parcel on top, tied with a red ribbon and bow
-	local parcelAt = fountainAt + Vector3.new(0, 12.1, 0)
+	-- The gold parcel on top (sitting in the top bowl's water), tied with a red ribbon and bow
+	local parcelAt = fountainAt + Vector3.new(0, 11.9, 0)
 	local parcelTurn = CFrame.Angles(0, math.rad(20), 0)
 	local RIBBON = Color3.fromRGB(230, 60, 70)
 	part(folder, {
@@ -917,6 +916,33 @@ local function buildHub(parent: Instance, layout: Layout)
 		Rate = 12,
 		LightEmission = 0,
 	})
+	-- Water spilling over each bowl's edge: droplets thrown outward from a ring around the lip, falling
+	-- into the bowl or pool below
+	local function spill(name: string, y: number, diameter: number, fall: number, rate: number)
+		local lipRing = part(folder, {
+			Name = name,
+			Size = Vector3.new(diameter, 0.1, diameter),
+			Position = fountainAt + Vector3.new(0, y, 0),
+			Transparency = 1,
+			CanCollide = false,
+			CanQuery = false,
+		})
+		local seconds = math.sqrt(2 * fall / 30)
+		emitter(lipRing, {
+			Shape = Enum.ParticleEmitterShape.Disc,
+			ShapeStyle = Enum.ParticleEmitterShapeStyle.Surface,
+			ShapeInOut = Enum.ParticleEmitterShapeInOut.Outward,
+			Size = NumberSequence.new(0.4, 0.25),
+			Speed = NumberRange.new(1, 2),
+			Acceleration = Vector3.new(0, -30, 0),
+			Lifetime = NumberRange.new(seconds, seconds + 0.05),
+			Transparency = NumberSequence.new(0.25, 0.6),
+			Rate = rate,
+		})
+	end
+	spill("FountainSpillMiddle", 7.5, 11.2, 7.5 - (RIM_TOP - 0.6), 140)
+	spill("FountainSpillTop", 10.85, 5.3, 10.85 - 7.55, 70)
+
 	-- A soft blue glow from the pool at night
 	local glow = Instance.new("PointLight")
 	glow.Color = Color3.fromRGB(120, 210, 255)
