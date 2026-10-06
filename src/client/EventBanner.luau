@@ -9,6 +9,7 @@
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
@@ -158,6 +159,60 @@ function EventBanner.Start()
 			refresh()
 			task.wait(0.25)
 		end
+	end)
+
+	-- THE BIG ONE title card: slams in across the middle of the screen when a boss lands
+	local titleLayer = Ui.make("ScreenGui", {
+		Name = "BossTitle",
+		ResetOnSpawn = false,
+		DisplayOrder = 8,
+		IgnoreGuiInset = true,
+	}, gui.Parent)
+	local strip = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.38),
+		Size = UDim2.new(1.2, 0, 0, 150),
+		Rotation = -4,
+		BackgroundColor3 = Color3.fromRGB(150, 20, 30),
+		BackgroundTransparency = 0.05,
+		Visible = false,
+	}, titleLayer)
+	Ui.border(strip, 4)
+	local bigName = Ui.outlined(strip, {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 14),
+		Size = UDim2.new(0.8, 0, 0, 84),
+		TextScaled = true,
+		TextColor3 = Ui.GOLD,
+		Text = "",
+	})
+	Ui.outlined(strip, {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 98),
+		Size = UDim2.new(0.8, 0, 0, 36),
+		TextScaled = true,
+		Text = "⚔️ THE BIG ONE ⚔️  ·  red BOSS pad in the plaza",
+	})
+	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
+	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })
+		if kind ~= "BossTitle" then
+			return
+		end
+		bigName.Text = `👑 {data.Boss} 👑`
+		strip.Visible = true
+		strip.Position = UDim2.fromScale(-0.7, 0.38)
+		TweenService:Create(strip, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			Position = UDim2.fromScale(0.5, 0.38),
+		}):Play()
+		task.delay(2.8, function()
+			local out = TweenService:Create(strip, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+				Position = UDim2.fromScale(1.7, 0.38),
+			})
+			out:Play()
+			out.Completed:Once(function()
+				strip.Visible = false
+			end)
+		end)
 	end)
 end
 

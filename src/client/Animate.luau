@@ -38,6 +38,14 @@ type CritterRig = {
 	Hidden: boolean,
 	Dust: ParticleEmitter, -- puffs kicked up while it runs
 	StillFor: number, -- seconds it's been standing still (a sudden dash after a rest pops a "!")
+	Boss: Highlight?, -- hourly bosses: a glowing outline that turns red when it's about to blow
+}
+
+-- Hourly bosses: what swirls around each one
+local BOSS_AURA: { [string]: { Color: Color3, Particle: Color3 } } = {
+	Tiger = { Color = Color3.fromRGB(255, 150, 40), Particle = Color3.fromRGB(120, 220, 90) }, -- jungle leaves
+	Yeti = { Color = Color3.fromRGB(140, 210, 255), Particle = Color3.fromRGB(250, 252, 255) }, -- snowflakes
+	Dragon = { Color = Color3.fromRGB(255, 80, 40), Particle = Color3.fromRGB(255, 160, 50) }, -- embers
 }
 
 type BoxRig = {
@@ -71,6 +79,47 @@ local function addCritter(ball: Instance)
 	model.Name = `{animalId}Art`
 	ball.LocalTransparencyModifier = 1
 	-- Shiny: a glowing outline and sparkles. Golden: solid shiny gold, with gold sparkles and a glow.
+	-- A boss: glowing outline, a slow swirl of leaves/snow/embers, a light, and a crown floating overhead
+	local bossHighlight: Highlight? = nil
+	local auraId = ball:GetAttribute("BossAura")
+	local aura = if typeof(auraId) == "string" then BOSS_AURA[auraId] else nil
+	if aura then
+		local outline = Instance.new("Highlight")
+		outline.OutlineColor = aura.Color
+		outline.FillColor = Color3.fromRGB(255, 40, 40)
+		outline.FillTransparency = 1
+		outline.Parent = model
+		bossHighlight = outline
+		local swirl = Instance.new("ParticleEmitter")
+		swirl.Color = ColorSequence.new(aura.Particle)
+		swirl.Size = NumberSequence.new(0.8, 0.2)
+		swirl.Lifetime = NumberRange.new(2, 3)
+		swirl.Rate = 25
+		swirl.Speed = NumberRange.new(3, 6)
+		swirl.SpreadAngle = Vector2.new(180, 180)
+		swirl.Rotation = NumberRange.new(0, 360)
+		swirl.RotSpeed = NumberRange.new(-120, 120)
+		swirl.LightEmission = 0.4
+		swirl.Parent = ball
+		local light = Instance.new("PointLight")
+		light.Color = aura.Color
+		light.Range = 40
+		light.Brightness = 2
+		light.Parent = ball
+		local crown = Instance.new("BillboardGui")
+		crown.Name = "BossCrown"
+		crown.Size = UDim2.fromScale(ball.Size.X * 0.35, ball.Size.X * 0.35) -- (scale = studs on a billboard)
+		crown.StudsOffset = Vector3.new(0, ball.Size.Y * 0.75, 0)
+		crown.LightInfluence = 0
+		local icon = Instance.new("TextLabel")
+		icon.Size = UDim2.fromScale(1, 1)
+		icon.BackgroundTransparency = 1
+		icon.TextScaled = true
+		icon.Text = "👑"
+		icon.Parent = crown
+		crown.Parent = ball
+	end
+
 	local variant = ball:GetAttribute("Variant")
 	if variant == "Golden" then
 		for _, p in model:GetDescendants() do
@@ -135,6 +184,7 @@ local function addCritter(ball: Instance)
 		Hidden = false,
 		Dust = dust,
 		StillFor = 0,
+		Boss = bossHighlight,
 	}
 end
 
@@ -220,6 +270,28 @@ local function updateCritter(rig: CritterRig, dt: number, now: number)
 		if age < 0.35 then
 			yaw = math.sin(age / 0.35 * math.pi * 2) * 0.25 * rig.TwitchSign -- a quick look left-right
 		end
+	end
+	-- A boss strains against the ropes, lies squashed and trembling once pinned, and pulses red when angry
+	local bossOutline = rig.Boss
+	if bossOutline then
+		if Workspace:GetAttribute("BossPhase") == "Box" then
+			lift, pitch, roll = -h * 0.12, 0, math.sin(now * 25) * 0.02
+			stretch = -0.15
+		else
+			local held = Workspace:GetAttribute("BossHeld")
+			local need = Workspace:GetAttribute("BossNeed")
+			local strain = if typeof(held) == "number"
+					and typeof(need) == "number"
+					and need > 0
+				then math.clamp(held / need, 0, 1)
+				else 0
+			pitch += 0.18 * strain -- leaning back against the pull
+			roll += math.sin(now * 30) * 0.05 * strain -- shaking
+		end
+		local anger = Workspace:GetAttribute("BossAnger")
+		bossOutline.FillTransparency = if typeof(anger) == "number" and anger >= 70
+			then 0.55 + 0.3 * math.sin(now * 10)
+			else 1
 	end
 	rig.Model:ScaleTo(rig.BaseScale * (1 + stretch))
 	rig.Model:PivotTo(ball.CFrame * rig.Offset * CFrame.new(0, lift, 0) * CFrame.Angles(pitch, yaw, roll))

@@ -188,6 +188,31 @@ function Effects.Start()
 				confetti(at + Vector3.new(0, 3, 0), 90)
 			end
 			fovPunch(10, 0.8)
+		elseif kind == "BossLanded" or kind == "BossPinned" then
+			-- The boss's parcel slams down / the boss is pinned flat: a dust burst and a big shake
+			local attachment = Instance.new("Attachment")
+			attachment.WorldPosition = data.At + Vector3.new(0, 1, 0)
+			attachment.Parent = Workspace.Terrain
+			local dust = Instance.new("ParticleEmitter")
+			dust.Color = ColorSequence.new(
+				if kind == "BossPinned" then Color3.fromRGB(255, 220, 120) else Color3.fromRGB(230, 215, 190)
+			)
+			dust.Size = NumberSequence.new(3, 8)
+			dust.Transparency = NumberSequence.new(0.2, 1)
+			dust.Lifetime = NumberRange.new(1, 1.6)
+			dust.Speed = NumberRange.new(30, 45)
+			dust.SpreadAngle = Vector2.new(10, 180)
+			dust.EmissionDirection = Enum.NormalId.Top
+			dust.Acceleration = Vector3.new(0, -10, 0)
+			dust.Drag = 3
+			dust.Enabled = false
+			dust.Parent = attachment
+			dust:Emit(if kind == "BossLanded" then 60 else 35)
+			task.delay(2.5, function()
+				attachment:Destroy()
+			end)
+			shakeCamera(if kind == "BossLanded" then 2.2 else 1.4, 0.5)
+			fovPunch(if kind == "BossLanded" then 14 else 8, 0.7)
 		elseif kind == "BossStomp" then
 			-- A red ring on the ground that fills in: jump before it lands!
 			local ring = Instance.new("Part")

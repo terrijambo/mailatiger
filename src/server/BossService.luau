@@ -63,6 +63,8 @@ type Fight = {
 	LastPet: { [Player]: number },
 	LastAngry: { [Player]: number },
 	Raged: { [number]: boolean },
+	Ropes: { [Player]: Beam }, -- glowing ropes from a handle to each holder's hand
+	LandsAt: number, -- (os.clock) the boss is still dropping in until then
 }
 local fight: Fight? = nil
 local stunnedUntil: { [Player]: number } = {}
@@ -265,7 +267,9 @@ local function finish(won: boolean)
 		handle:Destroy()
 	end
 	f.Ball:Destroy()
-	for _, name in { "BossPhase", "BossPin", "BossHeld", "BossNeed", "BossTaped", "BossSeams", "BossEndsAt" } do
+	for _, name in
+		{ "BossPhase", "BossPin", "BossHeld", "BossNeed", "BossTaped", "BossSeams", "BossEndsAt", "BossAnger" }
+	do
 		Workspace:SetAttribute(name, nil)
 	end
 	setPad(false)
@@ -337,6 +341,39 @@ local function makeSpots(): { BoxMath.Spot }
 	return spots
 end
 
+-- A glowing rope from the handle to the holder's hand (gold while enough people hold on)
+local function attachRope(f: Fight, player: Player, handle: BasePart)
+	local old = f.Ropes[player]
+	if old then
+		old:Destroy()
+	end
+	local character = player.Character
+	local hand = character
+		and (character:FindFirstChild("RightGripAttachment", true) or character:FindFirstChild("RootAttachment", true))
+	local ring = handle:FindFirstChild("RopeEnd") :: Attachment?
+	if not (hand and hand:IsA("Attachment") and ring) then
+		return
+	end
+	local beam = Instance.new("Beam")
+	beam.Attachment0 = ring
+	beam.Attachment1 = hand
+	beam.Width0, beam.Width1 = 0.5, 0.3
+	beam.FaceCamera = true
+	beam.LightEmission = 0.6
+	beam.CurveSize0 = 1.5
+	beam.Color = ColorSequence.new(Color3.fromRGB(255, 240, 180))
+	beam.Parent = handle
+	f.Ropes[player] = beam
+end
+
+local function dropRope(f: Fight, player: Player)
+	local beam = f.Ropes[player]
+	if beam then
+		beam:Destroy()
+		f.Ropes[player] = nil
+	end
+end
+
 local function startBox()
 	local f = fight
 	if not f then
@@ -344,6 +381,11 @@ local function startBox()
 	end
 	f.Phase = "Box"
 	f.Holding = {}
+	for player in f.Ropes do
+		dropRope(f, player)
+	end
+	-- THUD: it's down
+	notifyHere("BossPinned", { At = Vector3.new(f.Ball.Position.X, platformTop, f.Ball.Position.Z) })
 	f.Boxers = {}
 	for _, player in playersHere() do
 		if (stunnedUntil[player] or 0) < os.clock() and rootOf(player) then
@@ -437,6 +479,14 @@ local function updatePin(f: Fight?, dt: number)
 		return
 	end
 	local now = os.clock()
+	if now < f.LandsAt then
+		return -- still crashing in
+	end
+	for player in f.Ropes do
+		if not f.Holding[player] then
+			dropRope(f, player)
+		end
+	end
 	-- Who's holding on right now (not stunned, still close to their handle)
 	local held = 0
 	for player, handle in f.Holding do
@@ -454,6 +504,12 @@ local function updatePin(f: Fight?, dt: number)
 		end
 	end
 	local need = math.clamp(math.ceil(#playersHere() / 2), 1, Boss.Handles)
+	-- The ropes go gold and thick while it's held down
+	for _, beam in f.Ropes do
+		local enough = held >= need
+		beam.Color = ColorSequence.new(if enough then Color3.fromRGB(255, 200, 40) else Color3.fromRGB(255, 240, 180))
+		beam.Width0 = if enough then 0.9 else 0.5
+	end
 	if held >= need then
 		f.Pin = math.min(1, f.Pin + dt / Boss.PinSeconds)
 	else
@@ -489,7 +545,9 @@ local function updatePin(f: Fight?, dt: number)
 	for index, handle in f.Handles do
 		local angle = index / #f.Handles * math.pi * 2
 		local offset = Vector3.new(math.cos(angle), 0, math.sin(angle)) * (Boss.Size / 2 + 1.5)
-		handle.CFrame = CFrame.new(Vector3.new(ball.Position.X, platformTop + 3, ball.Position.Z) + offset)
+		local at = Vector3.new(ball.Position.X, platformTop + 3, ball.Position.Z) + offset
+		-- (the ring faces outward, toward whoever grabs it)
+		handle.CFrame = CFrame.lookAt(at, at + offset) * CFrame.Angles(0, math.rad(90), 0)
 	end
 
 	if now >= f.NextStomp then
@@ -550,6 +608,7 @@ local function updateBox(f: Fight?, dt: number)
 		return
 	end
 	f.Anger += Boss.AngerRate * dt
+	Workspace:SetAttribute("BossAnger", math.floor(f.Anger)) -- (the boss glows red when it's close to blowing)
 	if f.Anger >= 100 then
 		launchAll(f)
 		return
@@ -648,6 +707,7 @@ function BossService.Begin(untilTime: number, _studio: boolean)
 	if not animal then
 		return
 	end
+	local landAt = center() + Vector3.new(0, 0, -10)
 	local ball = Instance.new("Part")
 	ball.Name = "Boss"
 	ball.Shape = Enum.PartType.Ball
@@ -656,10 +716,58 @@ function BossService.Begin(untilTime: number, _studio: boolean)
 	ball.Anchored = true
 	ball.CanCollide = false
 	ball:SetAttribute("AnimalId", def.AnimalId)
-	ball.CFrame = CFrame.new(center() + Vector3.new(0, Boss.Size / 2, -10))
-	ball.Parent = arena
-	CollectionService:AddTag(ball, "Critter") -- (the client draws the giant Blender model on it)
+	ball:SetAttribute("BossAura", def.AnimalId) -- the client adds a glow, particles and a crown
+	ball.CFrame = CFrame.new(landAt + Vector3.new(0, Boss.Size / 2, 0))
 	MapBuilder.Label(ball, `👑 {def.DisplayName}`, Boss.Size / 2 + 4, Color3.fromRGB(255, 110, 110))
+
+	-- The entrance: a giant parcel falls out of the sky, slams down and bursts open, and there it is
+	local parcel = Instance.new("Model")
+	parcel.Name = "BossParcel"
+	local crate = Instance.new("Part")
+	crate.Size = Vector3.one * (Boss.Size + 4)
+	crate.Color = Color3.fromRGB(205, 165, 115)
+	crate.Anchored = true
+	crate.CFrame = CFrame.new(landAt + Vector3.new(0, 160, 0))
+	crate.Parent = parcel
+	for _, axis in { Vector3.new(1, 0.04, 0.12), Vector3.new(0.12, 0.04, 1) } do
+		local tape = Instance.new("Part")
+		tape.Size = Vector3.new(axis.X * (Boss.Size + 4.4), 0.4, axis.Z * (Boss.Size + 4.4))
+		tape.Color = Color3.fromRGB(235, 205, 120)
+		tape.Anchored = true
+		tape.CanCollide = false
+		tape.CFrame = crate.CFrame * CFrame.new(0, (Boss.Size + 4) / 2 + 0.1, 0)
+		tape.Parent = parcel
+	end
+	parcel.PrimaryPart = crate
+	parcel.Parent = arena
+	Remotes.Notify:FireAllClients("BossTitle", { Boss = def.DisplayName })
+	task.spawn(function()
+		local start = os.clock()
+		local fallTime = 1.4
+		local from, to = crate.CFrame, CFrame.new(landAt + Vector3.new(0, (Boss.Size + 4) / 2, 0))
+		while os.clock() - start < fallTime do
+			local t = (os.clock() - start) / fallTime
+			parcel:PivotTo(from:Lerp(to, t * t))
+			task.wait()
+		end
+		parcel:PivotTo(to)
+		notifyHere("BossLanded", { At = landAt })
+		Sfx.Play("VineBoom", crate)
+		task.wait(0.5)
+		-- Burst open: the sides fly off
+		for _, part in parcel:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.CanCollide = false
+				part.AssemblyLinearVelocity =
+					Vector3.new(math.random(-40, 40), math.random(50, 80), math.random(-40, 40))
+			end
+		end
+		ball.Parent = arena
+		CollectionService:AddTag(ball, "Critter") -- (the client draws the giant Blender model on it)
+		task.wait(3)
+		parcel:Destroy()
+	end)
 
 	local f: Fight = {
 		Until = untilTime,
@@ -685,17 +793,24 @@ function BossService.Begin(untilTime: number, _studio: boolean)
 		LastPet = {},
 		LastAngry = {},
 		Raged = {},
+		Ropes = {},
+		LandsAt = os.clock() + 2,
 	}
 	for _ = 1, Boss.Handles do
+		-- A golden ring to grab (a short, wide cylinder standing on its edge)
 		local handle = Instance.new("Part")
 		handle.Name = "BossHandle"
-		handle.Shape = Enum.PartType.Ball
-		handle.Size = Vector3.new(2.4, 2.4, 2.4)
-		handle.Color = Color3.fromRGB(255, 230, 90)
+		handle.Shape = Enum.PartType.Cylinder
+		handle.Size = Vector3.new(0.6, 2.8, 2.8)
+		handle.Color = Color3.fromRGB(255, 210, 60)
 		handle.Material = Enum.Material.Neon
 		handle.Anchored = true
 		handle.CanCollide = false
 		handle.Parent = arena
+		handle.CFrame = CFrame.new(landAt + Vector3.new(0, -60, 0)) -- (out of sight until it lands)
+		local ropeEnd = Instance.new("Attachment")
+		ropeEnd.Name = "RopeEnd"
+		ropeEnd.Parent = handle
 		local prompt = Instance.new("ProximityPrompt")
 		prompt.ActionText = "Hold on!"
 		prompt.ObjectText = "Rope"
@@ -706,11 +821,13 @@ function BossService.Begin(untilTime: number, _studio: boolean)
 		prompt.PromptButtonHoldBegan:Connect(function(player: Player)
 			if fight == f and f.Phase == "Pin" and (stunnedUntil[player] or 0) < os.clock() then
 				f.Holding[player] = handle
+				attachRope(f, player, handle)
 			end
 		end)
 		prompt.PromptButtonHoldEnded:Connect(function(player: Player)
 			if f.Holding[player] == handle then
 				f.Holding[player] = nil
+				dropRope(f, player)
 			end
 		end)
 		table.insert(f.Handles, handle)
