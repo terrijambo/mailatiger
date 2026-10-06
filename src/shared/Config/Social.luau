@@ -22,7 +22,7 @@ return {
 	},
 
 	Leaderboards = {
-		StoreVersion = "v1", -- change to reset the boards
+		StoreVersion = "launch1", -- change to reset the boards (fresh at launch, 2026-10-06)
 		RefreshSeconds = 60,
 		Size = 10,
 		-- Tiger times faster than this are ignored (nobody catches AND boxes a tiger that fast, so it's a cheat)

@@ -33,7 +33,7 @@ return {
 	},
 
 	Save = {
-		StoreName = "PlayerData_v1", -- change the version to wipe everyone's data (e.g. before launch)
+		StoreName = "PlayerData_launch1", -- change this to wipe everyone's data. (Fresh at launch, 2026-10-06; v1 held Studio test progress)
 		AutosaveSeconds = 60,
 		LockTimeoutSeconds = 600, -- a lock older than this is treated as abandoned (crashed server)
 		LoadRetries = 5, -- on the last retry a stale lock is taken over so players never get stuck
