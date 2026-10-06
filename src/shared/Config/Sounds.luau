@@ -25,7 +25,7 @@ export type Sound = {
 -- of them for something better, especially the vine boom (a cannon for now).
 local sounds: { [string]: Sound } = {
 	-- The big clip moment: the animal launches you out of the box
-	VineBoom = { Id = "rbxassetid://3149249837", Volume = 2, Heard = "Everyone" }, -- "Cannon_Explode" (stand-in)
+	VineBoom = { Id = "rbxassetid://140367458608473", Volume = 2, Heard = "Everyone" }, -- the real vine boom
 
 	-- BOX stage
 	Pop = { Id = "rbxassetid://15675055424", Volume = 0.8 }, -- the animal pops up out of the box ("Cute Pop")

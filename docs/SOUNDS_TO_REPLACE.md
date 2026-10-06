@@ -8,7 +8,6 @@ How to swap one: Studio → Toolbox → Marketplace → Audio → search → rig
 
 | Slot | Used for | Stand-in now | Look for |
 |---|---|---|---|
-| `VineBoom` | The animal launches you out of the box (the clip moment) | "Cannon_Explode" | the actual vine boom: a deep bass "BOOM" |
 | `Purr` | Rubbing a ♥ spot | "BirdHello" (a bird chirp) | cat purr, happy animal hum |
 | `Growl` | The animal thumps the box from inside | "Joystick Slam" | muffled thud and growl, cardboard bump |
 | `Kaching` | Buying anything with coins | "Low Bells" | cash register "ka-ching" |
@@ -42,6 +41,10 @@ These are new and reuse an existing sound with a different pitch, so they work b
 | `StampThud` | "Giant Button Press" | rubber stamp "thunk" |
 | `Ding` | "electronic ping" | tutorial step done: a softer, friendlier ding |
 | `Escape` | "Short spring" | cartoon scramble or zip-away |
+
+## Done
+
+`VineBoom` (the real vine boom, 2026-10-05).
 
 ## Probably fine
 
