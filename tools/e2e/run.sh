@@ -4,6 +4,7 @@
 # Prints PASS/FAIL for each step plus any errors. Never touches MailATiger.rbxl (it reads a copy).
 #
 #   bash tools/e2e/run.sh
+#   E2E_CLIENT=tools/devices/client.lua bash tools/e2e/run.sh    (a different client test; see tools/devices)
 #
 # Needs: rojo, lune and run-in-roblox (rokit add --global lune-org/lune rojo-rbx/run-in-roblox).
 # A second Studio window opens for about a minute and closes by itself. Save in Studio first (Ctrl+S).
@@ -44,7 +45,7 @@ lune run tools/smoke/merge.luau "$TMP/build.rbxl" "$TMP/place_copy.rbxl" "$TMP/m
 	echo 'local client = Instance.new("LocalScript")'
 	echo 'client.Name = "E2EClient"'
 	echo 'client.Source = [==['
-	cat tools/e2e/client.lua
+	cat "${E2E_CLIENT:-tools/e2e/client.lua}"
 	echo ']==]'
 	echo 'client.Parent = game:GetService("StarterPlayer").StarterPlayerScripts'
 	echo 'local ok, result = pcall(function() return game:GetService("StudioTestService"):ExecutePlayModeAsync({}) end)'

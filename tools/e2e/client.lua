@@ -114,7 +114,9 @@ local function dumpUi(tag)
 					if visible then
 						local text = ""
 						if d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("TextBox") then
-							text = string.gsub(string.sub(d.Text, 1, 40), "[%c|]", " ")
+							-- (cut at a whole character: half an emoji is invalid text and breaks run-in-roblox)
+							local cut = utf8.offset(d.Text, 41)
+							text = string.gsub(if cut then string.sub(d.Text, 1, cut - 1) else d.Text, "[%c|]", " ")
 						end
 						local c = d.BackgroundColor3
 						table.insert(lines, string.format("UI %s %s|%s|%d|%d|%d|%d|%d|%d|%d|%.2f|%s", tag, screen.Name, d.ClassName,
