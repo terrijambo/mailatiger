@@ -160,7 +160,7 @@ Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` expo
 |---|---|---|
 | `AnimalModels` | All 25 animals + `Gruff` | Yes |
 | `BoxModels` | `Cardboard`, `Wood`, `Steel`, `Vault` | Yes |
-| `PropModels` | `Parcel`, `MailChute`, `MailChuteExpress`, `MailChutePneumatic`, `MailChuteRocket`, `GruffHat`, `Egg`, `Envelope`, `GrabbingGloves`, `Sneakers`, `TapeGun`, `ButterflyNet`, `TapeRoll`, `RubberStamp` | Yes (the tools spin on the shop table and show in the Shop menu) |
+| `PropModels` | `Parcel`, `MailChute`, `MailChuteExpress`, `MailChutePneumatic`, `MailChuteRocket`, `GruffHat`, `BossCrown`, `Egg`, `Envelope`, `GrabbingGloves`, `Sneakers`, `TapeGun`, `ButterflyNet`, `TapeRoll`, `RubberStamp` | Yes (the tools spin on the shop table and show in the Shop menu; `BossCrown` is the top boss helper's crown; `TapeRoll` is also the boss fight's pull handles) |
 | `MapModels` | Town: `PostOffice`, `PostCounter`, `PenCounter`, `ShopStall`, `OrdersBoard`, `LeaderboardStand`, `TravelPad`, `SpawnPad`, `Lamppost`, `Bench`, `Mailbox`, `Planter` | Yes (laid over the grey map blocks) |
 | `MapModels` | Arenas: `ArenaGate`, `PicketFence`, `Bush`, `Doghouse`, `Flowerbed`, `Barn`, `HayBale`, `FarmFence`, `Trough`, `JungleTree`, `MudPuddle`, `BambooFence`, `Rock`, `RinkBoard`, `HockeyGoal`, `Snowman`, `ACUnit`, `WaterTower`, `Chimney` | Yes (laid over the grey map blocks) |
 

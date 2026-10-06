@@ -27,6 +27,7 @@ local BossArena = require(script.Parent.BossArena)
 local BoxingService = require(script.Parent.BoxingService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local Remotes = require(script.Parent.Remotes)
@@ -527,11 +528,13 @@ local function attachRope(f: Fight, player: Player, handle: BasePart)
 	local beam = Instance.new("Beam")
 	beam.Attachment0 = ring
 	beam.Attachment1 = hand
-	beam.Width0, beam.Width1 = 0.5, 0.3
+	-- (a strip of packing tape pulled tight from the roll to your hand)
+	beam.Width0, beam.Width1 = 1, 0.6
 	beam.FaceCamera = true
-	beam.LightEmission = 0.6
-	beam.CurveSize0 = 1.5
-	beam.Color = ColorSequence.new(Color3.fromRGB(255, 240, 180))
+	beam.LightEmission = 0.15
+	beam.CurveSize0 = 0.4
+	beam.Transparency = NumberSequence.new(0.1)
+	beam.Color = ColorSequence.new(Color3.fromRGB(225, 190, 120))
 	beam.Parent = handle
 	f.Ropes[player] = beam
 end
@@ -719,8 +722,9 @@ local function updatePin(f: Fight?, dt: number)
 	-- The ropes go gold and thick while it's held down
 	for _, beam in f.Ropes do
 		local enough = held >= need
-		beam.Color = ColorSequence.new(if enough then Color3.fromRGB(255, 200, 40) else Color3.fromRGB(255, 240, 180))
-		beam.Width0 = if enough then 0.9 else 0.5
+		beam.Color = ColorSequence.new(if enough then Color3.fromRGB(255, 215, 90) else Color3.fromRGB(225, 190, 120))
+		beam.Width0 = if enough then 1.5 else 1
+		beam.LightEmission = if enough then 0.5 else 0.15
 	end
 	if held >= need then
 		f.Pin = math.min(1, f.Pin + dt / Boss.PinSeconds)
@@ -1168,23 +1172,63 @@ function BossService.Begin(untilTime: number, _studio: boolean)
 		MailStart = 1,
 	}
 	for _ = 1, Boss.Handles do
-		-- A golden ring to grab (a short, wide cylinder standing on its edge)
+		-- A giant roll of packing tape to pull on: the team literally tapes the boss down. Your Blender
+		-- "TapeRoll" (PropModels) if it's imported, otherwise a tan roll with a cardboard core.
 		local handle = Instance.new("Part")
 		handle.Name = "BossHandle"
 		handle.Shape = Enum.PartType.Cylinder
-		handle.Size = Vector3.new(0.6, 2.8, 2.8)
-		handle.Color = Color3.fromRGB(255, 210, 60)
-		handle.Material = Enum.Material.Neon
+		handle.Size = Vector3.new(1.4, 3.4, 3.4)
+		handle.Color = Color3.fromRGB(215, 175, 105)
 		handle.Anchored = true
 		handle.CanCollide = false
 		handle.Parent = arena
+		local core = Instance.new("Part")
+		core.Name = "Core"
+		core.Shape = Enum.PartType.Cylinder
+		core.Size = Vector3.new(1.5, 1.5, 1.5)
+		core.Color = Color3.fromRGB(150, 110, 70)
+		core.CanCollide = false
+		core.Massless = true
+		core.Parent = handle
+		local roll = ModelFit.Spawn("PropModels", "TapeRoll", CFrame.new(), 3.6, nil)
+		if roll then
+			handle.Transparency = 1
+			core:Destroy()
+			for _, part in roll:GetDescendants() do
+				if part:IsA("BasePart") then
+					part.Anchored = false
+					part.CanCollide = false
+					part.Massless = true
+				end
+			end
+			roll.Parent = handle
+		end
 		handle.CFrame = CFrame.new(landAt + Vector3.new(0, -60, 0)) -- (out of sight until it lands)
+		-- (weld the roll's look to the moving handle)
+		for _, part in handle:GetDescendants() do
+			if part:IsA("BasePart") then
+				if roll then
+					-- (the model was spawned standing on the origin, facing -Z; turn it so the roll's hole faces
+					-- outward along the handle's X axis, and center it on the handle)
+					part.CFrame = handle.CFrame
+						* CFrame.Angles(0, math.rad(90), 0)
+						* CFrame.new(0, -1.8, 0)
+						* part.CFrame
+				else
+					part.CFrame = handle.CFrame
+				end
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = handle
+				weld.Part1 = part
+				weld.Parent = part
+			end
+		end
 		local ropeEnd = Instance.new("Attachment")
 		ropeEnd.Name = "RopeEnd"
 		ropeEnd.Parent = handle
 		local prompt = Instance.new("ProximityPrompt")
-		prompt.ActionText = "Hold on!"
-		prompt.ObjectText = "Rope"
+		prompt.ActionText = "Pull the tape!"
+		prompt.ObjectText = "Tape Roll"
 		prompt.HoldDuration = 600 -- (never "finishes": you hold on for as long as you keep the key down)
 		prompt.MaxActivationDistance = 10
 		prompt.RequiresLineOfSight = false
@@ -1227,12 +1271,30 @@ function BossService.Init(map: MapBuilder.Map)
 			return
 		end
 		if player:GetAttribute("BossCrown") == true and not old then
-			-- A real gold crown on their head (built from parts and welded on), plus a small name tag
+			-- A real gold crown on their head (your Blender "BossCrown" in PropModels, or one built from parts
+			-- if it isn't imported), welded on, plus a small name tag
 			local holder = Instance.new("Folder")
 			holder.Name = "BossCrown"
 			holder.Parent = head
 			local top = (head :: BasePart).CFrame * CFrame.new(0, (head :: BasePart).Size.Y / 2 + 0.3, 0)
 			local gold = Color3.fromRGB(255, 200, 40)
+			local model = ModelFit.Spawn("PropModels", "BossCrown", top * CFrame.new(0, -0.3, 0), 1.9, nil)
+			if model then
+				for _, part in model:GetDescendants() do
+					if part:IsA("BasePart") then
+						part.Anchored = false
+						part.CanCollide = false
+						part.CanQuery = false
+						part.CanTouch = false
+						part.Massless = true
+						local weld = Instance.new("WeldConstraint")
+						weld.Part0 = head :: BasePart
+						weld.Part1 = part
+						weld.Parent = part
+					end
+				end
+				model.Parent = holder
+			end
 			local function piece(shape: Enum.PartType, size: Vector3, cframe: CFrame, color: Color3, neon: boolean?)
 				local part = Instance.new("Part")
 				part.Shape = shape
@@ -1250,26 +1312,35 @@ function BossService.Init(map: MapBuilder.Map)
 				weld.Part1 = part
 				weld.Parent = part
 			end
-			-- The band (a short wide cylinder standing up), five points around the top, and three gems
-			piece(Enum.PartType.Cylinder, Vector3.new(0.55, 1.9, 1.9), top * CFrame.Angles(0, 0, math.rad(90)), gold)
-			for i = 1, 5 do
-				local angle = i / 5 * math.pi * 2
+			-- (no model: the band, five points around the top, and three gems)
+			if not model then
 				piece(
-					Enum.PartType.Block,
-					Vector3.new(0.3, 0.6, 0.3),
-					top * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.5, -0.82) * CFrame.Angles(0, math.rad(45), 0),
+					Enum.PartType.Cylinder,
+					Vector3.new(0.55, 1.9, 1.9),
+					top * CFrame.Angles(0, 0, math.rad(90)),
 					gold
 				)
-			end
-			for i, color in { Color3.fromRGB(230, 40, 50), Color3.fromRGB(60, 140, 255), Color3.fromRGB(80, 220, 110) } do
-				local angle = (i - 2) * 0.7
-				piece(
-					Enum.PartType.Ball,
-					Vector3.new(0.32, 0.32, 0.32),
-					top * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.05, -0.95),
-					color,
-					true
-				)
+				for i = 1, 5 do
+					local angle = i / 5 * math.pi * 2
+					piece(
+						Enum.PartType.Block,
+						Vector3.new(0.3, 0.6, 0.3),
+						top * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.5, -0.82) * CFrame.Angles(0, math.rad(45), 0),
+						gold
+					)
+				end
+				for i, color in
+					{ Color3.fromRGB(230, 40, 50), Color3.fromRGB(60, 140, 255), Color3.fromRGB(80, 220, 110) }
+				do
+					local angle = (i - 2) * 0.7
+					piece(
+						Enum.PartType.Ball,
+						Vector3.new(0.32, 0.32, 0.32),
+						top * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.05, -0.95),
+						color,
+						true
+					)
+				end
 			end
 			local gui = Instance.new("BillboardGui")
 			gui.Size = UDim2.fromOffset(110, 24)

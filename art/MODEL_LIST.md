@@ -56,6 +56,7 @@ Named by box Id. Open-topped so the animal can poke out.
 |---|---|---|---|
 | Gruff | `characters.py` | Postmaster Gruff: grumpy walrus, huge mustache, tusks, postal jacket | The grey ball behind the counter, and the Gruff animal (**hooked** via `AnimalModels > Gruff`) |
 | GruffHat | `characters.py` | His tiny blue postal cap with a gold badge (separate so a breakout can knock it off) | The blue hat block |
+| BossCrown | `characters.py` | A gold crown with five pearl-tipped points, red velvet, a red gem in front and two blue ones; worn by the top helper of each hourly boss fight | A crown built from plain parts |
 
 Players use their own Roblox avatars, so there's no player model.
 

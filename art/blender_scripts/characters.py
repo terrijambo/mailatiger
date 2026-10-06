@@ -9,7 +9,9 @@ import os
 import sys
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from common import ball, both, box, cyl, limb, run, spike  # noqa: E402
+import math
+
+from common import ball, both, box, cyl, limb, run, spike, torus  # noqa: E402
 
 SKIN = (130, 110, 100)
 EYE = (25, 25, 30)
@@ -55,7 +57,38 @@ def gruff_hat():
     ]
 
 
+def boss_crown():
+    # The Boss Hunter crown: worn by the top helper of each hourly boss fight. About 2 studs across, so it
+    # sits on a player's head; the game scales it to fit anyway. The front (red gem) faces -Y.
+    points = []
+    pearls = []
+    for i in range(5):
+        angle = math.radians(90 + i * 72)  # one point straight over the front gem
+        x, y = math.cos(angle) * 0.92, -math.sin(angle) * 0.92
+        out = (x * 0.25, y * 0.25, 1.0)  # leaning outward a little
+        points.append(spike((x, y, 0.6), out, 0.75, 0.24, vertices=4))
+        length = math.sqrt(out[0] ** 2 + out[1] ** 2 + out[2] ** 2)
+        tip = (x + out[0] / length * 0.78, y + out[1] / length * 0.78, 0.6 + out[2] / length * 0.78)
+        pearls.append(ball(0.11, tip, subdivisions=1))
+    return [
+        ("Band", GOLD, [cyl(1.0, 0.6, (0, 0, 0.3), vertices=16)]),
+        ("Trim", (205, 150, 40), [
+            torus(1.0, 0.07, (0, 0, 0.02), major_segments=16, minor_segments=4),
+            torus(1.0, 0.07, (0, 0, 0.6), major_segments=16, minor_segments=4),
+        ]),
+        ("Points", GOLD, points),
+        ("Pearls", (250, 250, 245), pearls),
+        ("Velvet", (175, 30, 55), [ball(0.86, (0, 0, 0.5), scale=(1, 1, 0.55))]),
+        ("RedGem", (225, 40, 60), [ball(0.17, (0, -1.0, 0.3), scale=(1, 0.6, 1.2))]),
+        ("BlueGem", (60, 130, 255), [
+            ball(0.13, (math.cos(math.radians(235)) * 1.0, math.sin(math.radians(235)) * 1.0, 0.3), scale=(1, 0.6, 1)),
+            ball(0.13, (math.cos(math.radians(305)) * 1.0, math.sin(math.radians(305)) * 1.0, 0.3), scale=(1, 0.6, 1)),
+        ]),
+    ]
+
+
 run({
     "Gruff": gruff,
     "GruffHat": gruff_hat,
+    "BossCrown": boss_crown,
 })

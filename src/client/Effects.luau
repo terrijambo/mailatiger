@@ -305,26 +305,78 @@ function Effects.Start()
 				dust.Enabled = false
 				dust.Parent = attachment
 				dust:Emit(70)
-				local cracks = {}
-				for i = 1, 7 do
-					local angle = i / 7 * math.pi * 2 + math.random() * 0.4
-					local length = data.Radius * (0.4 + math.random() * 0.4)
-					local crack = Instance.new("Part")
-					crack.Anchored = true
-					crack.CanCollide = false
-					crack.CanQuery = false
-					crack.Color = Color3.fromRGB(60, 50, 45)
-					crack.Size = Vector3.new(0.5, 0.06, length)
-					crack.CFrame = CFrame.new(data.At + Vector3.new(0, 0.12, 0))
-						* CFrame.Angles(0, angle, 0)
-						* CFrame.new(0, 0, -length / 2 - 2)
-					crack.Parent = Workspace
-					table.insert(cracks, crack)
+				-- Cracks: jagged lines that zig-zag out from the impact, taper to a point and split into
+				-- branches, around a dark dented center. They fade away after a few seconds.
+				local cracks: { BasePart } = {}
+				local CRACK = Color3.fromRGB(45, 38, 35)
+				local function segment(from: Vector3, to: Vector3, width: number)
+					local length = (to - from).Magnitude
+					if length < 0.05 then
+						return
+					end
+					local piece = Instance.new("Part")
+					piece.Anchored = true
+					piece.CanCollide = false
+					piece.CanQuery = false
+					piece.CanTouch = false
+					piece.Color = CRACK
+					piece.Size = Vector3.new(width, 0.08, length + width * 0.6) -- (overlap so the joints don't gap)
+					piece.CFrame = CFrame.lookAt((from + to) / 2, to)
+					piece.Parent = Workspace
+					table.insert(cracks, piece)
 				end
-				task.delay(4, function()
+				local function crack(start: Vector3, angle: number, length: number, width: number, depth: number)
+					local point = start
+					local steps = math.random(3, 5)
+					for step = 1, steps do
+						angle += math.rad(math.random(-28, 28)) -- zig-zag
+						local stepLength = length / steps * (0.7 + math.random() * 0.6)
+						local nextPoint = point + Vector3.new(math.sin(angle), 0, math.cos(angle)) * stepLength
+						local w = width * (1 - (step - 1) / steps) -- tapering to a point
+						segment(point, nextPoint, math.max(0.12, w))
+						-- Now and then a thinner branch splits off
+						if depth < 2 and step < steps and math.random() < 0.45 then
+							crack(
+								nextPoint,
+								angle + math.rad(math.random(30, 55) * (if math.random() < 0.5 then -1 else 1)),
+								length * 0.45,
+								w * 0.6,
+								depth + 1
+							)
+						end
+						point = nextPoint
+					end
+				end
+				local center = data.At + Vector3.new(0, 0.1, 0)
+				local dent = Instance.new("Part")
+				dent.Shape = Enum.PartType.Cylinder
+				dent.Anchored = true
+				dent.CanCollide = false
+				dent.CanQuery = false
+				dent.Color = Color3.fromRGB(70, 60, 55)
+				dent.Size = Vector3.new(0.06, 5, 5)
+				dent.CFrame = CFrame.new(center) * CFrame.Angles(0, 0, math.rad(90))
+				dent.Parent = Workspace
+				table.insert(cracks, dent)
+				for i = 1, 6 do
+					local angle = i / 6 * math.pi * 2 + math.random() * 0.5
+					crack(
+						center + Vector3.new(math.sin(angle), 0, math.cos(angle)) * 2.2,
+						angle,
+						data.Radius * (0.45 + math.random() * 0.35),
+						0.8,
+						0
+					)
+				end
+				task.delay(3.2, function()
+					for _, piece in cracks do
+						TweenService:Create(piece, TweenInfo.new(0.8), { Transparency = 1 }):Play()
+					end
+				end)
+				task.delay(4.1, function()
 					attachment:Destroy()
-					for _, crack in cracks do
-						crack:Destroy()
+					for _, piece in cracks do
+						piece:Destroy()
 					end
 				end)
 			end)

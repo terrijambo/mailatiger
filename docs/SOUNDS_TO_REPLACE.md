@@ -37,7 +37,6 @@ These are new and reuse an existing sound with a different pitch, so they work b
 | Slot | Used for | Look for |
 |---|---|---|
 | `BossMusic` | the fight theme while a boss is on (near the arena) | epic but silly drums or orchestra, loops cleanly |
-| `BossStomp` | each stomp | heavy thud, earth rumble |
 | `CrowdCheer` | the stands go wild on a win | stadium cheer |
 
 ## Could be better
@@ -52,7 +51,7 @@ These are new and reuse an existing sound with a different pitch, so they work b
 
 ## Done
 
-`VineBoom` (the real vine boom, 2026-10-05).
+`VineBoom` (the real vine boom, 2026-10-05). `BossStomp` (a giant dinosaur footstep from Pro Sound Effects, 2026-10-06).
 
 ## Probably fine
 

@@ -21,7 +21,7 @@ local EXPECTED = {
 	},
 	BoxModels = { "Cardboard", "Wood", "Steel", "Vault" },
 	PropModels = {
-		"Parcel", "MailChute", "MailChuteExpress", "MailChutePneumatic", "MailChuteRocket", "GruffHat", "Egg",
+		"Parcel", "MailChute", "MailChuteExpress", "MailChutePneumatic", "MailChuteRocket", "GruffHat", "BossCrown", "Egg",
 		"Envelope", "GrabbingGloves", "Sneakers", "TapeGun", "ButterflyNet", "TapeRoll", "RubberStamp",
 	},
 	MapModels = {

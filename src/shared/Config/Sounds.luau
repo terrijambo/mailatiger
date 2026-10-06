@@ -64,7 +64,7 @@ local sounds: { [string]: Sound } = {
 
 	-- Hourly boss fights. NEW SLOTS that borrow other sounds for now (docs/BOSS_VISUALS_ROADMAP.md, Phase 6)
 	BossMusic = { Id = "rbxassetid://17422163655", Volume = 0.35, Pitch = 0.9 }, -- the fight theme (loops; borrows MusicArena)
-	BossStomp = { Id = "rbxassetid://16480560696", Volume = 1.4, Pitch = 0.6, Heard = "Everyone" }, -- (borrows StampThud)
+	BossStomp = { Id = "rbxassetid://9125404769", Volume = 1.6, Heard = "Everyone" }, -- "Boomy Footsteps Giant Thumpy Dinosaur" (Pro Sound Effects, free for every Roblox game)
 	CrowdCheer = { Id = "rbxassetid://127645268874265", Volume = 0.8, Pitch = 0.8 }, -- the stands go wild (borrows CoinJingle)
 
 	-- Background music (loops)
