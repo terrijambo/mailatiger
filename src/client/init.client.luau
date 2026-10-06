@@ -9,6 +9,7 @@ local Audio = require(script.Audio)
 local Effects = require(script.Effects)
 local Hud = require(script.Hud)
 local Inventory = require(script.Inventory)
+local BossLook = require(script.BossLook)
 local BoxingScreen = require(script.BoxingScreen)
 local DiamondUpgrades = require(script.DiamondUpgrades)
 local EventBanner = require(script.EventBanner)
@@ -43,6 +44,7 @@ Music.Start()
 ZoneLocks.Start()
 TrollBar.Start()
 EventBanner.Start()
+BossLook.Start()
 task.spawn(ChuteVisual.Start) -- waits for the map to load, so it runs on its own
 task.spawn(Tutorial.Start) -- waits for your save to load
 

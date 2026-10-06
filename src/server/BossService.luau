@@ -23,6 +23,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
+local BossArena = require(script.Parent.BossArena)
 local BoxingService = require(script.Parent.BoxingService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
@@ -70,6 +71,7 @@ local fight: Fight? = nil
 local stunnedUntil: { [Player]: number } = {}
 local crownHolder: Player? = nil
 local bossIndex = 0
+local lastScoreboard = 0
 
 local function center(): Vector3
 	return Boss.ArenaCenter + Vector3.new(0, platformTop, 0)
@@ -163,6 +165,7 @@ local function buildArena(map: MapBuilder.Map)
 		)
 	end
 	platformTop = 0
+	BossArena.Build(arena, c, size)
 	-- The pad home
 	local home = block(
 		"BackToTown",
@@ -195,7 +198,8 @@ local function setPad(open: boolean)
 		part.Material = Enum.Material.Neon
 		part.CanCollide = false
 		part.Parent = arena
-		MapBuilder.Label(part, "⚔️ BOSS ARENA", 5, Color3.fromRGB(255, 120, 120))
+		MapBuilder.Label(part, "⚔️ BOSS ARENA", 17, Color3.fromRGB(255, 120, 120))
+		BossArena.Arch(part)
 		part.Touched:Connect(function(hit)
 			local model = hit:FindFirstAncestorOfClass("Model")
 			local player = model and Players:GetPlayerFromCharacter(model)
@@ -309,6 +313,22 @@ local function finish(won: boolean)
 	if won then
 		giveCrown(topPlayer)
 	end
+	-- The crowd goes wild (or boos), then the floor is cleared for next time
+	Workspace:SetAttribute("CrowdMood", if won then "Cheer" else "Boo")
+	BossArena.SetBanners(if won then "BOXED!" else "RETURN TO SENDER")
+	BossArena.SetScoreboard(
+		if won
+			then `{f.Name} BOXED!\nTop helper: {if topPlayer then topPlayer.DisplayName else "everyone"}`
+			else `{f.Name} GOT AWAY`
+	)
+	task.delay(10, function()
+		if fight == nil then
+			Workspace:SetAttribute("CrowdMood", nil)
+			BossArena.ClearTheme()
+			BossArena.SetBanners("THE BIG ONE")
+			BossArena.SetScoreboard("NEXT BOSS: ON THE HOUR")
+		end
+	end)
 	Remotes.Notify:FireAllClients(if won then "BossWin" else "BossLose", {
 		Boss = f.Name,
 		Top = if won and topPlayer then topPlayer.DisplayName else nil,
@@ -582,6 +602,12 @@ local function launchAll(f: Fight?)
 		BoxingService.Stun(player, 3)
 	end
 	notifyHere("Message", { Speaker = "BOSS", Text = `MEGA VINE BOOM! The {f.Name} broke free! Pin it again!` })
+	Workspace:SetAttribute("CrowdMood", "Boo")
+	task.delay(4, function()
+		if fight == f then
+			Workspace:SetAttribute("CrowdMood", "Hype")
+		end
+	end)
 	f.Phase = "Pin"
 	f.Pin = 0
 	f.Boxers = {}
@@ -834,6 +860,9 @@ function BossService.Begin(untilTime: number, _studio: boolean)
 	end
 	fight = f
 	setPad(true)
+	BossArena.Theme(arena, center(), Boss.ArenaSize, def.AnimalId)
+	BossArena.SetBanners(def.DisplayName)
+	Workspace:SetAttribute("CrowdMood", "Hype")
 	Workspace:SetAttribute("BossName", def.DisplayName)
 	Workspace:SetAttribute("BossPhase", "Pin")
 	Workspace:SetAttribute("BossEndsAt", untilTime)
@@ -908,6 +937,15 @@ function BossService.Init(map: MapBuilder.Map)
 			return
 		end
 		Workspace:SetAttribute("BossEndsAt", f.Until)
+		-- The scoreboard, about twice a second
+		if os.clock() - lastScoreboard > 0.5 then
+			lastScoreboard = os.clock()
+			local left = math.max(0, f.Until - os.time())
+			local status = if f.Phase == "Pin"
+				then `PIN IT!  {math.floor(f.Pin * 100)}%`
+				else `BOX IT!  {Workspace:GetAttribute("BossTaped") or 0} / {SEAMS} SEAMS`
+			BossArena.SetScoreboard(`{f.Name}   {left // 60}:{string.format("%02d", left % 60)}\n{status}`)
+		end
 		if os.time() >= f.Until then
 			notifyHere(
 				"Message",
