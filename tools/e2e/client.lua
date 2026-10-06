@@ -697,10 +697,23 @@ local function run()
 		end
 	end
 	log(waitFor(function()
-		return (events.BossWin or 0) > 0
-	end, 5), "boxed the boss and won")
+		return Workspace:GetAttribute("BossPhase") == "Mail"
+	end, 5), "boxed the boss: now MAIL IT")
+	-- Push the sealed box into the giant chute
+	local bossBox = arena and arena:WaitForChild("BossBox", 3)
+	local push = game:GetService("RunService").Heartbeat:Connect(function()
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		if root and bossBox and bossBox.Parent then
+			root.CFrame = bossBox:GetPivot() * CFrame.new(0, 0, 12)
+		end
+	end)
 	log(waitFor(function()
-		return (events.BossReward or 0) > 0 and profile().LuckyNext == true
+		return (events.BossWin or 0) > 0
+	end, 45), "pushed the box into the chute and won")
+	push:Disconnect()
+	log(waitFor(function()
+		return (events.BossReward or 0) > 0 and profile().LuckyNext == true and (profile().BossKills or {}).Tiger == 1
 	end, 3), "boss reward: diamonds, coins and a Shiny next job")
 
 	log(true, "events seen: " .. HttpService:JSONEncode(events))

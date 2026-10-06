@@ -151,5 +151,10 @@ return {
 		Diamonds = { Min = 10, Max = 30 },
 		Jobs = 20,
 		LoseDiamonds = 3,
+		-- MAIL IT (after it's boxed): push the box into the giant chute in time for a bonus
+		MailSeconds = 60,
+		MailSpeedPerPusher = 4, -- studs/second for each player pushing...
+		MailMaxSpeed = 12, -- ...up to this
+		MailBonus = 1.5, -- rewards x this when it's mailed in time
 	},
 }

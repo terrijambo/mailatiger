@@ -844,7 +844,9 @@ function Hud.Start()
 		elseif kind == "BossReward" then
 			showToast(
 				if data.Top then "👑 You were the top helper!" else "⚔️ Boss reward",
-				"Your next job is a guaranteed Shiny!",
+				if data.Mailed
+					then "Mailed it in time: rewards x1.5! Your next job is a guaranteed Shiny!"
+					else "Your next job is a guaranteed Shiny!",
 				`+{data.Diamonds} 💎   +{Format.Short(data.Coins)} coins`,
 				nil,
 				Ui.GOLD

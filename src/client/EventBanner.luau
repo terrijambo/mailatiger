@@ -100,6 +100,16 @@ function EventBanner.Start()
 				barBack.Visible = true
 				barFill.Size = UDim2.fromScale(math.clamp(attr("BossPin") or 0, 0, 1), 1)
 				barFill.BackgroundColor3 = Ui.GOLD
+			elseif bossPhase == "Mail" then
+				local mailEnds = attr("BossMailEndsAt")
+				line.Text = `MAIL IT! Push the box into the giant chute! Bonus x1.5 if it's in within {if typeof(
+						mailEnds
+					) == "number"
+					then clock(mailEnds - now)
+					else "?"}`
+				barBack.Visible = true
+				barFill.Size = UDim2.fromScale(1 - math.clamp(attr("BossMailLeft") or 1, 0, 1), 1)
+				barFill.BackgroundColor3 = Color3.fromRGB(255, 120, 60)
 			else
 				local taped, seams = attr("BossTaped") or 0, attr("BossSeams") or 5
 				line.Text = `BOX IT! Tape together, pet to keep it calm. Seams: {taped}/{seams}`

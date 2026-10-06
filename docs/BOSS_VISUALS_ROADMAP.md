@@ -1,6 +1,6 @@
 # Boss fights: making them look as good as they play
 
-**Status (2026-10-06): Phases 1–5 built**, plus the Phase 6 sound slots (borrowing other sounds until you pick real ones; see `docs/SOUNDS_TO_REPLACE.md`). The optional art (a 3D crown, title cards, portraits) isn't in yet. The crown is still a text tag.
+**Status (2026-10-06): Phases 1–5 built**, plus the Phase 6 sound slots (borrowing other sounds until you pick real ones; see `docs/SOUNDS_TO_REPLACE.md`). The crown is now a real 3D gold crown built from parts, and the boss has its MAIL IT finale (push the sealed box into a giant chute within 60 s for rewards x1.5). The optional art (title cards, portraits) isn't in yet.
 
 The boss fight works: pin it, box it, MEGA VINE BOOM, rewards. It looks plain, though: a scaled-up animal on a flat green island with yellow balls for handles. This roadmap turns it into the moment players screenshot and come back for every hour.
 

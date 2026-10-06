@@ -68,6 +68,11 @@ type Fight = {
 	Ropes: { [Player]: Beam }, -- glowing ropes from a handle to each holder's hand
 	LandsAt: number, -- (os.clock) the boss is still dropping in until then
 	NextKick: number,
+	-- MAIL IT (after it's boxed): push the parcel into the giant chute before MailUntil
+	Chute: Model?,
+	ChuteAt: Vector3,
+	MailUntil: number,
+	MailStart: number, -- the box's distance from the chute when it began
 	BigBox: Model?, -- the giant cardboard box dropped over it in BOX IT
 }
 
@@ -356,7 +361,7 @@ local function giveCrown(player: Player?)
 	end
 end
 
-local function finish(won: boolean)
+local function finish(won: boolean, mailed: boolean?)
 	local f = fight
 	if not f then
 		return
@@ -372,8 +377,22 @@ local function finish(won: boolean)
 	if f.BigBox then
 		f.BigBox:Destroy()
 	end
+	if f.Chute then
+		f.Chute:Destroy()
+	end
 	for _, name in
-		{ "BossPhase", "BossPin", "BossHeld", "BossNeed", "BossTaped", "BossSeams", "BossEndsAt", "BossAnger" }
+		{
+			"BossPhase",
+			"BossPin",
+			"BossHeld",
+			"BossNeed",
+			"BossTaped",
+			"BossSeams",
+			"BossEndsAt",
+			"BossAnger",
+			"BossMailEndsAt",
+			"BossMailLeft",
+		}
 	do
 		Workspace:SetAttribute(name, nil)
 	end
@@ -390,8 +409,10 @@ local function finish(won: boolean)
 		if profile and player.Parent and work > 0 then
 			local share = if top > 0 then work / top else 0
 			if won then
-				local diamonds = math.round(Boss.Diamonds.Min + (Boss.Diamonds.Max - Boss.Diamonds.Min) * share)
-				local coins = math.round(Economy.BestBaseValue(player) * Boss.Jobs * (0.5 + 0.5 * share))
+				local bonus = if mailed then Boss.MailBonus else 1 -- mailed it in time: more!
+				local diamonds =
+					math.round((Boss.Diamonds.Min + (Boss.Diamonds.Max - Boss.Diamonds.Min) * share) * bonus)
+				local coins = math.round(Economy.BestBaseValue(player) * Boss.Jobs * (0.5 + 0.5 * share) * bonus)
 				profile.Diamonds += diamonds
 				profile.BossWins += 1
 				profile.BossKills[f.AnimalId] = (profile.BossKills[f.AnimalId] or 0) + 1
@@ -407,6 +428,7 @@ local function finish(won: boolean)
 					Diamonds = diamonds,
 					Coins = coins,
 					Top = player == topPlayer,
+					Mailed = mailed == true,
 				})
 				Badges.Award(player, "BossHunter")
 			else
@@ -807,6 +829,128 @@ local function launchAll(f: Fight?)
 	Workspace:SetAttribute("BossTaped", nil)
 end
 
+-- MAIL IT: a giant mail chute rises at the north end of the arena. Everyone near the sealed box pushes it
+-- (more pushers, faster); it scoots off sideways now and then. Get it in before the time runs out for a
+-- bonus (and the firework); otherwise it's still boxed, just no bonus.
+local function startMail(f: Fight)
+	f.Phase = "Mail"
+	local boxers = f.Boxers
+	f.Boxers = {}
+	endBox(boxers)
+	f.MailUntil = os.clock() + Boss.MailSeconds
+	Workspace:SetAttribute("BossPhase", "Mail")
+	Workspace:SetAttribute("BossMailEndsAt", os.time() + Boss.MailSeconds)
+
+	-- The chute, rising out of the floor
+	local at = center() + Vector3.new(0, 0, -Boss.ArenaSize / 2 + 12)
+	f.ChuteAt = at
+	local chute = Instance.new("Model")
+	chute.Name = "GiantChute"
+	local function piece(name: string, offset: Vector3, size: Vector3, color: Color3, material: Enum.Material?)
+		local part = Instance.new("Part")
+		part.Name = name
+		part.Anchored = true
+		part.Size = size
+		part.Color = color
+		part.Material = material or Enum.Material.SmoothPlastic
+		part.CFrame = CFrame.new(at + offset - Vector3.new(0, 30, 0))
+		part.Parent = chute
+	end
+	piece("Base", Vector3.new(0, 2, 0), Vector3.new(22, 4, 16), Color3.fromRGB(226, 72, 66))
+	piece("Body", Vector3.new(0, 12, -2), Vector3.new(18, 18, 10), Color3.fromRGB(226, 72, 66))
+	piece("Mouth", Vector3.new(0, 10, 3.1), Vector3.new(14, 9, 0.4), Color3.fromRGB(25, 25, 35))
+	piece("Lip", Vector3.new(0, 15, 3.3), Vector3.new(16, 1.2, 1), Color3.fromRGB(255, 200, 40), Enum.Material.Neon)
+	chute.Parent = arena
+	f.Chute = chute
+	task.spawn(function()
+		for i = 1, 30 do
+			chute:PivotTo(chute:GetPivot() + Vector3.new(0, 1, 0))
+			if i % 6 == 0 then
+				task.wait()
+			end
+		end
+	end)
+	local box = f.BigBox
+	if box then
+		-- The lid slams shut on top
+		local front = box:FindFirstChild("Front") :: BasePart?
+		if front then
+			local lid = Instance.new("Part")
+			lid.Name = "Lid"
+			lid.Anchored = true
+			lid.CanCollide = false
+			lid.Color = Color3.fromRGB(190, 150, 100)
+			lid.Size = Vector3.new(front.Size.X, 1, front.Size.X)
+			lid.CFrame = box:GetPivot() * CFrame.new(0, front.Size.Y / 2 + 0.5, 0)
+			lid.Parent = box
+		end
+		f.MailStart =
+			math.max(1, (Vector3.new(box:GetPivot().X, 0, box:GetPivot().Z) - Vector3.new(at.X, 0, at.Z)).Magnitude)
+	end
+	f.Ball:SetAttribute("Hidden", true) -- (it's in the box)
+	notifyHere("Message", { Speaker = "BOSS", Text = "SEALED! Now MAIL IT: push the box into the giant chute, fast!" })
+end
+
+local function updateMail(f: Fight, dt: number)
+	local box = f.BigBox
+	if not box then
+		finish(true, false)
+		return
+	end
+	local now = os.clock()
+	local pos = box:GetPivot().Position
+	local flatBox = Vector3.new(pos.X, 0, pos.Z)
+	local goal = Vector3.new(f.ChuteAt.X, 0, f.ChuteAt.Z + 4)
+	local toGoal = goal - flatBox
+	Workspace:SetAttribute("BossMailLeft", math.clamp(toGoal.Magnitude / f.MailStart, 0, 1))
+	if toGoal.Magnitude < 4 then
+		-- In it goes! It shoots out of the top of the chute as a firework
+		notifyHere("BossLanded", { At = f.ChuteAt })
+		box:PivotTo(CFrame.new(f.ChuteAt + Vector3.new(0, 12, 0)))
+		f.BigBox = box
+		launchBigBox(f)
+		finish(true, true)
+		return
+	end
+	if now >= f.MailUntil then
+		notifyHere("Message", { Speaker = "Postmaster Gruff", Text = "Too slow for the bonus. It's boxed, at least." })
+		finish(true, false)
+		return
+	end
+	-- Pushers: anyone right up against it
+	local reach = (Boss.Size + 6) / 2 + 7
+	local pushers = 0
+	for _, player in playersHere() do
+		local root = rootOf(player)
+		if root and (stunnedUntil[player] or 0) < now then
+			local flat = Vector3.new(root.Position.X, 0, root.Position.Z)
+			if (flat - flatBox).Magnitude < reach then
+				pushers += 1
+				addWork(player, dt)
+			end
+		end
+	end
+	local step = if pushers > 0
+		then toGoal.Unit * math.min(Boss.MailSpeedPerPusher * pushers, Boss.MailMaxSpeed) * dt
+		else -toGoal.Unit * 0.8 * dt -- it creeps back if nobody's pushing
+	-- Now and then it scoots sideways (you have to chase it)
+	if math.random() < dt / 5 then
+		local side = Vector3.new(-toGoal.Unit.Z, 0, toGoal.Unit.X) * (if math.random() < 0.5 then -6 else 6)
+		step += side
+		Sfx.Play("Bonk", box.PrimaryPart or box:FindFirstChildWhichIsA("BasePart"))
+	end
+	local nextPos = flatBox + step
+	local limit = Boss.ArenaSize / 2 - (Boss.Size + 6) / 2 - 2
+	nextPos = Vector3.new(
+		math.clamp(nextPos.X, Boss.ArenaCenter.X - limit, Boss.ArenaCenter.X + limit),
+		0,
+		math.clamp(nextPos.Z, Boss.ArenaCenter.Z - limit, Boss.ArenaCenter.Z + limit)
+	)
+	local wobble = CFrame.Angles(0, 0, math.sin(now * 8) * 0.03 * math.min(pushers, 3))
+	box:PivotTo(CFrame.new(nextPos.X, pos.Y, nextPos.Z) * wobble)
+	f.Ball.CFrame = CFrame.new(nextPos.X, f.Ball.Position.Y, nextPos.Z)
+end
+
 local function updateBox(f: Fight?, dt: number)
 	if not f then
 		return
@@ -884,8 +1028,7 @@ local function onInput(player: Player, action: unknown, index: unknown)
 				for _, boxer in f.Boxers do
 					Remotes.Notify:FireClient(boxer, "SeamTaped", { Seam = index })
 				end
-				launchBigBox(f)
-				finish(true)
+				startMail(f)
 				return
 			end
 			for _, boxer in f.Boxers do
@@ -1020,6 +1163,9 @@ function BossService.Begin(untilTime: number, _studio: boolean)
 		Ropes = {},
 		LandsAt = os.clock() + 2,
 		NextKick = os.clock() + Boss.KickEvery,
+		ChuteAt = Vector3.zero,
+		MailUntil = 0,
+		MailStart = 1,
 	}
 	for _ = 1, Boss.Handles do
 		-- A golden ring to grab (a short, wide cylinder standing on its edge)
@@ -1081,21 +1227,64 @@ function BossService.Init(map: MapBuilder.Map)
 			return
 		end
 		if player:GetAttribute("BossCrown") == true and not old then
+			-- A real gold crown on their head (built from parts and welded on), plus a small name tag
+			local holder = Instance.new("Folder")
+			holder.Name = "BossCrown"
+			holder.Parent = head
+			local top = (head :: BasePart).CFrame * CFrame.new(0, (head :: BasePart).Size.Y / 2 + 0.3, 0)
+			local gold = Color3.fromRGB(255, 200, 40)
+			local function piece(shape: Enum.PartType, size: Vector3, cframe: CFrame, color: Color3, neon: boolean?)
+				local part = Instance.new("Part")
+				part.Shape = shape
+				part.Size = size
+				part.CFrame = cframe
+				part.Color = color
+				part.Material = if neon then Enum.Material.Neon else Enum.Material.Metal
+				part.CanCollide = false
+				part.CanQuery = false
+				part.CanTouch = false
+				part.Massless = true
+				part.Parent = holder
+				local weld = Instance.new("WeldConstraint")
+				weld.Part0 = head :: BasePart
+				weld.Part1 = part
+				weld.Parent = part
+			end
+			-- The band (a short wide cylinder standing up), five points around the top, and three gems
+			piece(Enum.PartType.Cylinder, Vector3.new(0.55, 1.9, 1.9), top * CFrame.Angles(0, 0, math.rad(90)), gold)
+			for i = 1, 5 do
+				local angle = i / 5 * math.pi * 2
+				piece(
+					Enum.PartType.Block,
+					Vector3.new(0.3, 0.6, 0.3),
+					top * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.5, -0.82) * CFrame.Angles(0, math.rad(45), 0),
+					gold
+				)
+			end
+			for i, color in { Color3.fromRGB(230, 40, 50), Color3.fromRGB(60, 140, 255), Color3.fromRGB(80, 220, 110) } do
+				local angle = (i - 2) * 0.7
+				piece(
+					Enum.PartType.Ball,
+					Vector3.new(0.32, 0.32, 0.32),
+					top * CFrame.Angles(0, angle, 0) * CFrame.new(0, 0.05, -0.95),
+					color,
+					true
+				)
+			end
 			local gui = Instance.new("BillboardGui")
-			gui.Name = "BossCrown"
-			gui.Size = UDim2.fromOffset(120, 34)
-			gui.StudsOffset = Vector3.new(0, 4.2, 0)
-			gui.MaxDistance = 120
+			gui.Size = UDim2.fromOffset(110, 24)
+			gui.StudsOffset = Vector3.new(0, 3.3, 0)
+			gui.MaxDistance = 90
 			local label = Instance.new("TextLabel")
 			label.Size = UDim2.fromScale(1, 1)
 			label.BackgroundTransparency = 1
 			label.Font = Enum.Font.LuckiestGuy
 			label.TextScaled = true
-			label.TextColor3 = Color3.fromRGB(255, 205, 50)
+			label.TextColor3 = gold
 			label.TextStrokeTransparency = 0
-			label.Text = "👑 BOSS HUNTER"
+			label.Text = "BOSS HUNTER"
 			label.Parent = gui
-			gui.Parent = head
+			gui.Parent = holder
 		elseif player:GetAttribute("BossCrown") ~= true and old then
 			old:Destroy()
 		end
@@ -1142,6 +1331,7 @@ function BossService.Init(map: MapBuilder.Map)
 			local left = math.max(0, f.Until - os.time())
 			local status = if f.Phase == "Pin"
 				then `PIN IT!  {math.floor(f.Pin * 100)}%`
+				elseif f.Phase == "Mail" then `MAIL IT!  {math.max(0, math.ceil(f.MailUntil - os.clock()))}s`
 				else `BOX IT!  {Workspace:GetAttribute("BossTaped") or 0} / {SEAMS} SEAMS`
 			BossArena.SetScoreboard(`{f.Name}   {left // 60}:{string.format("%02d", left % 60)}\n{status}`)
 		end
@@ -1153,6 +1343,8 @@ function BossService.Init(map: MapBuilder.Map)
 			finish(false)
 		elseif f.Phase == "Pin" then
 			updatePin(f, dt)
+		elseif f.Phase == "Mail" then
+			updateMail(f, dt)
 		else
 			updateBox(f, dt)
 		end
