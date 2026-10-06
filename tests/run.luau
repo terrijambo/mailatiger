@@ -178,6 +178,42 @@ for key, cell in Config.IconAtlas.Cells do
 end
 check(#Config.IconSheets >= Config.IconAtlas.SheetCount, "IconSheets.luau needs one line per sheet")
 
+section("Shiny and Golden")
+local Variants = Config.Variants
+check(Variants.Roll(0) ~= nil and Variants.Roll(0).Id == "Golden", "the luckiest roll is Golden")
+check(Variants.Roll(0.99) == nil, "most rolls are plain")
+local hits = 0
+for i = 1, 4000 do
+	if Variants.Roll((i - 0.5) / 4000) then
+		hits += 1
+	end
+end
+check(hits > 90 and hits < 125, `about 1 in 36 jobs is special (got {hits} of 4000)`)
+for _, variant in Variants.List do
+	check(variant.PayMult > 1 and variant.XPMult >= 1, `{variant.Id} pays more`)
+end
+
+section("Challenges")
+local Challenges = Config.Challenges
+for _, list in { Challenges.Daily, Challenges.Weekly } do
+	for _, challenge in list do
+		check(Challenges.ById[challenge.Id] == challenge, `challenge {challenge.Id} ById`)
+		check(table.find({ "Box", "Mail", "Order", "Streak", "Troll" }, challenge.Kind) ~= nil, `{challenge.Id} kind {challenge.Kind}`)
+		check(challenge.Count > 0 and challenge.Diamonds > 0, `{challenge.Id} count and reward`)
+		check(not string.find(Challenges.Text(challenge), "{", 1, true), `{challenge.Id} text keeps a placeholder`)
+	end
+end
+local easy = 0
+for _, challenge in Challenges.Daily do
+	if not challenge.MinLevel and not challenge.NeedsTroll then
+		easy += 1
+	end
+end
+check(easy >= Challenges.DailyCount, "a brand-new player can always get a full set of dailies")
+check(Challenges.Week(4 * 86400) == Challenges.Week(10 * 86400) and Challenges.Week(10 * 86400) ~= Challenges.Week(11 * 86400), "weeks start on Monday")
+local streak = Config.Progression.Streak
+check(streak.Max > 1 and streak.PerStep > 0, "the delivery streak pays more")
+
 section("Diamonds")
 local Diamonds = Config.Diamonds
 for _, upgrade in Diamonds.List do

@@ -26,6 +26,8 @@ return {
 	IconAtlas = require(script.IconAtlas),
 	IconSheets = require(script.IconSheets),
 	Diamonds = require(script.Diamonds),
+	Variants = require(script.Variants),
+	Challenges = require(script.Challenges),
 
 	Dev = {
 		-- In Roblox Studio every animal is free, so you can test any of them right away.

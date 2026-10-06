@@ -15,6 +15,7 @@ local Analytics = require(script.Parent.Analytics)
 local BoxingService = require(script.Parent.BoxingService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local ChallengeService = require(script.Parent.ChallengeService)
 local Remotes = require(script.Parent.Remotes)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
 
@@ -228,6 +229,7 @@ local function use(player: Player, trollId: unknown)
 	effect(player, root, troll)
 	Sfx.Play(`Troll_{trollId}`, root.Position)
 	Analytics.Custom(player, `Troll_{trollId}`)
+	ChallengeService.Track(player, "Troll", {})
 end
 
 -- Buying (from ShopService, "BuyTroll")

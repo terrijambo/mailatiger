@@ -12,7 +12,7 @@ local Levels = {
 	end,
 
 	-- XP for each parcel you mail = MailXPPerTier x the animal's tier x the star multiplier
-	MailXPPerTier = 12,
+	MailXPPerTier = 15,
 	StarXPMult = { 0.5, 0.75, 1, 1.25, 1.6 }, -- for 1..5 stars
 	-- First time you ever mail an animal: this x its tier
 	NewSpeciesXP = 40,

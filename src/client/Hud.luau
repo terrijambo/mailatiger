@@ -87,6 +87,33 @@ function Hud.Start()
 	local boostRow, boostLabel = statRow(stack, 1, "Hud_Boost", BOOST_ORANGE)
 	local _, bagLabel = statRow(stack, 2, "Hud_Bag", BAG_TAN)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
+
+	-- Delivery streak: a flame next to your coins ("🔥x5") that pops each time it grows
+	local streakLabel = Ui.outlined(coinRow, {
+		Position = UDim2.fromOffset(178, 2),
+		Size = UDim2.fromOffset(120, 40),
+		TextSize = 30,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(255, 150, 40),
+		Text = "",
+		Visible = false,
+		ZIndex = 3,
+	})
+	local streakPop = Ui.make("UIScale", { Scale = 1 }, streakLabel)
+	local function refreshStreak()
+		local count = player:GetAttribute("Streak")
+		local show = typeof(count) == "number" and count >= 2
+		streakLabel.Visible = show
+		if show then
+			streakLabel.Text = `🔥x{count}`
+			streakPop.Scale = 1.5
+			TweenService:Create(streakPop, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Scale = 1,
+			}):Play()
+		end
+	end
+	player:GetAttributeChangedSignal("Streak"):Connect(refreshStreak)
+	refreshStreak()
 	-- Diamonds (tap to open Diamond Upgrades)
 	local diamondRow, diamondLabel = statRow(stack, 4, "Hud_Diamonds", DIAMOND_BLUE)
 	diamondRow.Size = UDim2.fromOffset(260, 38)
@@ -298,6 +325,11 @@ function Hud.Start()
 		if player:GetAttribute("InGroup") then
 			mult *= money.GroupPayoutMult
 		end
+		local friends = player:GetAttribute("FriendsHere")
+		if typeof(friends) == "number" and friends > 0 then
+			local tuning = Config.Social.Friends
+			mult *= 1 + tuning.BonusPerFriend * math.min(friends, tuning.MaxFriends)
+		end
 		boostRow.Visible = mult > 1.001
 		boostLabel.Text = `+{math.round((mult - 1) * 100)}% coins`
 
@@ -316,7 +348,7 @@ function Hud.Start()
 		status.TextColor3 = if player:GetAttribute("Chaos") then Color3.fromRGB(255, 130, 120) else Ui.WHITE
 	end
 	Profile.Watch(refreshStatus)
-	for _, attribute in { "Chaos", "Premium", "InGroup" } do
+	for _, attribute in { "Chaos", "Premium", "InGroup", "FriendsHere" } do
 		player:GetAttributeChangedSignal(attribute):Connect(refreshStatus)
 	end
 
@@ -659,10 +691,14 @@ function Hud.Start()
 		elseif kind == "Parcel" then
 			-- A taped box went into your bag
 			local stamp = if data.Stamp then `   {data.Stamp}` else ""
+			local variant = if data.Variant then Config.Variants.ById[data.Variant] else nil
+			local streak = if data.Streak and data.Streak > 1.001
+				then `   🔥 streak x{math.floor(data.Streak * 100 + 0.5) / 100}`
+				else ""
 			showToast(
-				`📦 Taped! {data.Animal} is in your bag ({data.Count}/{data.Capacity})`,
+				`📦 Taped! {if variant then variant.Emoji .. " " .. variant.DisplayName .. " " else ""}{data.Animal} is in your bag ({data.Count}/{data.Capacity})`,
 				`Carry it to the Mail Chute in town and {Ui.hint("hold E", "hold X", "hold the Mail button")} to mail it.`,
-				`worth {Format.Short(data.Coins)} coins{stamp}`,
+				`worth {Format.Short(data.Coins)} coins{stamp}{streak}`,
 				data.Stars,
 				Ui.GREEN
 			)
@@ -747,6 +783,52 @@ function Hud.Start()
 				`+{Format.Short(data.XP)} XP   +{Format.Short(data.Coins)} coins   +{data.Diamonds or 0} 💎`,
 				nil,
 				Ui.GREEN
+			)
+		elseif kind == "VariantFound" then
+			local variant = Config.Variants.ById[data.Variant]
+			if variant then
+				showToast(
+					`{variant.Emoji} A {string.upper(variant.DisplayName)} {data.Animal}!`,
+					`Rare find! It pays {data.PayMult}x coins and extra XP. Don't let it get away!`,
+					nil,
+					nil,
+					variant.Color
+				)
+			end
+		elseif kind == "VariantBoxed" then
+			local variant = Config.Variants.ById[data.Variant]
+			if variant and data.Player ~= player.DisplayName then
+				showToast(
+					`{variant.Emoji} {string.upper(variant.DisplayName)}!`,
+					`{data.Player} just boxed a {variant.DisplayName} {data.Animal}!`,
+					nil,
+					nil,
+					variant.Color
+				)
+			end
+		elseif kind == "StreakLost" then
+			showToast(
+				`💔 Streak lost (x{data.Count})`,
+				`Your delivery streak ended ({data.Why}). Box with 4+ stamps to build it back up!`,
+				nil,
+				nil,
+				Ui.RED
+			)
+		elseif kind == "ChallengeDone" then
+			showToast(
+				`✅ {if data.Weekly then "Weekly" else "Daily"} challenge done!`,
+				data.Text,
+				`+{data.Diamonds} 💎   +{Format.Short(data.Coins)} coins`,
+				nil,
+				Ui.GREEN
+			)
+		elseif kind == "AllDailies" then
+			showToast(
+				"🏆 All daily challenges done!",
+				`{data.Streak} day{if data.Streak == 1 then "" else "s"} in a row. Come back tomorrow to grow the bonus!`,
+				`+{data.Diamonds} 💎`,
+				nil,
+				Ui.GOLD
 			)
 		elseif kind == "NewSpecies" then
 			showToast(

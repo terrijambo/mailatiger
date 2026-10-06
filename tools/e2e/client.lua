@@ -615,6 +615,10 @@ local function run()
 	log(player:GetAttribute("MusicOff") == true, "music-off setting reached the music player")
 
 	log(true, "events seen: " .. HttpService:JSONEncode(events))
+	local challenges = profile().Challenges
+	log(challenges ~= nil and #challenges.Daily == 3 and #challenges.Weekly == 1, "3 daily + 1 weekly challenge picked")
+	log((events.VariantFound or 0) >= 1, "the lucky 3rd job was a Shiny")
+	log(gui:FindFirstChild("OrdersBoard") ~= nil, "orders and challenges board exists")
 	log(frames / frameTime > 30, string.format("average %.0f FPS, %d hitches over 0.1 s", frames / frameTime, hitches))
 end
 

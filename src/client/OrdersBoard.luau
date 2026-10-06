@@ -25,7 +25,7 @@ local CONDITION_TEXT = {
 
 function OrdersBoard.Start()
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
-	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "OrdersBoard", "Gruff's Orders", Ui.PURPLE)
+	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "OrdersBoard", "Orders & Challenges", Ui.PURPLE)
 
 	local list = Ui.make("ScrollingFrame", {
 		Position = UDim2.fromOffset(20, 62),
@@ -98,8 +98,82 @@ function OrdersBoard.Start()
 			TextWrapped = true,
 		})
 
+		-- Daily and weekly challenges
+		local state = profile.Challenges
+		if state then
+			local secondsLeft = 86400 - os.time() % 86400
+			Ui.label(list, {
+				LayoutOrder = 1,
+				Size = UDim2.new(1, 0, 0, 24),
+				Font = Ui.TITLE_FONT,
+				TextSize = 20,
+				TextColor3 = Ui.BROWN,
+				Text = `DAILY CHALLENGES  (new ones in {secondsLeft // 3600}h {secondsLeft % 3600 // 60}m)`,
+			})
+			local order = 1
+			local function challengeCard(entry: { Id: string, Progress: number, Done: boolean }, weekly: boolean)
+				local challenge = Config.Challenges.ById[entry.Id]
+				if not challenge then
+					return
+				end
+				order += 1
+				local card = Ui.card(list, {
+					LayoutOrder = order,
+					Size = UDim2.new(1, 0, 0, 56),
+					BackgroundColor3 = if entry.Done
+						then Color3.fromRGB(220, 245, 220)
+						elseif weekly then Color3.fromRGB(225, 235, 255)
+						else Ui.WHITE,
+				})
+				Ui.label(card, {
+					Position = UDim2.fromOffset(12, 4),
+					Size = UDim2.new(1, -170, 0, 24),
+					TextSize = 18,
+					Text = (if weekly then "WEEKLY: " else "") .. Config.Challenges.Text(challenge),
+				})
+				local back = Ui.make("Frame", {
+					Position = UDim2.fromOffset(12, 32),
+					Size = UDim2.new(1, -170, 0, 14),
+					BackgroundColor3 = Color3.fromRGB(200, 195, 185),
+				}, card)
+				Ui.round(back, 7)
+				local fill = Ui.make("Frame", {
+					Size = UDim2.fromScale(math.clamp(entry.Progress / challenge.Count, 0, 1), 1),
+					BackgroundColor3 = if entry.Done then Ui.GREEN else Color3.fromRGB(60, 170, 235),
+				}, back)
+				Ui.round(fill, 7)
+				Ui.label(card, {
+					AnchorPoint = Vector2.new(1, 0.5),
+					Position = UDim2.new(1, -12, 0.5, 0),
+					Size = UDim2.fromOffset(150, 40),
+					TextSize = 18,
+					TextXAlignment = Enum.TextXAlignment.Right,
+					TextColor3 = if entry.Done then Ui.GREEN else Ui.BROWN,
+					Text = if entry.Done
+						then "DONE ✓"
+						else `{entry.Progress}/{challenge.Count}   +{challenge.Diamonds} 💎`,
+				})
+			end
+			for _, entry in state.Daily do
+				challengeCard(entry, false)
+			end
+			for _, entry in state.Weekly do
+				challengeCard(entry, true)
+			end
+			if state.Streak > 0 then
+				order += 1
+				Ui.label(list, {
+					LayoutOrder = order,
+					Size = UDim2.new(1, 0, 0, 20),
+					TextSize = 15,
+					TextColor3 = Color3.fromRGB(110, 100, 90),
+					Text = `🔥 All dailies done {state.Streak} day{if state.Streak == 1 then "" else "s"} in a row: the bonus grows each day (up to {Config.Challenges.MaxStreak}).`,
+				})
+			end
+		end
+
 		Ui.label(list, {
-			LayoutOrder = 1,
+			LayoutOrder = 20,
 			Size = UDim2.new(1, 0, 0, 24),
 			Font = Ui.TITLE_FONT,
 			TextSize = 20,
@@ -109,7 +183,7 @@ function OrdersBoard.Start()
 		for index, order in profile.Orders do
 			local animal = Config.Animals.ById[order.AnimalId]
 			local frame = Ui.card(list, {
-				LayoutOrder = index + 1,
+				LayoutOrder = 20 + index,
 				Size = UDim2.new(1, 0, 0, 64),
 				BackgroundColor3 = if order.Done then Color3.fromRGB(220, 245, 220) else Ui.WHITE,
 			})

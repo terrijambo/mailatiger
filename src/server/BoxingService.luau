@@ -28,6 +28,7 @@ local CatchAI = require(script.Parent.CatchAI)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
+local ChallengeService = require(script.Parent.ChallengeService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local MailService = require(script.Parent.MailService)
@@ -37,6 +38,7 @@ local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Remotes = require(script.Parent.Remotes)
 local StampsConfig = require(ReplicatedStorage.Shared.Config.Stamps)
+local StreakService = require(script.Parent.StreakService)
 local Travel = require(script.Parent.Travel)
 local Types = require(script.Parent.Types)
 
@@ -449,6 +451,7 @@ local function startBox(s: Session)
 			SeamCount = seamCount,
 			BoxId = s.BoxId,
 			Role = s.Roles[member] or "Both",
+			Variant = s.Variant,
 		})
 	end
 	syncBox(s)
@@ -535,6 +538,7 @@ local function launch(s: Session)
 		end
 		notify(member, "Launch", { Velocity = velocity, Seconds = cfg.RagdollSeconds })
 		stun(member, cfg.RagdollSeconds)
+		StreakService.Break(member, "getting launched")
 	end
 	escape(s, "Launch")
 end
@@ -574,6 +578,10 @@ local function finishJob(s: Session)
 	if s.Chaos then
 		mult *= Social.Chaos.PayoutMult
 	end
+	local variant = if s.Variant then Config.Variants.ById[s.Variant] else nil
+	if variant then
+		mult *= variant.PayMult
+	end
 
 	-- The taped box shrinks into the owner's arms
 	local model = s.BoxModel
@@ -606,7 +614,10 @@ local function finishJob(s: Session)
 	endSession(s)
 	local label = if stamp then stamp.DisplayName elseif s.Chaos then "CHAOS" else nil
 	for _, member in members do
-		local coins = math.max(1, math.round(animal.BaseValue * mult * Economy.PayoutMult(member) + s.Bonus))
+		-- The delivery streak (a good box in a row pays more)
+		local streakMult = StreakService.OnBox(member, stars)
+		local coins =
+			math.max(1, math.round(animal.BaseValue * mult * streakMult * Economy.PayoutMult(member) + s.Bonus))
 		Analytics.Onboarding(member, "Taped")
 		MailService.AddParcel(member, {
 			AnimalId = s.AnimalId,
@@ -616,15 +627,27 @@ local function finishJob(s: Session)
 			Escapes = s.Escapes,
 			UnderPar = underPar,
 			Stamp = label,
+			Variant = s.Variant,
 		})
+		ChallengeService.Track(member, "Box", { Stars = stars, Seconds = seconds, Chaos = s.Chaos })
 		notify(member, "BoxDone", {})
 		notify(member, "Parcel", {
 			Animal = animal.DisplayName,
 			Stars = stars,
 			Coins = coins,
 			Stamp = label,
+			Variant = s.Variant,
+			Streak = streakMult,
 			Count = MailService.Count(member),
 			Capacity = MailService.Capacity(member),
+		})
+	end
+	-- Everyone in the server hears about a Shiny or Golden
+	if variant then
+		Remotes.Notify:FireAllClients("VariantBoxed", {
+			Player = s.Player.DisplayName,
+			Animal = animal.DisplayName,
+			Variant = variant.Id,
 		})
 	end
 end
@@ -635,6 +658,7 @@ local function cancel(s: Session)
 	endSession(s)
 	for _, member in members do
 		notify(member, "BoxDone", {})
+		StreakService.Break(member, "quitting a job")
 	end
 end
 
@@ -950,6 +974,15 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 		Economy.Sync(player)
 	end
 
+	-- Shiny or Golden? (Your LuckyJob-th job ever is always at least Shiny. Events can raise the odds
+	-- with the Workspace attribute VariantLuck.)
+	local luck = Workspace:GetAttribute("VariantLuck")
+	local variant = Config.Variants.Roll(math.random(), if typeof(luck) == "number" then luck else 1)
+	local jobsSoFar = profile.Mailed + #profile.Parcels
+	if not variant and jobsSoFar == Config.Variants.LuckyJob - 1 and next(profile.Shinies) == nil then
+		variant = Config.Variants.ById.Shiny
+	end
+
 	local arenaId = Config.Arenas.ByTier[animal.Tier].Id
 	local s: Session = {
 		Player = player,
@@ -965,6 +998,7 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 		AngryTouches = 0,
 		MaxAnger = 0,
 		Bonus = 0,
+		Variant = if variant then variant.Id else nil,
 		BoxId = profile.EquippedBox,
 		StampId = stampId,
 		GrabHoldMult = 1 - Economy.ToolBonus(player, "Gloves"),
@@ -978,6 +1012,13 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 	startCatch(s, nil)
 	if stampId then
 		say(player, "Stamp", `{Config.Stamps.ById[stampId].DisplayName} stamp applied to this job!`)
+	end
+	if variant then
+		notify(player, "VariantFound", {
+			Animal = animal.DisplayName,
+			Variant = variant.Id,
+			PayMult = variant.PayMult,
+		})
 	end
 	if s.Chaos then
 		say(

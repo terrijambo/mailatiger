@@ -1,8 +1,8 @@
 --!strict
 -- The three leaderboards in town:
---   FastestTiger  quickest tiger job (seconds, lower is better)
---   FiveStamps    most 5-stamp jobs
---   Rarest        rarest animal ever mailed
+--   FastestTiger  quickest tiger job (seconds, lower is better), all time
+--   FiveStamps    most 5-stamp jobs THIS WEEK (a fresh board every Monday, so new players can place)
+--   Rarest        most Golden animals mailed, all time (the board's id is older than its job)
 -- Scores are stored in OrderedDataStores (global across all servers) and the boards refresh every minute.
 -- If DataStores are off (Studio without API access), the boards rank just the players in this server.
 
@@ -22,6 +22,8 @@ type Board = {
 	Id: string,
 	Title: string,
 	Ascending: boolean, -- true = smaller is better
+	Weekly: boolean?, -- a new board every week (Monday, UTC)
+	StoreKey: string?, -- the saved board's name, when it differs from Id
 	Score: (Profile) -> number, -- 0 = no score yet
 	Format: (number) -> string,
 }
@@ -40,10 +42,12 @@ local BOARDS: { Board } = {
 	},
 	{
 		Id = "FiveStamps",
-		Title = "MOST 5-STAMP JOBS",
+		Title = "5-STAMP JOBS THIS WEEK",
 		Ascending = false,
+		Weekly = true,
 		Score = function(profile: Profile)
-			return profile.FiveStampJobs
+			local stats = profile.WeekStats
+			return if stats.Week == Config.Challenges.Week(os.time()) then stats.FiveStamps else 0
 		end,
 		Format = function(value: number)
 			return `{value} jobs`
@@ -51,14 +55,14 @@ local BOARDS: { Board } = {
 	},
 	{
 		Id = "Rarest",
-		Title = "RAREST ANIMAL MAILED",
+		Title = "🌟 GOLDEN ANIMALS",
+		StoreKey = "Golden", -- (a fresh store: the old Rarest scores meant something else)
 		Ascending = false,
 		Score = function(profile: Profile)
-			return profile.RarestIndex
+			return profile.GoldenMailed
 		end,
 		Format = function(value: number)
-			local animal = Config.Animals.List[value]
-			return if animal then animal.DisplayName else "?"
+			return `{value} golden`
 		end,
 	},
 }
@@ -69,6 +73,28 @@ local LeaderboardService = {}
 
 local map: MapBuilder.Map
 local stores: { [string]: OrderedDataStore } = {}
+local online = false
+
+-- The store for a board (weekly boards get a new store each week)
+local function storeFor(board: Board): OrderedDataStore?
+	if not online then
+		return nil
+	end
+	local name = `Leaderboard_{board.StoreKey or board.Id}_{Tuning.StoreVersion}`
+	if board.Weekly then
+		name ..= `_W{Config.Challenges.Week(os.time())}`
+	end
+	local store = stores[name]
+	if not store then
+		local ok, result = pcall(DataStoreService.GetOrderedDataStore, DataStoreService, name)
+		if ok then
+			store = result
+			stores[name] = result
+		end
+	end
+	return store
+end
+
 local nameCache: { [number]: string } = {}
 
 local function nameFor(userId: number): string
@@ -89,7 +115,7 @@ local function upload(player: Player)
 		return
 	end
 	for _, board in BOARDS do
-		local store = stores[board.Id]
+		local store = storeFor(board)
 		local score = board.Score(profile)
 		if store and score > 0 then
 			local ok, err = pcall(store.SetAsync, store, tostring(player.UserId), score)
@@ -102,7 +128,7 @@ end
 
 local function fetch(board: Board): { Entry }
 	local entries: { Entry } = {}
-	local store = stores[board.Id]
+	local store = storeFor(board)
 	if store then
 		local ok, pages = pcall(store.GetSortedAsync, store, board.Ascending, Tuning.Size, 1)
 		if ok then
@@ -144,7 +170,7 @@ local function draw(board: Board, entries: { Entry })
 	gui.CanvasSize = Vector2.new(360, 440)
 	gui.LightInfluence = 0
 
-	local lines = { board.Title, if next(stores) then "(all servers)" else "(this server only)", "" }
+	local lines = { board.Title, if online then "(all servers)" else "(this server only)", "" }
 	for rank, entry in entries do
 		table.insert(lines, `{rank}. {entry.Name}   {board.Format(entry.Value)}`)
 	end
@@ -172,7 +198,7 @@ end
 
 -- Call after a job is mailed. Jobs take a while, so uploading each time stays well inside DataStore limits.
 function LeaderboardService.Submit(player: Player)
-	if next(stores) then
+	if online then
 		task.spawn(upload, player)
 	else
 		task.defer(refreshAll) -- offline boards: just redraw from this server's players
@@ -182,18 +208,7 @@ end
 function LeaderboardService.Start(builtMap: MapBuilder.Map)
 	map = builtMap
 
-	if DataService.IsOnline() then
-		for _, board in BOARDS do
-			local ok, store = pcall(
-				DataStoreService.GetOrderedDataStore,
-				DataStoreService,
-				`Leaderboard_{board.Id}_{Tuning.StoreVersion}`
-			)
-			if ok then
-				stores[board.Id] = store
-			end
-		end
-	end
+	online = DataService.IsOnline()
 
 	task.spawn(function()
 		while true do

@@ -14,6 +14,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
+local ChallengeService = require(script.Parent.ChallengeService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local LeaderboardService = require(script.Parent.LeaderboardService)
@@ -193,7 +194,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 
 	local total, orderBonus, best = 0, 0, 1
 	local lines = {}
-	local progress: { { AnimalId: string, Stars: number, Orders: number } } = {} -- XP and quests, after paying
+	local progress: { { AnimalId: string, Stars: number, Orders: number, Variant: string? } } = {} -- XP and quests, after paying
 	for _, parcel in profile.Parcels do
 		local pay = math.max(1, math.round(parcel.Coins * chute.PayMult))
 		total += pay
@@ -203,11 +204,26 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 			UnderPar = parcel.UnderPar,
 		})
 		orderBonus += bonus
-		table.insert(progress, { AnimalId = parcel.AnimalId, Stars = parcel.Stars, Orders = completed })
-		-- Leaderboard stats
+		table.insert(
+			progress,
+			{ AnimalId = parcel.AnimalId, Stars = parcel.Stars, Orders = completed, Variant = parcel.Variant }
+		)
+		-- Leaderboard stats (the 5-stamp board counts this week only)
 		profile.Mailed += 1
+		local week = Config.Challenges.Week(os.time())
+		if profile.WeekStats.Week ~= week then
+			profile.WeekStats = { Week = week, FiveStamps = 0 }
+		end
 		if parcel.Stars == 5 then
 			profile.FiveStampJobs += 1
+			profile.WeekStats.FiveStamps += 1
+		end
+		-- Shiny and Golden collection
+		if parcel.Variant == "Shiny" then
+			profile.Shinies[parcel.AnimalId] = (profile.Shinies[parcel.AnimalId] or 0) + 1
+		elseif parcel.Variant == "Golden" then
+			profile.Goldens[parcel.AnimalId] = (profile.Goldens[parcel.AnimalId] or 0) + 1
+			profile.GoldenMailed += 1
 		end
 		if
 			parcel.AnimalId == "Tiger"
@@ -234,7 +250,9 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		end
 
 		local animal = Config.Animals.ById[parcel.AnimalId]
-		local name = if animal then animal.DisplayName else parcel.AnimalId
+		local variant = if parcel.Variant then Config.Variants.ById[parcel.Variant] else nil
+		local name = (if variant then variant.Emoji .. " " else "")
+			.. (if animal then animal.DisplayName else parcel.AnimalId)
 		table.insert(lines, `{name} {string.rep("★", parcel.Stars)} +{Format.Short(pay)}`)
 	end
 
@@ -244,9 +262,11 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	-- XP, the collection and quests, once the coins have landed
 	task.defer(function()
 		for _, entry in progress do
-			ProgressionService.OnParcelMailed(player, entry.AnimalId, entry.Stars)
+			ProgressionService.OnParcelMailed(player, entry.AnimalId, entry.Stars, entry.Variant)
+			ChallengeService.Track(player, "Mail", { Variant = entry.Variant })
 			for _ = 1, entry.Orders do
 				ProgressionService.OnOrderDone(player, entry.AnimalId)
+				ChallengeService.Track(player, "Order", {})
 			end
 		end
 	end)

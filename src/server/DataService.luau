@@ -34,6 +34,17 @@ export type Parcel = {
 	Escapes: number,
 	UnderPar: boolean,
 	Stamp: string?, -- stamp or CHAOS label, shown on the receipt
+	Variant: string?, -- "Shiny" or "Golden" (Config/Variants.luau)
+}
+
+export type ChallengeProgress = { Id: string, Progress: number, Done: boolean }
+export type ChallengeState = {
+	Day: number, -- the day (UTC) the dailies were picked
+	Daily: { ChallengeProgress },
+	Week: number,
+	Weekly: { ChallengeProgress },
+	Streak: number, -- days in a row with all dailies done
+	LastAllDay: number, -- the last day all dailies were done
 }
 
 export type Profile = {
@@ -71,6 +82,13 @@ export type Profile = {
 	-- Diamonds (kept through rebirths)
 	Diamonds: number,
 	Upgrades: { [string]: number }, -- diamond upgrade id -> level (Config/Diamonds.luau)
+	-- Shiny and Golden animals mailed, by animal id (the collection), and the all-time Golden count
+	Shinies: { [string]: number },
+	Goldens: { [string]: number },
+	GoldenMailed: number,
+	Challenges: ChallengeState,
+	-- This week's leaderboard stats (reset when a new week starts)
+	WeekStats: { Week: number, FiveStamps: number },
 }
 
 local DataService = {}
@@ -119,6 +137,11 @@ local function newProfile(): Profile
 		Trolls = {},
 		Diamonds = 0,
 		Upgrades = {},
+		Shinies = {},
+		Goldens = {},
+		GoldenMailed = 0,
+		Challenges = { Day = 0, Daily = {}, Week = 0, Weekly = {}, Streak = 0, LastAllDay = 0 },
+		WeekStats = { Week = 0, FiveStamps = 0 },
 	}
 end
 

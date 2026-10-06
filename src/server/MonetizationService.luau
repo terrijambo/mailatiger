@@ -202,6 +202,33 @@ local function checkPerks(player: Player)
 	end
 end
 
+-- Friends in this server (for the friend coin bonus, see Economy.PayoutMult): sets "FriendsHere" on everyone
+local friendCache: { [string]: boolean } = {}
+local function areFriends(a: Player, b: Player): boolean
+	local key = if a.UserId < b.UserId then `{a.UserId}_{b.UserId}` else `{b.UserId}_{a.UserId}`
+	local known = friendCache[key]
+	if known == nil then
+		local ok, result = pcall(a.IsFriendsWithAsync, a, b.UserId)
+		known = ok and result == true
+		friendCache[key] = known
+	end
+	return known
+end
+local function countFriends()
+	local everyone = Players:GetPlayers()
+	for _, player in everyone do
+		local count = 0
+		for _, other in everyone do
+			if other ~= player and other.Parent and areFriends(player, other) then
+				count += 1
+			end
+		end
+		if player.Parent then
+			player:SetAttribute("FriendsHere", count)
+		end
+	end
+end
+
 local function watchPlayer(player: Player)
 	task.spawn(checkPerks, player)
 	player.CharacterAdded:Connect(function(character)
@@ -216,6 +243,13 @@ local function watchPlayer(player: Player)
 end
 
 function MonetizationService.Start()
+	Players.PlayerAdded:Connect(function()
+		task.defer(countFriends)
+	end)
+	Players.PlayerRemoving:Connect(function()
+		task.defer(countFriends)
+	end)
+	task.defer(countFriends)
 	MarketplaceService.ProcessReceipt = processReceipt
 	Players.PlayerMembershipChanged:Connect(checkPerks) -- bought Premium mid-game
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, passId: number, bought: boolean)

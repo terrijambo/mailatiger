@@ -15,6 +15,15 @@ return {
 		MaxStreak = 7,
 	},
 
+	-- Delivery streak: every box finished with MinStars or more in a row raises your streak, and each step
+	-- up adds PerStep to that job's pay (x1, x1.125, x1.25 ... up to Max). A worse box, a launch or quitting a
+	-- job resets it. Kept only while you're in the server.
+	Streak = {
+		MinStars = 4,
+		PerStep = 0.125,
+		Max = 2,
+	},
+
 	Orders = {
 		Count = 3,
 		RefreshMinutes = 10,

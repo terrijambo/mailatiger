@@ -37,6 +37,16 @@ export type Data = {
 	Trolls: { [string]: boolean },
 	Diamonds: number,
 	Upgrades: { [string]: number },
+	Shinies: { [string]: number }?,
+	Goldens: { [string]: number }?,
+	Challenges: {
+		Day: number,
+		Daily: { { Id: string, Progress: number, Done: boolean } },
+		Week: number,
+		Weekly: { { Id: string, Progress: number, Done: boolean } },
+		Streak: number,
+		LastAllDay: number,
+	}?,
 }
 
 local EMPTY: Data = {

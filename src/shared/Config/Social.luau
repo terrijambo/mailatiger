@@ -28,4 +28,10 @@ return {
 		-- Tiger times faster than this are ignored (nobody catches AND boxes a tiger that fast, so it's a cheat)
 		MinTigerSeconds = 5,
 	},
+
+	-- Playing in the same server as your Roblox friends: +10% coins per friend, up to 3 friends (+30%)
+	Friends = {
+		BonusPerFriend = 0.1,
+		MaxFriends = 3,
+	},
 }

@@ -23,15 +23,15 @@ local List: { Animal } = {
 		DisplayName = "Hamster",
 		Tier = 1,
 		Price = 0,
-		BaseValue = 5,
+		BaseValue = 8,
 		Carriers = 1,
 	},
 	{
 		Id = "Bunny",
 		DisplayName = "Bunny",
 		Tier = 1,
-		Price = 50,
-		BaseValue = 10,
+		Price = 40,
+		BaseValue = 12,
 		Carriers = 1,
 	},
 	{
@@ -39,7 +39,7 @@ local List: { Animal } = {
 		DisplayName = "Goldfish",
 		Tier = 1,
 		Price = 120,
-		BaseValue = 18,
+		BaseValue = 20,
 		Carriers = 1,
 	},
 	{

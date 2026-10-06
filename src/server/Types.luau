@@ -36,6 +36,7 @@ export type Session = {
 	AngryTouches: number, -- how often you rubbed an angry spot
 	MaxAnger: number,
 	Bonus: number,
+	Variant: string?, -- "Shiny" or "Golden" (rolled when the job starts)
 
 	-- Locked in when the job starts, from the player's gear
 	BoxId: string, -- equipped box

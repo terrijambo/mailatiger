@@ -11,7 +11,11 @@ export type Badge = {
 
 local badges: { [string]: Badge } = {
 	FirstDelivery = { Id = 1129895110676226, DisplayName = "First Delivery", Description = "Mailed your first animal." },
-	TigerMailed = { Id = 3184538417839974, DisplayName = "Mail a Tiger", Description = "You actually did it. You mailed a tiger." },
+	TigerMailed = {
+		Id = 3184538417839974,
+		DisplayName = "Mail a Tiger",
+		Description = "You actually did it. You mailed a tiger.",
+	},
 	ReturnToSender = {
 		Id = 2526709665761261,
 		DisplayName = "RETURN TO SENDER",
@@ -22,7 +26,11 @@ local badges: { [string]: Badge } = {
 		DisplayName = "Five Stamps",
 		Description = "A perfect 5-stamp job. Gruff said 'acceptable'.",
 	},
-	SpecialDelivery = { Id = 3245484368836474, DisplayName = "Special Delivery", Description = "Mailed Postmaster Gruff himself." },
+	SpecialDelivery = {
+		Id = 3245484368836474,
+		DisplayName = "Special Delivery",
+		Description = "Mailed Postmaster Gruff himself.",
+	},
 	ChaosCourier = { Id = 0, DisplayName = "Chaos Courier", Description = "Mailed an animal in Chaos Mode." },
 	Reborn = { Id = 0, DisplayName = "Reborn", Description = "Rebirthed for a permanent coin bonus." },
 }

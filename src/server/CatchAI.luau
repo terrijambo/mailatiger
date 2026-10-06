@@ -313,8 +313,15 @@ function CatchAI.Spawn(s: Session, at: Vector3?)
 	critter.CanCollide = false
 	critter:SetAttribute("AnimalId", s.AnimalId)
 	critter:SetAttribute("OwnerId", s.Player.UserId) -- the tutorial arrow points at your own animal
+	critter:SetAttribute("Variant", s.Variant) -- Shiny or Golden: the client makes it sparkle or turn gold
 	CollectionService:AddTag(critter, "Critter")
-	MapBuilder.Label(critter, `{s.Player.DisplayName}'s {animal.DisplayName}`, radius + 1.5)
+	local variant = if s.Variant then Config.Variants.ById[s.Variant] else nil
+	MapBuilder.Label(
+		critter,
+		`{s.Player.DisplayName}'s {if variant then variant.Emoji .. " " .. variant.DisplayName .. " " else ""}{animal.DisplayName}`,
+		radius + 1.5,
+		if variant then variant.Color else nil
+	)
 
 	-- One prompt for everyone: the owner/crew grab it, others can join a giant's crew or spook a Chaos animal
 	local prompt = Instance.new("ProximityPrompt")

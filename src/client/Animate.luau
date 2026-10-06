@@ -70,6 +70,33 @@ local function addCritter(ball: Instance)
 	end
 	model.Name = `{animalId}Art`
 	ball.LocalTransparencyModifier = 1
+	-- Shiny: a glowing outline and sparkles. Golden: solid shiny gold, with gold sparkles and a glow.
+	local variant = ball:GetAttribute("Variant")
+	if variant == "Golden" then
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.Color = Color3.fromRGB(255, 200, 40):Lerp(p.Color, 0.2)
+				p.Material = Enum.Material.Foil
+			end
+		end
+		local glow = Instance.new("PointLight")
+		glow.Color = Color3.fromRGB(255, 210, 80)
+		glow.Range = 14
+		glow.Brightness = 2
+		glow.Parent = ball
+		local sparkles = Instance.new("Sparkles")
+		sparkles.SparkleColor = Color3.fromRGB(255, 220, 90)
+		sparkles.Parent = ball
+	elseif variant == "Shiny" then
+		local outline = Instance.new("Highlight")
+		outline.FillColor = Color3.fromRGB(140, 230, 255)
+		outline.FillTransparency = 0.75
+		outline.OutlineColor = Color3.new(1, 1, 1)
+		outline.Parent = model
+		local sparkles = Instance.new("Sparkles")
+		sparkles.SparkleColor = Color3.fromRGB(150, 235, 255)
+		sparkles.Parent = ball
+	end
 	local parts = {}
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") then

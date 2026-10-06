@@ -31,6 +31,11 @@ local FOR_EVENT: { [string]: string } = {
 	Diamonds = "Diamond",
 	ServerBoost = "ServerBoost",
 	UpgradeBought = "Diamond",
+	VariantFound = "LevelUp",
+	VariantBoxed = "Diamond",
+	ChallengeDone = "QuestDone",
+	AllDailies = "LevelUp",
+	StreakLost = "AngryHit",
 	NewSpecies = "CoinJingle",
 }
 

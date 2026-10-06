@@ -433,7 +433,17 @@ function BoxingScreen.Start()
 		-- Dark boxes (the Vault) get light seams so you can still see where to tape
 		local c = boxCard.BackgroundColor3
 		seamColor = if 0.3 * c.R + 0.59 * c.G + 0.11 * c.B < 0.45 then Color3.fromRGB(235, 235, 240) else DARK
-		animalTitle.Text = `Calm your {if animal then animal.DisplayName else "animal"}`
+		-- Shiny or Golden: say so, and tint the 3D animal
+		local variant = if data.Variant then Config.Variants.ById[data.Variant] else nil
+		animalTitle.Text =
+			`Calm your {if variant then variant.Emoji .. " " .. variant.DisplayName .. " " else ""}{if animal
+				then animal.DisplayName
+				else "animal"}`
+		animalTitle.TextColor3 = if variant then variant.Color else Ui.WHITE
+		viewport.ImageColor3 = if data.Variant == "Golden"
+			then Color3.fromRGB(255, 215, 90)
+			elseif data.Variant == "Shiny" then Color3.fromRGB(200, 245, 255)
+			else Color3.new(1, 1, 1)
 		animalBody.BackgroundColor3 = if animal and animal.Color then animal.Color else Color3.new(1, 1, 1)
 
 		-- Show the 3D model if there is one, looking at its face; otherwise the circle

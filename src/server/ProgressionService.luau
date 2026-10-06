@@ -162,13 +162,17 @@ end
 -- Events from the rest of the game
 
 -- One parcel mailed at the chute
-function ProgressionService.OnParcelMailed(player: Player, animalId: string, stars: number)
+function ProgressionService.OnParcelMailed(player: Player, animalId: string, stars: number, variantId: string?)
 	local profile = DataService.Get(player)
 	local animal = Config.Animals.ById[animalId]
 	if not profile or not animal then
 		return
 	end
-	local xp = Levels.MailXPPerTier * animal.Tier * (Levels.StarXPMult[stars] or 1)
+	local variant = if variantId then Config.Variants.ById[variantId] else nil
+	local xp = Levels.MailXPPerTier
+		* animal.Tier
+		* (Levels.StarXPMult[stars] or 1)
+		* (if variant then variant.XPMult else 1)
 	local first = (profile.Species[animalId] or 0) == 0
 	profile.Species[animalId] = (profile.Species[animalId] or 0) + 1
 	if first then

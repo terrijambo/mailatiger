@@ -108,6 +108,12 @@ function Inventory.Start()
 				HorizontalAlignment = Enum.HorizontalAlignment.Center,
 			}, list)
 			local collected = 0
+			-- Shiny and Golden ones mailed of this animal (shown after the count)
+			local function rare(animalId: string): string
+				local shiny = (data.Shinies or {})[animalId] or 0
+				local golden = (data.Goldens or {})[animalId] or 0
+				return (if shiny > 0 then `  ✨{shiny}` else "") .. (if golden > 0 then `  🌟{golden}` else "")
+			end
 			for index, animal in Config.Animals.List do
 				local mailed = (data.Species or {})[animal.Id] or 0
 				if mailed > 0 then
@@ -144,7 +150,9 @@ function Inventory.Start()
 					TextSize = 14,
 					TextXAlignment = Enum.TextXAlignment.Center,
 					TextColor3 = Color3.fromRGB(110, 100, 90),
-					Text = if mailed > 0 then `Mailed ×{Format.Short(mailed)}` else `Tier {animal.Tier}`,
+					Text = if mailed > 0
+						then `Mailed ×{Format.Short(mailed)}{rare(animal.Id)}`
+						else `Tier {animal.Tier}`,
 				})
 			end
 			local title = (window:FindFirstChild("TitleBar") :: Frame):FindFirstChild("Title") :: TextLabel

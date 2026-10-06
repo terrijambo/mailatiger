@@ -185,7 +185,7 @@ function Economy.BoostActive(): boolean
 	return typeof(untilTime) == "number" and Workspace:GetServerTimeNow() < untilTime
 end
 
--- Your payout multiplier: rebirths, Golden Paws, the server boost, Roblox Premium and the group bonus
+-- Your payout multiplier: rebirths, Golden Paws, the server boost, Roblox Premium, the group and friends
 -- (MonetizationService sets those attributes)
 function Economy.PayoutMult(player: Player): number
 	local profile = DataService.Get(player)
@@ -201,6 +201,12 @@ function Economy.PayoutMult(player: Player): number
 	end
 	if player:GetAttribute("InGroup") == true then
 		mult *= money.GroupPayoutMult
+	end
+	-- Playing with Roblox friends in the same server (MonetizationService counts them)
+	local friends = player:GetAttribute("FriendsHere")
+	if typeof(friends) == "number" and friends > 0 then
+		local tuning = Config.Social.Friends
+		mult *= 1 + tuning.BonusPerFriend * math.min(friends, tuning.MaxFriends)
 	end
 	return mult
 end
