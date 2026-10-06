@@ -18,6 +18,7 @@ local MapBuilder = require(script.Parent.MapBuilder)
 local MonetizationService = require(script.Parent.MonetizationService)
 local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
+local Travel = require(script.Parent.Travel)
 local TrollService = require(script.Parent.TrollService)
 
 local ShopService = {}
@@ -51,6 +52,9 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		return
 	elseif action == "StudioBuy" then
 		MonetizationService.StudioBuy(player, itemId)
+		return
+	elseif action == "GoToGruff" then
+		Travel.ToGruff(player)
 		return
 	elseif action == "StudioEvent" then
 		EventService.StudioStart(itemId) -- (does nothing outside Studio)

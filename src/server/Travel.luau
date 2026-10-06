@@ -35,6 +35,18 @@ function Travel.ToTown(player: Player)
 	teleport(player, map.TownSpawn)
 end
 
+-- The GRUFF button: straight to Postmaster Gruff's counter (and the mail chute next to him). Not while
+-- you're boxing an animal (you can't leave the BOX screen), and not more than once every few seconds.
+function Travel.ToGruff(player: Player): boolean
+	if player:GetAttribute("Stage") == "Box" or os.clock() - (lastTeleport[player] or 0) < 3 then
+		return false
+	end
+	local gruff = map.Gruff.Position
+	local stand = Vector3.new(gruff.X, gruff.Y + 2, gruff.Z + 14) -- in front of his counter, facing him
+	teleport(player, CFrame.lookAt(stand, Vector3.new(gruff.X, stand.Y, gruff.Z)))
+	return true
+end
+
 -- Calls `go` when a player steps on the pad (at most once every 2 seconds per player)
 local function onStep(pad: BasePart, go: (Player) -> ())
 	pad.Touched:Connect(function(hit)

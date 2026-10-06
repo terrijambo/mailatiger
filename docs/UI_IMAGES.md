@@ -28,6 +28,7 @@ Priority: **A** = seen all the time, do these first. **B** = in menus. **C** = n
 | `Button_Orders` | a clipboard with a letter and a red wax seal | ORDERS button (Gruff's orders and quests) |
 | `Button_Inventory` | a backpack stuffed with parcels | INVENTORY button |
 | `Button_Store` | a shopping bag with a gift bow | STORE button (Robux) |
+| `Button_Menu` | a stack of three chunky bars (a "menu" icon) or an open envelope full of letters | MENU button (pops out the rest) |
 | `Button_Upgrades` | a big shiny blue diamond with an up arrow | UPGRADES button (diamond upgrades) |
 | `Button_Settings` | a gear | SETTINGS button |
 | `Button_Invite` | a waving hand / two friends | INVITE button |

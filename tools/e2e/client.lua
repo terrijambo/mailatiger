@@ -614,6 +614,16 @@ local function run()
 	log(#broken == 0, "sounds load: " .. loaded .. " ok" .. (if #broken > 0 then ", broken: " .. table.concat(broken, ", ") else ""))
 	log(player:GetAttribute("MusicOff") == true, "music-off setting reached the music player")
 
+	-- The GRUFF button: teleport to Postmaster Gruff
+	task.wait(3.2)
+	remotes.ShopAction:FireServer("GoToGruff")
+	log(waitFor(function()
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart")
+		local gruff = map:FindFirstChild("Gruff")
+		return root ~= nil and gruff ~= nil and (root.Position - gruff.Position).Magnitude < 20
+	end, 3), "GRUFF button teleports you to Postmaster Gruff")
+
 	-- Events (started with the Studio test buttons)
 	remotes.ShopAction:FireServer("StudioEvent", "GoldenHour")
 	log(waitFor(function()

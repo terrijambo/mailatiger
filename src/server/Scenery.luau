@@ -1,5 +1,5 @@
 --!strict
--- Everything in the world that's just for looks: the island (terrain), the ocean and mountains, the hub's
+-- Everything in the world that's just for looks: the island (terrain), the ocean, the hub's
 -- terraces, fountain and info boards, the street grid out to each zone with their giant entrance banners,
 -- and each zone's theme (a house by the Backyard, a farm by the Barn, a waterfall cliff in the Jungle, a snowy
 -- winter zone around the Ice Rink, and a city of skyscrapers around the Rooftop).
@@ -168,7 +168,7 @@ local function signText(
 end
 
 ---------------------------------------------------------------------------------------------------
--- Terrain: island, beach, ocean, mountains
+-- Terrain: the ocean around the island
 
 local function buildTerrain(_layout: Layout)
 	local terrain = Workspace.Terrain
@@ -180,10 +180,6 @@ local function buildTerrain(_layout: Layout)
 
 	-- Ocean everywhere (the island itself is flat smooth parts: see buildGround)
 	terrain:FillBlock(CFrame.new(0, -16, -150), Vector3.new(2400, 20, 2400), Enum.Material.Water)
-	-- Brighter terrain colors for the mountains on the horizon
-	terrain:SetMaterialColor(Enum.Material.Rock, Color3.fromRGB(150, 150, 162))
-	terrain:SetMaterialColor(Enum.Material.Grass, Color3.fromRGB(112, 196, 90))
-	terrain:SetMaterialColor(Enum.Material.Snow, Color3.fromRGB(248, 250, 255))
 	-- Puffy clouds
 	if not terrain:FindFirstChildOfClass("Clouds") then
 		local clouds = Instance.new("Clouds")
@@ -191,29 +187,6 @@ local function buildTerrain(_layout: Layout)
 		clouds.Density = 0.65
 		clouds.Color = Color3.new(1, 1, 1)
 		clouds.Parent = terrain
-	end
-
-	-- Mountains on the horizon (big lumps of rock, snow-capped on the winter side)
-	type Mountain = { X: number, Z: number, R: number, Snowy: boolean }
-	local mountains: { Mountain } = {
-		{ X = -420, Z = -560, R = 150, Snowy = true },
-		{ X = -140, Z = -600, R = 170, Snowy = true },
-		{ X = 170, Z = -600, R = 160, Snowy = false },
-		{ X = 440, Z = -540, R = 150, Snowy = false },
-		{ X = -560, Z = -300, R = 140, Snowy = true },
-		{ X = 570, Z = -300, R = 140, Snowy = false },
-		{ X = -560, Z = 40, R = 120, Snowy = false },
-		{ X = 560, Z = 40, R = 120, Snowy = false },
-		{ X = -300, Z = 380, R = 110, Snowy = false },
-		{ X = 320, Z = 380, R = 110, Snowy = false },
-	}
-	for _, m in mountains do
-		local x, z, r = m.X, m.Z, m.R
-		terrain:FillBall(Vector3.new(x, -r * 0.35, z), r, Enum.Material.Rock)
-		terrain:FillBall(Vector3.new(x + r * 0.3, -r * 0.45, z + r * 0.2), r * 0.8, Enum.Material.Grass)
-		if m.Snowy then
-			terrain:FillBall(Vector3.new(x, r * 0.35, z), r * 0.32, Enum.Material.Snow)
-		end
 	end
 end
 

@@ -48,10 +48,17 @@ function Menus.Register(name: string, gui: ScreenGui, onOpen: (() -> ())?)
 	gui:GetPropertyChangedSignal("Enabled"):Connect(refreshGamepad)
 end
 
+-- Set by SideButtons: runs whenever a window opens (folds the pop-out MENU away)
+Menus.OnOpen = nil :: (() -> ())?
+
 function Menus.Open(name: string)
 	local menu = menus[name]
 	if not menu then
 		return
+	end
+	local hook = Menus.OnOpen
+	if hook then
+		hook()
 	end
 	for other, entry in menus do
 		if other ~= name then

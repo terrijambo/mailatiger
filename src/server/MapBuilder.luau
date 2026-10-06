@@ -938,7 +938,7 @@ function MapBuilder.Build(): Map
 		end
 	end
 
-	-- Everything that's just for looks: the island, ocean and mountains, terraces, paths, zone themes
+	-- Everything that's just for looks: the island, ocean, terraces, paths, zone themes
 	local zones: { Scenery.Zone } = {}
 	for _, def in Config.Arenas.List do
 		local l = ARENA_LAYOUT[def.Id]

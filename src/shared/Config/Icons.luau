@@ -26,6 +26,7 @@ local icons: { [string]: Icon } = {
 	Button_Upgrades = icon("💎"),
 	Button_Settings = icon("⚙️"),
 	Button_Invite = icon("👋"),
+	Button_Menu = icon("☰"),
 
 	-- HUD
 	Hud_Coins = icon("💰"),

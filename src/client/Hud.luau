@@ -45,18 +45,29 @@ Hud.Short = Format.Short
 
 -- One row of the stats stack: an emoji icon and a big outlined value
 -- (icon is a key in Config/Icons.luau)
-local function statRow(parent: Instance, order: number, icon: string, color: Color3): (Frame, TextLabel)
+-- (mirrored: icon on the right and the number right-aligned, for the bottom-right corner)
+local function statRow(
+	parent: Instance,
+	order: number,
+	icon: string,
+	color: Color3,
+	mirrored: boolean?
+): (Frame, TextLabel)
 	local row = Ui.make("Frame", {
 		LayoutOrder = order,
 		Size = UDim2.fromOffset(260, 44),
 		BackgroundTransparency = 1,
 	}, parent)
-	Ui.icon(row, icon, { Size = UDim2.fromOffset(44, 44) })
+	Ui.icon(row, icon, {
+		AnchorPoint = Vector2.new(if mirrored then 1 else 0, 0),
+		Position = if mirrored then UDim2.fromScale(1, 0) else UDim2.new(),
+		Size = UDim2.fromOffset(44, 44),
+	})
 	local value = Ui.outlined(row, {
-		Position = UDim2.fromOffset(52, 0),
+		Position = UDim2.fromOffset(if mirrored then 0 else 52, 0),
 		Size = UDim2.new(1, -52, 1, 0),
 		TextSize = 38,
-		TextXAlignment = Enum.TextXAlignment.Left,
+		TextXAlignment = if mirrored then Enum.TextXAlignment.Right else Enum.TextXAlignment.Left,
 		TextColor3 = color,
 		Text = "",
 	})
@@ -84,8 +95,20 @@ function Hud.Start()
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
 	}, stack)
-	local boostRow, boostLabel = statRow(stack, 1, "Hud_Boost", BOOST_ORANGE)
-	local _, bagLabel = statRow(stack, 2, "Hud_Bag", BAG_TAN)
+	-- The bag and your coin boost live in the bottom-right corner (top-right on phones)
+	local rightStack = Ui.make("Frame", {
+		Size = UDim2.fromOffset(270, 100),
+		BackgroundTransparency = 1,
+	}, gui)
+	Ui.autoScale(rightStack)
+	local rightLayout = Ui.make("UIListLayout", {
+		Padding = UDim.new(0, 2),
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		HorizontalAlignment = Enum.HorizontalAlignment.Right,
+		VerticalAlignment = Enum.VerticalAlignment.Bottom,
+	}, rightStack)
+	local boostRow, boostLabel = statRow(rightStack, 1, "Hud_Boost", BOOST_ORANGE, true)
+	local _, bagLabel = statRow(rightStack, 2, "Hud_Bag", BAG_TAN, true)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
 
 	-- Delivery streak: a flame next to your coins ("🔥x5") that pops each time it grows
@@ -155,7 +178,7 @@ function Hud.Start()
 		Text = "",
 		ZIndex = 3,
 	})
-	stack.Size = UDim2.fromOffset(300, 240)
+	stack.Size = UDim2.fromOffset(300, 140)
 	-- Big screens: bottom-left. Phones: top-left, so the thumbstick (bottom-left) is free; the side buttons
 	-- go under it (SideButtons.luau)
 	Ui.onResize(function()
@@ -164,10 +187,17 @@ function Hud.Start()
 			stack.AnchorPoint = Vector2.new(0, 0)
 			stack.Position = UDim2.fromOffset(margin, 8)
 			stackLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+			-- (under the server boost timer, which is top-right on phones)
+			rightStack.AnchorPoint = Vector2.new(1, 0)
+			rightStack.Position = UDim2.new(1, -margin, 0, 8 + 60 * Ui.screenScale())
+			rightLayout.VerticalAlignment = Enum.VerticalAlignment.Top
 		else
 			stack.AnchorPoint = Vector2.new(0, 1)
 			stack.Position = UDim2.new(0, margin, 1, -margin)
 			stackLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+			rightStack.AnchorPoint = Vector2.new(1, 1)
+			rightStack.Position = UDim2.new(1, -margin, 1, -margin)
+			rightLayout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 		end
 	end)
 	local function refreshLevel()
