@@ -189,6 +189,18 @@ function ShopService.Start(builtMap: MapBuilder.Map)
 
 	Remotes.Listen(Remotes.ShopAction, 8, onShopAction)
 
+	-- Fresh orders for everyone online when theirs expire or are all done (not only when the board is opened)
+	task.spawn(function()
+		while true do
+			task.wait(20)
+			for player, profile in DataService.GetAll() do
+				if Orders.Refresh(profile) then
+					Economy.Sync(player)
+				end
+			end
+		end
+	end)
+
 	-- New players (and anyone whose orders expired while they were away) get fresh orders on join
 	DataService.Loaded:Connect(function(player: Player)
 		local profile = DataService.Get(player) -- the real save (the event only passes a copy)

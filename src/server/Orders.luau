@@ -24,7 +24,14 @@ local Orders = {}
 
 -- Makes new orders if it's time (or `force` is true). Returns whether anything changed.
 function Orders.Refresh(profile: Profile, force: boolean?): boolean
-	if not force and os.time() < profile.OrdersRefreshAt then
+	-- New orders when it's time, or as soon as every order is done (so "complete N orders" quests never get stuck)
+	local allDone = true
+	for _, order in profile.Orders do
+		if not order.Done then
+			allDone = false
+		end
+	end
+	if not force and not allDone and os.time() < profile.OrdersRefreshAt then
 		return false
 	end
 
