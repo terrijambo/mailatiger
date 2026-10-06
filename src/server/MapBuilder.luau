@@ -195,10 +195,12 @@ end
 
 -- A small floating name tag: white text with a dark outline (like "Tiny House $15K" in popular sims).
 -- It only shows when you're fairly close, so the town isn't a wall of text.
-function MapBuilder.Label(adornee: BasePart, text: string, height: number, color: Color3?)
+-- widthStuds: size it in the world instead of on screen, so it shrinks with distance (labels standing
+-- side by side, like the travel pads, then never overlap each other)
+function MapBuilder.Label(adornee: BasePart, text: string, height: number, color: Color3?, widthStuds: number?)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "Label"
-	gui.Size = UDim2.fromOffset(190, 30)
+	gui.Size = if widthStuds then UDim2.fromScale(widthStuds, widthStuds * 0.16) else UDim2.fromOffset(190, 30)
 	gui.StudsOffset = Vector3.new(0, height, 0)
 	gui.MaxDistance = 70
 
@@ -859,7 +861,7 @@ function MapBuilder.Build(): Map
 			Material = Enum.Material.Neon,
 		})
 		local tiers = table.concat(def.Tiers, "&")
-		MapBuilder.Label(pad, `{string.upper(def.DisplayName)} · T{tiers}`, 2.5, COLORS.Yellow)
+		MapBuilder.Label(pad, `{string.upper(def.DisplayName)} · T{tiers}`, 2.5, COLORS.Yellow, 15)
 		tint(dress(map, "TravelPad", spot(x, 0, 18), 7, { pad }), "Center", def.Color)
 		travelPads[def.Id] = pad
 	end
