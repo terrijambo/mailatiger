@@ -36,6 +36,8 @@ export type Data = {
 	Species: { [string]: number },
 	Trolls: { [string]: boolean },
 	Diamonds: number,
+	FollowAsked: number?,
+	InviteRewards: number?,
 	Upgrades: { [string]: number },
 	Shinies: { [string]: number }?,
 	Goldens: { [string]: number }?,

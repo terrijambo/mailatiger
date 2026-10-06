@@ -53,6 +53,11 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	elseif action == "StudioBuy" then
 		MonetizationService.StudioBuy(player, itemId)
 		return
+	elseif action == "FollowAsked" then
+		-- The Favorite / Get updates card was shown (so it's only asked a couple of times, ever)
+		profile.FollowAsked = math.min(profile.FollowAsked + 1, 99)
+		DataService.Sync(player)
+		return
 	elseif action == "GoToGruff" then
 		Travel.ToGruff(player)
 		return

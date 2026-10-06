@@ -34,4 +34,21 @@ return {
 		BonusPerFriend = 0.1,
 		MaxFriends = 3,
 	},
+
+	-- Inviting friends (MENU > INVITE). A friend who joins from your invite gets a welcome gift right away;
+	-- you get paid once they've mailed a few animals (so it's a real player, not a quick alt account).
+	-- If you're not in their server then, it waits and is paid the next time you join.
+	Invites = {
+		NewPlayerGift = 5, -- diamonds for the friend who joined from an invite
+		InviterReward = 15, -- diamonds for you, per friend
+		PayAfterMails = 3, -- the friend must mail this many animals first
+		MaxRewards = 20, -- the most friends you can be paid for, ever
+		StoreName = "Referrals_launch1", -- (rewards waiting for inviters who weren't online)
+	},
+
+	-- A one-time "Having fun? Favorite / Get updates" card (no reward: Roblox doesn't allow paying for those)
+	Follow = {
+		AfterMinutes = 12, -- of play in this session
+		MaxAsks = 2, -- across all sessions (asked again later if they closed it the first time)
+	},
 }

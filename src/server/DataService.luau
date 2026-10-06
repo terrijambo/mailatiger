@@ -92,6 +92,11 @@ export type Profile = {
 	BossWins: number, -- hourly bosses beaten
 	BossKills: { [string]: number }, -- by boss animal id (the boss collection in the Bag)
 	LuckyNext: boolean, -- the next job is a guaranteed Shiny (a boss reward)
+	-- Invites (Config/Social.luau Invites)
+	InvitedBy: number, -- the friend whose invite you joined from (0 = none)
+	InvitePaid: boolean, -- that friend has been paid for you
+	InviteRewards: number, -- friends you've been paid for
+	FollowAsked: number, -- times the Favorite / Get updates card was shown
 }
 
 local DataService = {}
@@ -148,6 +153,10 @@ local function newProfile(): Profile
 		BossWins = 0,
 		BossKills = {},
 		LuckyNext = false,
+		InvitedBy = 0,
+		InvitePaid = false,
+		InviteRewards = 0,
+		FollowAsked = 0,
 	}
 end
 

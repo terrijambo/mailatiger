@@ -13,6 +13,7 @@ local BossLook = require(script.BossLook)
 local BoxingScreen = require(script.BoxingScreen)
 local DiamondUpgrades = require(script.DiamondUpgrades)
 local EventBanner = require(script.EventBanner)
+local FollowPrompt = require(script.FollowPrompt)
 local ChuteVisual = require(script.ChuteVisual)
 local Movement = require(script.Movement)
 local Music = require(script.Music)
@@ -45,6 +46,7 @@ ZoneLocks.Start()
 TrollBar.Start()
 EventBanner.Start()
 BossLook.Start()
+FollowPrompt.Start()
 task.spawn(ChuteVisual.Start) -- waits for the map to load, so it runs on its own
 task.spawn(Tutorial.Start) -- waits for your save to load
 

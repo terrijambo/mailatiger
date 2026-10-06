@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SocialService = game:GetService("SocialService")
 local TweenService = game:GetService("TweenService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
 local Menus = require(script.Parent.Menus)
 local Ui = require(script.Parent.Ui)
 
@@ -169,7 +170,13 @@ function SideButtons.Start()
 		{ Label = "INVITE", Icon = "Button_Invite", Color = Ui.GREEN, LayoutOrder = 6 },
 		nil,
 		function()
-			pcall(SocialService.PromptGameInvite, SocialService, player)
+			-- Your UserId rides along with the invite, so you get paid diamonds when they join and play
+			-- (InviteService on the server)
+			local options = Instance.new("ExperienceInviteOptions")
+			options.PromptMessage =
+				`Invite friends: they get {Config.Social.Invites.NewPlayerGift} diamonds, you get {Config.Social.Invites.InviterReward} each!`
+			options.LaunchData = tostring(player.UserId)
+			pcall(SocialService.PromptGameInvite, SocialService, player, options)
 		end
 	)
 	invite.Visible = false
