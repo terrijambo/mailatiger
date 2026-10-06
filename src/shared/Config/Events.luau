@@ -138,6 +138,7 @@ return {
 		StompStun = 1.6,
 		RoarEvery = 15,
 		RoarRadius = 40,
+		KickEvery = 9, -- it kicks two crates across the arena
 		-- The giant box: 5 seams, each needs this many strips (more players = more strips)
 		StripsPerSeamPerPlayer = 0.5,
 		MaxStripsPerSeam = 4,

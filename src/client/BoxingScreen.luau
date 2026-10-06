@@ -370,6 +370,7 @@ function BoxingScreen.Start()
 	end
 
 	local seamColor = DARK
+	local bossName: string? = nil -- the hourly boss's shared box (BossService), or nil for a normal job
 	local function drawSeams()
 		if seamLayer then
 			seamLayer:Destroy()
@@ -392,7 +393,7 @@ function BoxingScreen.Start()
 				dot(layer, seam.B, 16, seamColor, 2)
 			end
 		end
-		boxTitle.Text = `Tape the seams: {done} / {#seams}`
+		boxTitle.Text = if bossName then `TEAM SEAMS: {done} / {#seams}` else `Tape the seams: {done} / {#seams}`
 	end
 
 	local function floatText(text: string, at: Vector2, color: Color3)
@@ -490,6 +491,7 @@ function BoxingScreen.Start()
 			table.insert(spotFrames, frame)
 		end
 		drawSeams()
+		bossName = data.Boss
 		applyRole(data.Role or "Both")
 		help.Text = if role == "Pet"
 			then "YOU PET: rub the ♥ spots to keep it calm while your crewmate tapes · Don't touch the ✖ spots"
@@ -497,6 +499,14 @@ function BoxingScreen.Start()
 				role == "Tape"
 			then "YOU TAPE: drag from dot to dot along each seam while your crewmate keeps it calm"
 			else "Rub the ♥ spots · Don't touch the ✖ spots · Drag tape from dot to dot along each seam"
+		if bossName then
+			-- The boss: one box for the whole team
+			animalTitle.Text = `⚔️ BOX THE {bossName}! ⚔️`
+			animalTitle.TextColor3 = Color3.fromRGB(255, 120, 110)
+			help.Text =
+				`TEAM BOX: every seam needs {data.Need or 1} strip{if (data.Need or 1) == 1 then "" else "s"} · keep petting the ♥ · don't let it hit 100!`
+		end
+		meterBack.BackgroundColor3 = if bossName then Color3.fromRGB(90, 20, 25) else Color3.fromRGB(60, 60, 68)
 		if Ui.inputKind() == "Gamepad" then
 			help.Text ..= "  ·  Left stick moves the hand, hold A"
 		end
@@ -880,6 +890,8 @@ function BoxingScreen.Start()
 			drawSeams()
 			shake(boxCard)
 			help.Text = "It peeled a strip of tape off! Re-tape that seam!"
+		elseif kind == "BossCallout" then
+			help.Text = data.Text
 		elseif kind == "BossStrip" then
 			-- The boss box: a strip went on a seam that needs several
 			local seam = seams[data.Seam]

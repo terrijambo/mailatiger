@@ -41,6 +41,8 @@ local FOR_EVENT: { [string]: string } = {
 	StampedeCatch = "Pop",
 	BossStart = "Roar",
 	BossWin = "LevelUp",
+	BossFirework = "VineBoom",
+	BossLanded = "StampThud",
 	BossReward = "CoinJingle",
 	NewSpecies = "CoinJingle",
 }

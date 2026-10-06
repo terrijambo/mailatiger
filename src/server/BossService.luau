@@ -66,7 +66,10 @@ type Fight = {
 	Raged: { [number]: boolean },
 	Ropes: { [Player]: Beam }, -- glowing ropes from a handle to each holder's hand
 	LandsAt: number, -- (os.clock) the boss is still dropping in until then
+	NextKick: number,
+	BigBox: Model?, -- the giant cardboard box dropped over it in BOX IT
 }
+
 local fight: Fight? = nil
 local stunnedUntil: { [Player]: number } = {}
 local crownHolder: Player? = nil
@@ -109,9 +112,103 @@ local function notifyHere(kind: string, data: { [string]: any })
 	end
 end
 
+-- BOX IT in the world: a giant open box drops over the pinned boss, gets a strip of tape for every seam the
+-- team finishes, and on a win slams shut and shoots into the sky like a firework
+local BOX_TAPE = Color3.fromRGB(235, 205, 120)
+local function bigBox(f: Fight): Model
+	local model = Instance.new("Model")
+	model.Name = "BossBox"
+	local s = Boss.Size + 6
+	local base = Vector3.new(f.Ball.Position.X, platformTop, f.Ball.Position.Z)
+	local function wall(name: string, offset: Vector3, size: Vector3)
+		local part = Instance.new("Part")
+		part.Name = name
+		part.Anchored = true
+		part.CanCollide = false
+		part.Size = size
+		part.Color = Color3.fromRGB(205, 165, 115)
+		part.CFrame = CFrame.new(base + offset + Vector3.new(0, 150, 0))
+		part.Parent = model
+	end
+	local h = s * 0.55
+	wall("Front", Vector3.new(0, h / 2, s / 2), Vector3.new(s, h, 1))
+	wall("Back", Vector3.new(0, h / 2, -s / 2), Vector3.new(s, h, 1))
+	wall("Left", Vector3.new(-s / 2, h / 2, 0), Vector3.new(1, h, s))
+	wall("Right", Vector3.new(s / 2, h / 2, 0), Vector3.new(1, h, s))
+	model.Parent = arena
+	-- Drop it from the sky
+	task.spawn(function()
+		local start = os.clock()
+		while os.clock() - start < 0.6 do
+			local t = (os.clock() - start) / 0.6
+			model:PivotTo(CFrame.new(base.X, platformTop + h / 2 + 150 * (1 - t * t), base.Z))
+			task.wait()
+		end
+		model:PivotTo(CFrame.new(base + Vector3.new(0, h / 2, 0)))
+		notifyHere("BossLanded", { At = base })
+	end)
+	return model
+end
+
+-- One strip of tape across the front of the giant box for each finished seam
+local function tapeBigBox(f: Fight, seamIndex: number)
+	local model = f.BigBox
+	local front = model and model:FindFirstChild("Front") :: BasePart?
+	if not front then
+		return
+	end
+	local strip = Instance.new("Part")
+	strip.Name = "Tape"
+	strip.Anchored = true
+	strip.CanCollide = false
+	strip.Color = BOX_TAPE
+	strip.Size = Vector3.new(front.Size.X * 0.9, 1.4, 0.3)
+	strip.CFrame = front.CFrame
+		* CFrame.new(0, front.Size.Y * (0.35 - (seamIndex - 1) * 0.17), 0.7)
+		* CFrame.Angles(0, 0, math.rad((seamIndex % 2 * 2 - 1) * 4))
+	strip.Parent = model
+end
+
+-- The win: the box shoots up and bursts into confetti and coins
+local function launchBigBox(f: Fight)
+	local model = f.BigBox
+	if not model then
+		return
+	end
+	f.BigBox = nil
+	f.Ball:SetAttribute("Hidden", true) -- (it's in the box now)
+	task.spawn(function()
+		local from = model:GetPivot()
+		local start = os.clock()
+		while os.clock() - start < 1.6 do
+			local t = (os.clock() - start) / 1.6
+			model:PivotTo(from * CFrame.new(0, 180 * t * t, 0) * CFrame.Angles(0, t * 8, 0))
+			task.wait()
+		end
+		Remotes.Notify:FireAllClients("BossFirework", { At = model:GetPivot().Position })
+		model:Destroy()
+	end)
+end
+local lastHelpPop: { [Player]: number } = {}
+
+-- "+HELP" over a player's head for everyone to see (at most every few seconds each)
+local function helpPop(player: Player)
+	local now = os.clock()
+	if now - (lastHelpPop[player] or 0) < 4 then
+		return
+	end
+	lastHelpPop[player] = now
+	Remotes.Notify:FireAllClients("HelpPop", { UserId = player.UserId })
+end
+
 local function addWork(player: Player, amount: number)
 	if fight then
-		fight.Work[player] = (fight.Work[player] or 0) + amount
+		local before = fight.Work[player] or 0
+		fight.Work[player] = before + amount
+		-- every 5 points of help
+		if math.floor((before + amount) / 5) > math.floor(before / 5) then
+			helpPop(player)
+		end
 	end
 end
 
@@ -271,6 +368,9 @@ local function finish(won: boolean)
 		handle:Destroy()
 	end
 	f.Ball:Destroy()
+	if f.BigBox then
+		f.BigBox:Destroy()
+	end
 	for _, name in
 		{ "BossPhase", "BossPin", "BossHeld", "BossNeed", "BossTaped", "BossSeams", "BossEndsAt", "BossAnger" }
 	do
@@ -406,6 +506,7 @@ local function startBox()
 	end
 	-- THUD: it's down
 	notifyHere("BossPinned", { At = Vector3.new(f.Ball.Position.X, platformTop, f.Ball.Position.Z) })
+	f.BigBox = bigBox(f)
 	f.Boxers = {}
 	for _, player in playersHere() do
 		if (stunnedUntil[player] or 0) < os.clock() and rootOf(player) then
@@ -437,6 +538,8 @@ local function startBox()
 			SeamCount = SEAMS,
 			BoxId = "Steel",
 			Role = "Both",
+			Boss = f.Name,
+			Need = f.Need,
 		})
 	end
 	notifyHere("Message", { Speaker = "BOSS", Text = `PINNED! Now BOX the {f.Name} together, before it blows!` })
@@ -473,12 +576,51 @@ local function stomp(f: Fight?)
 	end)
 end
 
+-- It kicks crates across the arena: they bonk whoever they hit (and make good cover from a roar)
+local function kickCrates(f: Fight)
+	for _ = 1, 2 do
+		local others = playersHere()
+		local target = others[math.random(1, math.max(1, #others))]
+		local targetRoot = target and rootOf(target)
+		local from = f.Ball.Position + Vector3.new(0, 2, 0)
+		local aim = if targetRoot then targetRoot.Position - from else Vector3.new(math.random(-1, 1), 0, 1)
+		local flat = Vector3.new(aim.X, 0, aim.Z)
+		local direction = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zAxis
+		local crate = Instance.new("Part")
+		crate.Name = "KickedCrate"
+		crate.Size = Vector3.new(4, 4, 4)
+		crate.Color = Color3.fromRGB(196, 136, 84)
+		crate.Material = Enum.Material.WoodPlanks
+		crate.CFrame = CFrame.new(from + direction * (Boss.Size / 2 + 3))
+		crate.Parent = arena
+		crate.AssemblyLinearVelocity = direction * 70 + Vector3.new(0, 25, 0)
+		crate.AssemblyAngularVelocity = Vector3.new(math.random(-8, 8), math.random(-8, 8), math.random(-8, 8))
+		local hits: { [Player]: boolean } = {}
+		crate.Touched:Connect(function(hit)
+			local model = hit:FindFirstAncestorOfClass("Model")
+			local player = model and Players:GetPlayerFromCharacter(model)
+			if player and not hits[player] and crate.AssemblyLinearVelocity.Magnitude > 20 then
+				hits[player] = true
+				BoxingService.Stun(player, 0.8)
+				if fight then
+					fight.Holding[player] = nil
+				end
+				Remotes.Notify:FireClient(player, "Knockback", { Direction = direction, Strength = 35 })
+			end
+		end)
+		task.delay(7, function()
+			crate:Destroy()
+		end)
+	end
+end
+
 local function roar(f: Fight?)
 	if not f then
 		return
 	end
 	Sfx.Play("Roar", f.Ball)
 	notifyHere("Roar", {})
+	notifyHere("BossRoar", { At = f.Ball.Position, Radius = Boss.RoarRadius })
 	for _, player in playersHere() do
 		local root = rootOf(player)
 		if root then
@@ -578,6 +720,10 @@ local function updatePin(f: Fight?, dt: number)
 		f.NextRoar = now + Boss.RoarEvery
 		roar(f)
 	end
+	if now >= f.NextKick then
+		f.NextKick = now + Boss.KickEvery
+		kickCrates(f)
+	end
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -589,6 +735,24 @@ local function launchAll(f: Fight?)
 	end
 	local boxers = f.Boxers
 	endBox(boxers)
+	if f.BigBox then
+		-- The box bursts apart
+		for _, part in f.BigBox:GetChildren() do
+			if part:IsA("BasePart") then
+				part.Anchored = false
+				part.AssemblyLinearVelocity =
+					Vector3.new(math.random(-50, 50), math.random(40, 70), math.random(-50, 50))
+			end
+		end
+		local broken = f.BigBox
+		f.BigBox = nil
+		task.delay(3, function()
+			broken:Destroy()
+		end)
+	end
+	for _, player in boxers do
+		Remotes.Notify:FireClient(player, "Breakout", { Animal = f.Name }) -- RETURN TO SENDER stamp
+	end
 	for _, player in boxers do
 		local root = rootOf(player)
 		if root then
@@ -675,6 +839,11 @@ local function onInput(player: Player, action: unknown, index: unknown)
 		addWork(player, 3)
 		if f.Strips[index] >= f.Need then
 			f.Taped[index] = true
+			helpPop(player)
+			tapeBigBox(f, index)
+			for _, boxer in f.Boxers do
+				Remotes.Notify:FireClient(boxer, "BossCallout", { Text = `{player.DisplayName} sealed a seam!` })
+			end
 			local done = 0
 			for _, taped in f.Taped do
 				if taped then
@@ -687,6 +856,7 @@ local function onInput(player: Player, action: unknown, index: unknown)
 				for _, boxer in f.Boxers do
 					Remotes.Notify:FireClient(boxer, "SeamTaped", { Seam = index })
 				end
+				launchBigBox(f)
 				finish(true)
 				return
 			end
@@ -821,6 +991,7 @@ function BossService.Begin(untilTime: number, _studio: boolean)
 		Raged = {},
 		Ropes = {},
 		LandsAt = os.clock() + 2,
+		NextKick = os.clock() + Boss.KickEvery,
 	}
 	for _ = 1, Boss.Handles do
 		-- A golden ring to grab (a short, wide cylinder standing on its edge)

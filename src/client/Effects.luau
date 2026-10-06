@@ -213,6 +213,60 @@ function Effects.Start()
 			end)
 			shakeCamera(if kind == "BossLanded" then 2.2 else 1.4, 0.5)
 			fovPunch(if kind == "BossLanded" then 14 else 8, 0.7)
+		elseif kind == "BossFirework" then
+			-- The boxed boss bursts in the sky: a huge confetti firework
+			confetti(data.At, 220)
+			confetti(data.At + Vector3.new(8, -6, 0), 120)
+			confetti(data.At + Vector3.new(-8, -6, 0), 120)
+			shakeCamera(0.8, 0.3)
+		elseif kind == "BossRoar" then
+			-- A shockwave bubble blasting out from the boss
+			local bubble = Instance.new("Part")
+			bubble.Shape = Enum.PartType.Ball
+			bubble.Anchored = true
+			bubble.CanCollide = false
+			bubble.CanQuery = false
+			bubble.Material = Enum.Material.ForceField
+			bubble.Color = Color3.fromRGB(255, 120, 90)
+			bubble.Size = Vector3.one * 6
+			bubble.CFrame = CFrame.new(data.At)
+			bubble.Parent = Workspace
+			TweenService:Create(bubble, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Size = Vector3.one * data.Radius * 2,
+				Transparency = 1,
+			}):Play()
+			task.delay(0.7, function()
+				bubble:Destroy()
+			end)
+			fovPunch(-10, 0.6)
+		elseif kind == "HelpPop" then
+			-- "+HELP" floats up over a boss fighter who's carrying the team
+			local helper = Players:GetPlayerByUserId(data.UserId)
+			local head = helper and helper.Character and helper.Character:FindFirstChild("Head") :: BasePart?
+			if head then
+				local pop = Instance.new("BillboardGui")
+				pop.Size = UDim2.fromOffset(110, 34)
+				pop.StudsOffset = Vector3.new(0, 3, 0)
+				pop.AlwaysOnTop = true
+				pop.MaxDistance = 120
+				local label = Instance.new("TextLabel")
+				label.Size = UDim2.fromScale(1, 1)
+				label.BackgroundTransparency = 1
+				label.Font = Enum.Font.LuckiestGuy
+				label.TextScaled = true
+				label.TextColor3 = Color3.fromRGB(120, 255, 140)
+				label.TextStrokeTransparency = 0
+				label.Text = "+HELP"
+				label.Parent = pop
+				pop.Adornee = head
+				pop.Parent = Workspace
+				TweenService:Create(pop, TweenInfo.new(1.2), { StudsOffset = Vector3.new(0, 7, 0) }):Play()
+				TweenService:Create(label, TweenInfo.new(1.2), { TextTransparency = 1, TextStrokeTransparency = 1 })
+					:Play()
+				task.delay(1.3, function()
+					pop:Destroy()
+				end)
+			end
 		elseif kind == "BossStomp" then
 			-- A red ring on the ground that fills in: jump before it lands!
 			local ring = Instance.new("Part")
@@ -234,6 +288,45 @@ function Effects.Start()
 			task.delay(data.Delay + 0.2, function()
 				ring:Destroy()
 				shakeCamera(1, 0.25)
+				-- The hit: a dust wave racing outward and cracks left in the ground for a few seconds
+				local attachment = Instance.new("Attachment")
+				attachment.WorldPosition = data.At + Vector3.new(0, 0.5, 0)
+				attachment.Parent = Workspace.Terrain
+				local dust = Instance.new("ParticleEmitter")
+				dust.Color = ColorSequence.new(Color3.fromRGB(225, 210, 185))
+				dust.Size = NumberSequence.new(2, 5)
+				dust.Transparency = NumberSequence.new(0.3, 1)
+				dust.Lifetime = NumberRange.new(0.6, 0.9)
+				dust.Speed = NumberRange.new(data.Radius * 1.4, data.Radius * 1.7)
+				dust.SpreadAngle = Vector2.new(85, 180)
+				dust.EmissionDirection = Enum.NormalId.Top
+				dust.Acceleration = Vector3.new(0, -25, 0)
+				dust.Drag = 2
+				dust.Enabled = false
+				dust.Parent = attachment
+				dust:Emit(70)
+				local cracks = {}
+				for i = 1, 7 do
+					local angle = i / 7 * math.pi * 2 + math.random() * 0.4
+					local length = data.Radius * (0.4 + math.random() * 0.4)
+					local crack = Instance.new("Part")
+					crack.Anchored = true
+					crack.CanCollide = false
+					crack.CanQuery = false
+					crack.Color = Color3.fromRGB(60, 50, 45)
+					crack.Size = Vector3.new(0.5, 0.06, length)
+					crack.CFrame = CFrame.new(data.At + Vector3.new(0, 0.12, 0))
+						* CFrame.Angles(0, angle, 0)
+						* CFrame.new(0, 0, -length / 2 - 2)
+					crack.Parent = Workspace
+					table.insert(cracks, crack)
+				end
+				task.delay(4, function()
+					attachment:Destroy()
+					for _, crack in cracks do
+						crack:Destroy()
+					end
+				end)
 			end)
 		elseif kind == "Slip" then
 			-- Slipped on a banana peel: a little flop
