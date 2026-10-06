@@ -726,45 +726,204 @@ local function buildHub(parent: Instance, layout: Layout)
 		end
 	end
 
-	-- Fountain in the middle of the plaza
+	-- Fountain in the middle of the plaza: a warm sandstone wishing fountain (it stands out on the white
+	-- tiles), with a teal pool full of coins, two tiers that spill water curtains into each other, arcing
+	-- jets from the rim, and a gold parcel with a red ribbon on top (this is a post office, after all).
 	local fountainAt = Vector3.new(0, 0, (min.Z + max.Z) / 2 + 30)
+	local SANDSTONE = Color3.fromRGB(232, 186, 132)
+	local SANDSTONE_DARK = Color3.fromRGB(205, 152, 100)
+	local POOL = Color3.fromRGB(40, 150, 190)
+	local WATER = Color3.fromRGB(110, 210, 255)
+	local function disc(
+		name: string,
+		y: number,
+		diameter: number,
+		height: number,
+		color: Color3,
+		props: { [string]: any }?
+	): BasePart
+		local p = part(folder, {
+			Name = name,
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(height, diameter, diameter),
+			CFrame = CFrame.new(fountainAt + Vector3.new(0, y + height / 2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
+			Color = color,
+		})
+		for key, value in (props or {}) :: { [string]: any } do
+			(p :: any)[key] = value
+		end
+		return p
+	end
+	local function water(name: string, y: number, diameter: number, height: number, curtain: boolean): BasePart
+		return disc(name, y, diameter, height, WATER, {
+			Material = Enum.Material.Glass,
+			Transparency = if curtain then 0.72 else 0.35,
+			Reflectance = if curtain then 0 else 0.15,
+			CanCollide = false,
+			CastShadow = false,
+		})
+	end
+
+	-- The step around it, the pool floor, and the rim wall (a ring of blocks, so the pool inside is open)
+	local RIM_R, RIM_TOP, FLOOR = 11, 3.4, 1.0
+	disc("FountainStep", 0, 26, 0.6, SANDSTONE_DARK)
+	disc("FountainBasin", 0.6, 22.4, FLOOR - 0.6, SANDSTONE_DARK)
+	disc("FountainPoolFloor", FLOOR, 21.6, 0.2, POOL)
+	local SEGMENTS = 28
+	for i = 1, SEGMENTS do
+		local angle = (i / SEGMENTS) * math.pi * 2
+		local around = CFrame.new(fountainAt) * CFrame.Angles(0, angle, 0)
+		local width = 2 * math.pi * RIM_R / SEGMENTS + 0.35
+		part(folder, {
+			Name = "FountainRim",
+			Size = Vector3.new(width, RIM_TOP - 0.6, 1.4),
+			CFrame = around * CFrame.new(0, 0.6 + (RIM_TOP - 0.6) / 2, -RIM_R),
+			Color = SANDSTONE,
+		})
+		-- A white cap along the top, a little wider than the wall
+		part(folder, {
+			Name = "FountainRimCap",
+			Size = Vector3.new(width + 0.1, 0.5, 2),
+			CFrame = around * CFrame.new(0, RIM_TOP + 0.25, -RIM_R),
+			Color = C.White,
+		})
+	end
+	local poolWater = water("FountainWater", FLOOR + 0.2, 21.4, RIM_TOP - 0.6 - FLOOR - 0.2, false)
+
+	-- Wishes: coins on the bottom of the pool
+	local random = Random.new(47)
+	for _ = 1, 18 do
+		local r = random:NextNumber(3.5, 9.5)
+		local a = random:NextNumber(0, math.pi * 2)
+		part(folder, {
+			Name = "FountainCoin",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.15, 0.9, 0.9),
+			CFrame = CFrame.new(fountainAt + Vector3.new(math.cos(a) * r, FLOOR + 0.28, math.sin(a) * r))
+				* CFrame.Angles(random:NextNumber(-0.25, 0.25), random:NextNumber(0, 6), math.rad(90)),
+			Color = C.Gold,
+			Material = Enum.Material.Neon,
+			CanCollide = false,
+		})
+	end
+
+	-- Lower column, middle bowl, and the water curtain spilling from it into the pool
+	disc("FountainPillar", FLOOR, 3.2, 6.2 - FLOOR, SANDSTONE)
+	disc("FountainBand", 3.2, 3.6, 0.4, C.Gold)
+	disc("FountainBowlFoot", 5.6, 5, 0.6, SANDSTONE_DARK)
+	disc("FountainBowl", 6.2, 11, 1.1, SANDSTONE)
+	disc("FountainBowlLip", 7.3, 11.4, 0.25, C.White)
+	water("FountainBowlWater", 7.3, 10, 0.3, false)
+	water("FountainCurtain", RIM_TOP - 0.6, 10.9, 6.2 - (RIM_TOP - 0.6), true)
+
+	-- Upper column, top bowl and its curtain
+	disc("FountainUpperPillar", 7.3, 1.8, 2.6, SANDSTONE)
+	disc("FountainUpperBand", 8.4, 2.2, 0.3, C.Gold)
+	disc("FountainTopBowl", 9.9, 5.2, 0.8, SANDSTONE)
+	disc("FountainTopLip", 10.7, 5.5, 0.2, C.White)
+	water("FountainTopWater", 10.6, 4.6, 0.3, false)
+	water("FountainTopCurtain", 7.6, 5.1, 9.9 - 7.6, true)
+
+	-- The gold parcel on top, tied with a red ribbon and bow
+	local parcelAt = fountainAt + Vector3.new(0, 12.1, 0)
+	local parcelTurn = CFrame.Angles(0, math.rad(20), 0)
+	local RIBBON = Color3.fromRGB(230, 60, 70)
 	part(folder, {
-		Name = "FountainBasin",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(2, 22, 22),
-		CFrame = CFrame.new(fountainAt + Vector3.new(0, 1, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = C.White,
+		Name = "FountainParcel",
+		Size = Vector3.new(2.4, 2, 2.4),
+		CFrame = CFrame.new(parcelAt) * parcelTurn,
+		Color = C.Gold,
 	})
-	part(folder, {
-		Name = "FountainWater",
-		Shape = Enum.PartType.Cylinder,
-		Size = Vector3.new(0.4, 19, 19),
-		CFrame = CFrame.new(fountainAt + Vector3.new(0, 2, 0)) * CFrame.Angles(0, 0, math.rad(90)),
-		Color = C.Water,
-		Material = Enum.Material.Glass,
-		Transparency = 0.3,
-		CanCollide = false,
-	})
-	box(folder, "FountainPillar", fountainAt + Vector3.new(0, 4, 0), Vector3.new(2.5, 6, 2.5), C.White)
+	for _, size in { Vector3.new(2.5, 2.1, 0.45), Vector3.new(0.45, 2.1, 2.5) } do
+		part(folder, {
+			Name = "FountainRibbon",
+			Size = size,
+			CFrame = CFrame.new(parcelAt) * parcelTurn,
+			Color = RIBBON,
+		})
+	end
+	for _, side in { -1, 1 } do
+		part(folder, {
+			Name = "FountainBow",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(0.9, 0.9, 0.9),
+			CFrame = CFrame.new(parcelAt) * parcelTurn * CFrame.new(side * 0.45, 1.3, 0),
+			Color = RIBBON,
+		})
+	end
+
+	-- Spray: a jet out of the top, arcing jets from four gold spouts on the rim, and mist on the pool
+	local function emitter(host: BasePart, props: { [string]: any })
+		local e = Instance.new("ParticleEmitter")
+		e.Color = ColorSequence.new(Color3.fromRGB(215, 240, 255))
+		e.Transparency = NumberSequence.new(0.15, 0.9)
+		e.LightEmission = 0.2
+		for key, value in props do
+			(e :: any)[key] = value
+		end
+		e.Parent = host
+	end
 	local spout = part(folder, {
 		Name = "FountainTop",
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.new(4, 4, 4),
-		Position = fountainAt + Vector3.new(0, 7.5, 0),
-		Color = C.Water,
-		Material = Enum.Material.Glass,
-		Transparency = 0.2,
+		Size = Vector3.new(0.6, 0.6, 0.6),
+		Position = parcelAt + Vector3.new(0, 1.9, 0),
+		Transparency = 1,
+		CanCollide = false,
+		CanQuery = false,
 	})
-	local spray = Instance.new("ParticleEmitter")
-	spray.Color = ColorSequence.new(Color3.fromRGB(200, 235, 255))
-	spray.Size = NumberSequence.new(0.6, 0.1)
-	spray.Speed = NumberRange.new(10, 14)
-	spray.SpreadAngle = Vector2.new(25, 25)
-	spray.Acceleration = Vector3.new(0, -35, 0)
-	spray.Lifetime = NumberRange.new(0.8, 1.1)
-	spray.Rate = 60
-	spray.Transparency = NumberSequence.new(0.2, 0.9)
-	spray.Parent = spout
+	emitter(spout, {
+		Size = NumberSequence.new(0.55, 0.15),
+		Speed = NumberRange.new(9, 12),
+		SpreadAngle = Vector2.new(14, 14),
+		Acceleration = Vector3.new(0, -30, 0),
+		Lifetime = NumberRange.new(0.9, 1.2),
+		Rate = 70,
+	})
+	for i = 1, 4 do
+		local angle = (i / 4) * math.pi * 2 + math.pi / 4
+		local at = fountainAt + Vector3.new(math.cos(angle) * RIM_R, RIM_TOP + 0.6, math.sin(angle) * RIM_R)
+		part(folder, {
+			Name = "FountainSpout",
+			Shape = Enum.PartType.Ball,
+			Size = Vector3.new(1.1, 1.1, 1.1),
+			Position = at,
+			Color = C.Gold,
+		})
+		-- Aimed inward and up; gravity bends it into an arc that lands near the column
+		local inward = (Vector3.new(fountainAt.X, at.Y, fountainAt.Z) - at).Unit
+		local nozzle = part(folder, {
+			Name = "FountainNozzle",
+			Size = Vector3.new(0.3, 0.3, 0.3),
+			CFrame = CFrame.lookAt(at, at + inward + Vector3.new(0, 0.9, 0)),
+			Transparency = 1,
+			CanCollide = false,
+			CanQuery = false,
+		})
+		emitter(nozzle, {
+			EmissionDirection = Enum.NormalId.Front,
+			Size = NumberSequence.new(0.35, 0.12),
+			Speed = NumberRange.new(13, 14),
+			SpreadAngle = Vector2.new(3, 3),
+			Acceleration = Vector3.new(0, -30, 0),
+			Lifetime = NumberRange.new(0.66, 0.7), -- (lands just inside the middle bowl's curtain)
+			Rate = 40,
+		})
+	end
+	emitter(poolWater, {
+		Size = NumberSequence.new(0.8, 1.6),
+		Speed = NumberRange.new(0.5, 1.5),
+		Lifetime = NumberRange.new(0.8, 1.4),
+		Transparency = NumberSequence.new(0.6, 1),
+		Rate = 12,
+		LightEmission = 0,
+	})
+	-- A soft blue glow from the pool at night
+	local glow = Instance.new("PointLight")
+	glow.Color = Color3.fromRGB(120, 210, 255)
+	glow.Range = 16
+	glow.Brightness = 1.2
+	glow.Shadows = false
+	glow.Parent = poolWater
 
 	-- Lawn beds on the plaza: raised grass with a low hedge around it and a couple of small trees
 	local function bed(center: Vector3, size: Vector2)
