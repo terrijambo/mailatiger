@@ -94,7 +94,7 @@ def main():
 
     # Things standing on roads (lamps are fine on sidewalks, not on asphalt)
     for thing in solid:
-        is_lamp = thing["name"] in ("LampPole", "Lamp")
+        is_lamp = thing["name"].startswith("Lamp")
         for road in (asphalt if is_lamp else roads):
             if area(thing["box"], road["box"]) > 0.3 and thing["box"][1] < road["box"][4] + 2:
                 label = "LAMP" if is_lamp else "ON ROAD"
@@ -108,7 +108,7 @@ def main():
         if lamp["name"] != "LampPole":
             continue
         for thing in items:
-            if thing is lamp or is_ground(thing) or thing["name"] in ("Lamp", "LampPole"):
+            if thing is lamp or is_ground(thing) or thing["name"].startswith("Lamp"):
                 continue
             if overlap(lamp["box"], thing["box"], 0.05):
                 problems.append(("LAMP HIT", lamp["path"], thing["path"], lamp["box"]))
@@ -168,7 +168,7 @@ def main():
             color = (186, 188, 196)
         elif name in ROAD_MARKS:
             color = (250, 250, 250)
-        elif name in ("LampPole", "Lamp"):
+        elif name.startswith("Lamp"):
             color = (255, 230, 120)
         elif name in ("Trunk", "Leaves", "Needles", "Snow", "Frond", "PalmTrunk"):
             color = (60, 150, 60)

@@ -19,6 +19,7 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local SignText = require(ReplicatedStorage.Shared.SignText)
 local Scenery = require(script.Parent.Scenery)
 
 local MapBuilder = {}
@@ -919,20 +920,17 @@ function MapBuilder.Build(): Map
 			CollectionService:AddTag(sign, "ZoneLock")
 			local gui = Instance.new("SurfaceGui")
 			gui.Face = Enum.NormalId.Back -- facing town (+Z)
-			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-			gui.PixelsPerStud = 40
 			gui.LightInfluence = 0
 			local label = Instance.new("TextLabel")
-			label.Size = UDim2.fromScale(1, 1)
+			label.Size = UDim2.fromScale(0.9, 0.8)
+			label.Position = UDim2.fromScale(0.05, 0.1)
 			label.BackgroundTransparency = 1
 			label.Font = Enum.Font.LuckiestGuy
-			label.TextScaled = true
-			label.TextWrapped = false
 			label.TextColor3 = Color3.fromRGB(255, 220, 90)
 			label.Text = `🔒 LEVEL {need}`
 			label.Parent = gui
 			local stroke = Instance.new("UIStroke")
-			stroke.Thickness = 4
+			stroke.Thickness = math.max(1.5, SignText.Fit(gui, label, sign) * 0.08)
 			stroke.Parent = label
 			gui.Parent = sign
 		end

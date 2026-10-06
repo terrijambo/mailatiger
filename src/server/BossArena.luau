@@ -8,6 +8,9 @@
 -- Everything is plain parts, so no extra art is needed.
 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local SignText = require(ReplicatedStorage.Shared.SignText)
 
 local BossArena = {}
 
@@ -39,18 +42,17 @@ end
 local function sign(part: BasePart, face: Enum.NormalId, text: string, color: Color3): TextLabel
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = face
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 30
 	gui.LightInfluence = 0
 	local label = Instance.new("TextLabel")
-	label.Size = UDim2.fromScale(1, 1)
+	label.Size = UDim2.fromScale(0.92, 0.84)
+	label.Position = UDim2.fromScale(0.04, 0.08)
 	label.BackgroundTransparency = 1
 	label.Font = Enum.Font.LuckiestGuy
-	label.TextScaled = true
 	label.TextColor3 = color
 	label.TextStrokeTransparency = 0
 	label.Text = text
 	label.Parent = gui
+	SignText.Fit(gui, label, part)
 	gui.Parent = part
 	return label
 end

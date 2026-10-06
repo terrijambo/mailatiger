@@ -8,6 +8,8 @@
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
+local SignText = require(game:GetService("ReplicatedStorage").Shared.SignText)
+
 local Scenery = {}
 
 export type Zone = {
@@ -114,8 +116,6 @@ local function signText(
 )
 	local gui = Instance.new("SurfaceGui")
 	gui.Face = face
-	gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-	gui.PixelsPerStud = 40
 	gui.LightInfluence = 0
 	gui.MaxDistance = 600
 	local frame = Instance.new("Frame")
@@ -143,8 +143,14 @@ local function signText(
 	title.Text = text
 	title.Name = "Title"
 	title.Parent = frame
+	-- Text as big as fits (SignText), with outlines scaled to the sign
+	local pixelsPerStud = SignText.Fit(gui, title, target)
+	local border = frame:FindFirstChildOfClass("UIStroke")
+	if border then
+		border.Thickness = math.max(2, pixelsPerStud * 0.15)
+	end
 	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 4
+	stroke.Thickness = math.max(1.5, pixelsPerStud * 0.08)
 	stroke.Color = Color3.new(0, 0, 0)
 	stroke.Transparency = 0.1
 	stroke.Parent = title
@@ -160,8 +166,9 @@ local function signText(
 		sub.Text = subtitle
 		sub.Name = "Subtitle"
 		sub.Parent = frame
+		SignText.Fit(gui, sub, target)
 		local subStroke = stroke:Clone()
-		subStroke.Thickness = 3
+		subStroke.Thickness = math.max(1, pixelsPerStud * 0.06)
 		subStroke.Parent = sub
 	end
 	gui.Parent = target
@@ -301,21 +308,57 @@ local function pine(parent: Instance, at: Vector3, height: number, snowy: boolea
 	end
 end
 
+-- A classic street lamp: a stepped base, a slim dark-green post with a decorative collar, and a glass
+-- lantern with a warm glow inside, under a little peaked cap with a knob on top
+local LAMP_GREEN = Color3.fromRGB(38, 62, 52)
 local function lamppost(parent: Instance, at: Vector3)
-	box(parent, "LampPole", at + Vector3.new(0, 4.5, 0), Vector3.new(0.5, 9, 0.5), C.Dark, Enum.Material.Metal)
-	local bulb = part(parent, {
+	box(parent, "LampBase", at + Vector3.new(0, 0.35, 0), Vector3.new(1.5, 0.7, 1.5), LAMP_GREEN, Enum.Material.Metal)
+	box(parent, "LampBase", at + Vector3.new(0, 0.95, 0), Vector3.new(1, 0.5, 1), LAMP_GREEN, Enum.Material.Metal)
+	box(parent, "LampPole", at + Vector3.new(0, 4.8, 0), Vector3.new(0.4, 8, 0.4), LAMP_GREEN, Enum.Material.Metal)
+	box(parent, "LampCollar", at + Vector3.new(0, 3, 0), Vector3.new(0.7, 0.35, 0.7), C.Gold, Enum.Material.Metal)
+	box(parent, "LampCollar", at + Vector3.new(0, 8.75, 0), Vector3.new(0.9, 0.3, 0.9), LAMP_GREEN, Enum.Material.Metal)
+	-- The lantern: a warm light inside a glass box with dark corner posts
+	local glow = part(parent, {
 		Name = "Lamp",
-		Shape = Enum.PartType.Ball,
-		Size = Vector3.new(1.6, 1.6, 1.6),
-		Position = at + Vector3.new(0, 9.4, 0),
-		Color = Color3.fromRGB(255, 235, 170),
+		Size = Vector3.new(0.8, 1.1, 0.8),
+		Position = at + Vector3.new(0, 9.6, 0),
+		Color = Color3.fromRGB(255, 225, 150),
 		Material = Enum.Material.Neon,
 	})
+	part(parent, {
+		Name = "LampGlass",
+		Size = Vector3.new(1.3, 1.5, 1.3),
+		Position = at + Vector3.new(0, 9.65, 0),
+		Color = Color3.fromRGB(255, 245, 210),
+		Material = Enum.Material.Glass,
+		Transparency = 0.45,
+	})
+	for _, corner in { Vector3.new(1, 0, 1), Vector3.new(-1, 0, 1), Vector3.new(1, 0, -1), Vector3.new(-1, 0, -1) } do
+		box(
+			parent,
+			"LampFrame",
+			at + Vector3.new(corner.X * 0.65, 9.65, corner.Z * 0.65),
+			Vector3.new(0.15, 1.5, 0.15),
+			LAMP_GREEN,
+			Enum.Material.Metal
+		)
+	end
+	box(parent, "LampCap", at + Vector3.new(0, 10.5, 0), Vector3.new(1.7, 0.25, 1.7), LAMP_GREEN, Enum.Material.Metal)
+	box(parent, "LampCap", at + Vector3.new(0, 10.75, 0), Vector3.new(1.1, 0.25, 1.1), LAMP_GREEN, Enum.Material.Metal)
+	local knob = part(parent, {
+		Name = "LampKnob",
+		Shape = Enum.PartType.Ball,
+		Size = Vector3.new(0.45, 0.45, 0.45),
+		Position = at + Vector3.new(0, 11.05, 0),
+		Color = C.Gold,
+		Material = Enum.Material.Metal,
+	})
+	knob.CanCollide = false
 	local light = Instance.new("PointLight")
-	light.Range = 18
-	light.Brightness = 1.2
-	light.Color = Color3.fromRGB(255, 225, 160)
-	light.Parent = bulb
+	light.Range = 20
+	light.Brightness = 1.3
+	light.Color = Color3.fromRGB(255, 220, 150)
+	light.Parent = glow
 end
 
 ---------------------------------------------------------------------------------------------------
@@ -906,17 +949,34 @@ local function backyardTheme(parent: Instance, zone: Zone)
 		Color3.fromRGB(235, 220, 190),
 		Enum.Material.SmoothPlastic
 	)
+	-- A gable roof: two wedges whose tall sides meet at the ridge and slope down over the front and back
+	-- (a wedge's tall side is its back, +Z, so the front half is turned around)
 	for _, side in { -1, 1 } do
 		part(parent, {
 			ClassName = "WedgePart",
 			Name = "HouseRoof",
 			Size = Vector3.new(42, 10, 12),
 			CFrame = CFrame.new(houseAt + Vector3.new(0, 23, side * 6))
-				* CFrame.Angles(0, if side == 1 then 0 else math.pi, 0),
+				* CFrame.Angles(0, if side == 1 then math.pi else 0, 0),
 			Color = C.Roof,
 			Material = Enum.Material.Slate,
 		})
 	end
+	box(
+		parent,
+		"RoofRidge",
+		houseAt + Vector3.new(0, 28.2, 0),
+		Vector3.new(42.4, 0.8, 1.2),
+		Color3.fromRGB(60, 90, 180)
+	)
+	box(parent, "Chimney", houseAt + Vector3.new(12, 27, -4), Vector3.new(3, 8, 3), Color3.fromRGB(180, 90, 70))
+	box(
+		parent,
+		"ChimneyTop",
+		houseAt + Vector3.new(12, 31.2, -4),
+		Vector3.new(3.6, 0.6, 3.6),
+		Color3.fromRGB(120, 60, 50)
+	)
 	box(parent, "Door", houseAt + Vector3.new(0, 4.5, 11.1), Vector3.new(5, 9, 0.4), C.Wood, Enum.Material.Wood)
 	for _, x in { -13, -6, 6, 13 } do
 		box(parent, "Window", houseAt + Vector3.new(x, 11, 11.1), Vector3.new(4, 4, 0.3), C.Glass, Enum.Material.Glass)
@@ -1279,19 +1339,17 @@ local function signpost(parent: Instance, at: Vector3, layout: Layout)
 		for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
 			local gui = Instance.new("SurfaceGui")
 			gui.Face = face
-			gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
-			gui.PixelsPerStud = 40
 			gui.LightInfluence = 0
 			local label = Instance.new("TextLabel")
-			label.Size = UDim2.fromScale(1, 1)
+			label.Size = UDim2.fromScale(0.92, 0.9)
+			label.Position = UDim2.fromScale(0.04, 0.05)
 			label.BackgroundTransparency = 1
 			label.Font = Enum.Font.LuckiestGuy
-			label.TextScaled = true
 			label.TextColor3 = Color3.new(1, 1, 1)
 			label.TextStrokeTransparency = 0
-			label.TextWrapped = false
 			label.Text = `{zone.Icon} {string.upper(zone.Name)}`
 			label.Parent = gui
+			SignText.Fit(gui, label, arrow)
 			gui.Parent = arrow
 		end
 	end
