@@ -991,6 +991,12 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 		variant = Config.Variants.ById.Shiny -- a reward for beating the boss
 	end
 	profile.LuckyNext = false
+	-- Promo Kit (Studio only): film a Shiny or Golden on demand
+	local forced = player:GetAttribute("PromoVariant")
+	if RunService:IsStudio() and typeof(forced) == "string" and Config.Variants.ById[forced] then
+		variant = Config.Variants.ById[forced]
+		player:SetAttribute("PromoVariant", nil)
+	end
 
 	local arenaId = Config.Arenas.ByTier[animal.Tier].Id
 	local s: Session = {

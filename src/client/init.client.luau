@@ -19,6 +19,7 @@ local Movement = require(script.Movement)
 local Music = require(script.Music)
 local OrdersBoard = require(script.OrdersBoard)
 local PenMenu = require(script.PenMenu)
+local PromoKit = require(script.PromoKit)
 local Settings = require(script.Settings)
 local SideButtons = require(script.SideButtons)
 local Shop = require(script.Shop)
@@ -47,6 +48,7 @@ TrollBar.Start()
 EventBanner.Start()
 BossLook.Start()
 FollowPrompt.Start()
+PromoKit.Start() -- (Studio only)
 task.spawn(ChuteVisual.Start) -- waits for the map to load, so it runs on its own
 task.spawn(Tutorial.Start) -- waits for your save to load
 

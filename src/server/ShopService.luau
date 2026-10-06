@@ -4,8 +4,11 @@
 --   BuyBox / EquipBox (box id)   UpgradeTool (tool id)   BuyStamp / SelectStamp (stamp id, "" = none)
 --   BuyChute (chute id, must be the next one up)   Rebirth   BuyTroll (troll id)
 --   BuyUpgrade (diamond upgrade id)   StudioBuy (Robux item key, Studio testing only)
+--   Claim ("O2" / "D1" / "W1" / "All")   Promo (Promo Kit shot setup, Studio only)
 
+local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -28,6 +31,35 @@ local map: MapBuilder.Map
 
 local function reply(player: Player, text: string)
 	Remotes.Notify:FireClient(player, "Message", { Speaker = "Supply Shop", Text = text })
+end
+
+-- Promo Kit (client/PromoKit.luau): set up shots for promo videos. Studio only, so it can't be used live.
+local defaultClock: number? = nil
+local function promo(player: Player, profile: DataService.Profile, id: string)
+	if not RunService:IsStudio() then
+		return
+	end
+	if id == "Golden" or id == "Shiny" then
+		player:SetAttribute("PromoVariant", id)
+		Remotes.Notify:FireClient(player, "Message", { Speaker = "Promo Kit", Text = `Your next animal will be {id}.` })
+	elseif id == "UnlockAll" then
+		for _, animal in Config.Animals.List do
+			profile.Owned[animal.Id] = true
+		end
+		for _, level in Config.Levels.ZoneLevels do
+			profile.Level = math.max(profile.Level, level)
+		end
+		profile.Coins += 1000000
+		Economy.Sync(player)
+		Remotes.Notify:FireClient(
+			player,
+			"Message",
+			{ Speaker = "Promo Kit", Text = "Every animal and zone unlocked, +1M coins." }
+		)
+	elseif id == "Sunset" or id == "Day" or id == "Night" then
+		defaultClock = defaultClock or Lighting.ClockTime
+		Lighting.ClockTime = if id == "Sunset" then 17.7 elseif id == "Night" then 0 else defaultClock :: number
+	end
 end
 
 -- CLAIM on the Orders board. id: "O2" (side order 2), "D1" (daily 1), "W1" (weekly 1), or "All"
@@ -99,6 +131,9 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		return
 	elseif action == "StudioBuy" then
 		MonetizationService.StudioBuy(player, itemId)
+		return
+	elseif action == "Promo" then
+		promo(player, profile, itemId) -- (Studio only)
 		return
 	elseif action == "Claim" then
 		claim(player, profile, itemId)
