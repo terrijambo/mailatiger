@@ -22,6 +22,7 @@ export type Order = {
 	Condition: string, -- "Any", "Stars4", "NoEscape" or "UnderPar"
 	Reward: number,
 	Done: boolean,
+	Claimed: boolean?, -- false = done, waiting for you to press CLAIM (nil on old saves = already paid)
 }
 
 -- A taped-up animal in your bag, waiting to be mailed. Its pay is worked out when it's taped; the chute you
@@ -37,7 +38,7 @@ export type Parcel = {
 	Variant: string?, -- "Shiny" or "Golden" (Config/Variants.luau)
 }
 
-export type ChallengeProgress = { Id: string, Progress: number, Done: boolean }
+export type ChallengeProgress = { Id: string, Progress: number, Done: boolean, Claimed: boolean? } -- (Claimed as in Order)
 export type ChallengeState = {
 	Day: number, -- the day (UTC) the dailies were picked
 	Daily: { ChallengeProgress },

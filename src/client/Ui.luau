@@ -436,6 +436,39 @@ function Ui.sideButton(parent: Instance, spec: SideButtonSpec): TextButton
 	return button
 end
 
+-- A red "!" dot in a button's top-right corner (something to claim). Toggle it with .Visible.
+function Ui.alertDot(button: GuiObject): Frame
+	local dot = Ui.make("Frame", {
+		Name = "AlertDot",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(1, -6, 0, 6),
+		Size = UDim2.fromOffset(28, 28),
+		BackgroundColor3 = Ui.RED,
+		Visible = false,
+		ZIndex = 10,
+	}, button)
+	Ui.round(dot, 14)
+	Ui.border(dot, 3)
+	Ui.make("TextLabel", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Font = Ui.TITLE_FONT,
+		Text = "!",
+		TextSize = 22,
+		TextColor3 = Ui.WHITE,
+		ZIndex = 11,
+	}, dot)
+	-- A gentle bob so it catches the eye
+	local scale = Ui.make("UIScale", {}, dot)
+	task.spawn(function()
+		while dot.Parent do
+			scale.Scale = 1 + 0.12 * math.abs(math.sin(os.clock() * 4))
+			task.wait(0.05)
+		end
+	end)
+	return dot
+end
+
 -- A text label with sensible defaults (for inside windows).
 function Ui.label(parent: Instance, props: { [string]: any }): TextLabel
 	local base: { [string]: any } = {

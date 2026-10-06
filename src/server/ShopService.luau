@@ -11,6 +11,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
+local ChallengeService = require(script.Parent.ChallengeService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local EventService = require(script.Parent.EventService)
@@ -27,6 +28,52 @@ local map: MapBuilder.Map
 
 local function reply(player: Player, text: string)
 	Remotes.Notify:FireClient(player, "Message", { Speaker = "Supply Shop", Text = text })
+end
+
+-- CLAIM on the Orders board. id: "O2" (side order 2), "D1" (daily 1), "W1" (weekly 1), or "All"
+local function claim(player: Player, profile: DataService.Profile, id: string)
+	local coins = 0
+	local function claimOrder(index: number)
+		local reward = Orders.Claim(profile, index)
+		if reward then
+			coins += reward
+		end
+	end
+	if id == "All" then
+		for index = 1, #profile.Orders do
+			claimOrder(index)
+		end
+		for index = 1, #profile.Challenges.Daily do
+			ChallengeService.Claim(player, false, index)
+		end
+		for index = 1, #profile.Challenges.Weekly do
+			ChallengeService.Claim(player, true, index)
+		end
+	else
+		local kind, number = string.match(id, "^(%u)(%d+)$")
+		local index = tonumber(number)
+		if not index then
+			return
+		end
+		if kind == "O" then
+			claimOrder(index)
+		elseif kind == "D" or kind == "W" then
+			ChallengeService.Claim(player, kind == "W", index)
+		end
+	end
+	if coins > 0 then
+		Economy.AddCoins(player, coins, "Order")
+	end
+	-- Every order done and claimed: new ones right away
+	if Orders.Refresh(profile) then
+		Remotes.Notify:FireClient(
+			player,
+			"Message",
+			{ Speaker = "Postmaster Gruff", Text = "New orders are up on my board!" }
+		)
+	end
+	Remotes.Notify:FireClient(player, "Claimed", {})
+	Economy.Sync(player)
 end
 
 local function onShopAction(player: Player, action: unknown, id: unknown)
@@ -52,6 +99,9 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		return
 	elseif action == "StudioBuy" then
 		MonetizationService.StudioBuy(player, itemId)
+		return
+	elseif action == "Claim" then
+		claim(player, profile, itemId)
 		return
 	elseif action == "FollowAsked" then
 		-- The Favorite / Get updates card was shown (so it's only asked a couple of times, ever)

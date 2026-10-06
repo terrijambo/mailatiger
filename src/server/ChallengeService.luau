@@ -8,7 +8,8 @@
 --       "Order"  {}                          a side order completed
 --       "Streak" { Count }                   your delivery streak just reached Count
 --       "Troll"  {}                          a troll item used
---   * Rewards are paid the moment a challenge is done. All 3 dailies done grows a day streak bonus.
+--   * A finished challenge waits on the Orders board until you press CLAIM (ChallengeService.Claim).
+--     All 3 dailies done grows a day streak bonus (paid right away).
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -93,18 +94,33 @@ local function matches(challenge: Challenge, kind: string, data: { [string]: any
 	return true
 end
 
-local function reward(player: Player, profile: Profile, challenge: Challenge, weekly: boolean)
-	local coins = Economy.BestBaseValue(player) * challenge.Jobs
-	profile.Coins += coins
-	profile.Diamonds += challenge.Diamonds
+-- Done: it waits on the board for CLAIM
+local function finished(player: Player, entry: DataService.ChallengeProgress, challenge: Challenge, weekly: boolean)
+	entry.Done = true
+	entry.Claimed = false
 	Analytics.Custom(player, if weekly then "WeeklyChallengeDone" else "DailyChallengeDone")
 	Remotes.Notify:FireClient(player, "ChallengeDone", {
 		Text = Challenges.Text(challenge),
 		Weekly = weekly,
-		Coins = coins,
+		Coins = Economy.BestBaseValue(player) * challenge.Jobs,
 		Diamonds = challenge.Diamonds,
 	})
-	Remotes.Notify:FireClient(player, "Diamonds", { Amount = challenge.Diamonds, Source = "Challenge" })
+end
+
+-- CLAIM: pays a finished challenge. Returns whether it paid.
+function ChallengeService.Claim(player: Player, weekly: boolean, index: number): boolean
+	local profile = DataService.Get(player)
+	local list = if profile then (if weekly then profile.Challenges.Weekly else profile.Challenges.Daily) else nil
+	local entry = list and list[index]
+	local challenge = entry and Challenges.ById[entry.Id]
+	if not profile or not entry or not challenge or not entry.Done or entry.Claimed ~= false then
+		return false
+	end
+	entry.Claimed = true
+	local coins = Economy.BestBaseValue(player) * challenge.Jobs
+	Economy.AddCoins(player, coins, "Challenge")
+	Economy.AddDiamonds(player, challenge.Diamonds, "Challenge")
+	return true
 end
 
 -- All 3 dailies done: a bonus that grows with each day in a row
@@ -148,8 +164,7 @@ function ChallengeService.Track(player: Player, kind: string, data: { [string]: 
 				changed = true
 				if entry.Progress >= challenge.Count then
 					entry.Progress = challenge.Count
-					entry.Done = true
-					reward(player, profile, challenge, scope.Weekly)
+					finished(player, entry, challenge, scope.Weekly)
 				end
 			end
 		end

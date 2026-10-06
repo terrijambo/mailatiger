@@ -195,7 +195,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		return
 	end
 
-	local total, orderBonus, best = 0, 0, 1
+	local total, orderBonus, ordersReady, best = 0, 0, 0, 1
 	local lines = {}
 	local progress: { { AnimalId: string, Stars: number, Orders: number, Variant: string? } } = {} -- XP and quests, after paying
 	for _, parcel in profile.Parcels do
@@ -207,6 +207,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 			UnderPar = parcel.UnderPar,
 		})
 		orderBonus += bonus
+		ordersReady += completed
 		table.insert(
 			progress,
 			{ AnimalId = parcel.AnimalId, Stars = parcel.Stars, Orders = completed, Variant = parcel.Variant }
@@ -261,7 +262,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 
 	local count = #profile.Parcels
 	profile.Parcels = {}
-	Economy.AddCoins(player, total + orderBonus, "MailPayout") -- (one update, so the HUD shows one "+N")
+	Economy.AddCoins(player, total, "MailPayout") -- (one update, so the HUD shows one "+N")
 	-- XP, the collection and quests, once the coins have landed
 	task.defer(function()
 		for _, entry in progress do
@@ -284,7 +285,8 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	notify(player, "MailReceipt", {
 		Count = count,
 		Coins = total,
-		OrderBonus = orderBonus,
+		OrderBonus = orderBonus, -- (waiting to be claimed on the Orders board)
+		OrdersReady = ordersReady,
 		Chute = chute.DisplayName,
 		Lines = lines,
 		Line = pick(Config.Gruff.Ratings[best]),

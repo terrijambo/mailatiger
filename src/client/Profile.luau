@@ -22,7 +22,7 @@ export type Data = {
 	SelectedStamp: string?,
 	Rebirths: number,
 	Mailed: number,
-	Orders: { { AnimalId: string, Condition: string, Reward: number, Done: boolean } },
+	Orders: { { AnimalId: string, Condition: string, Reward: number, Done: boolean, Claimed: boolean? } },
 	OrdersRefreshAt: number,
 	Parcels: { { AnimalId: string, Stars: number, Coins: number } },
 	ChuteTier: string,
@@ -43,9 +43,9 @@ export type Data = {
 	Goldens: { [string]: number }?,
 	Challenges: {
 		Day: number,
-		Daily: { { Id: string, Progress: number, Done: boolean } },
+		Daily: { { Id: string, Progress: number, Done: boolean, Claimed: boolean? } },
 		Week: number,
-		Weekly: { { Id: string, Progress: number, Done: boolean } },
+		Weekly: { { Id: string, Progress: number, Done: boolean, Claimed: boolean? } },
 		Streak: number,
 		LastAllDay: number,
 	}?,
@@ -100,6 +100,27 @@ function Profile.BagCapacity(data: Data): number
 end
 
 -- Calls `callback` now and whenever your progress changes.
+-- How many finished orders and challenges are waiting for CLAIM (for the red "!" dots)
+function Profile.Claimable(data: Data): number
+	local count = 0
+	for _, order in data.Orders do
+		if order.Done and order.Claimed == false then
+			count += 1
+		end
+	end
+	local state = data.Challenges
+	if state then
+		for _, list in { state.Daily, state.Weekly } do
+			for _, entry in list do
+				if entry.Done and entry.Claimed == false then
+					count += 1
+				end
+			end
+		end
+	end
+	return count
+end
+
 function Profile.Watch(callback: () -> ())
 	player:GetAttributeChangedSignal("Profile"):Connect(callback)
 	callback()

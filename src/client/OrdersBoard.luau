@@ -1,6 +1,6 @@
 --!strict
 -- Gruff's orders board: shows your current orders, what each needs, and whether it's done.
--- Orders complete automatically when you mail a matching animal.
+-- Orders and challenges finish by themselves as you play, then wait here for you to press CLAIM.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -45,6 +45,25 @@ function OrdersBoard.Start()
 		Text = "",
 	})
 
+	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
+
+	-- A green CLAIM button on the right of a card
+	local function claimButton(card: GuiObject, id: string, reward: string)
+		local button = Ui.button(card, {
+			AnchorPoint = Vector2.new(1, 0.5),
+			Position = UDim2.new(1, -10, 0.5, 0),
+			Size = UDim2.fromOffset(150, 42),
+			BackgroundColor3 = Ui.GREEN,
+			Text = `CLAIM {reward}`,
+			TextSize = 18,
+		})
+		button.Activated:Connect(function()
+			button.Active = false
+			button.Text = "..."
+			shopAction:FireServer("Claim", id)
+		end)
+	end
+
 	local function redraw()
 		for _, child in list:GetChildren() do
 			if child:IsA("GuiObject") then
@@ -52,6 +71,23 @@ function OrdersBoard.Start()
 			end
 		end
 		local profile = Profile.Get()
+
+		-- CLAIM ALL, when there's more than one thing waiting
+		local waiting = Profile.Claimable(profile)
+		if waiting > 1 then
+			local all = Ui.button(list, {
+				LayoutOrder = -1,
+				Size = UDim2.new(1, 0, 0, 46),
+				BackgroundColor3 = Ui.GREEN,
+				Text = `CLAIM ALL ({waiting})`,
+				Font = Ui.TITLE_FONT,
+				TextSize = 24,
+			})
+			all.Activated:Connect(function()
+				all.Active = false
+				shopAction:FireServer("Claim", "All")
+			end)
+		end
 
 		-- Gruff's main quest, on top in gold
 		local quest = QuestText.Current()
@@ -111,7 +147,11 @@ function OrdersBoard.Start()
 				Text = `DAILY CHALLENGES  (new ones in {secondsLeft // 3600}h {secondsLeft % 3600 // 60}m)`,
 			})
 			local order = 1
-			local function challengeCard(entry: { Id: string, Progress: number, Done: boolean }, weekly: boolean)
+			local function challengeCard(
+				entry: { Id: string, Progress: number, Done: boolean, Claimed: boolean? },
+				weekly: boolean,
+				index: number
+			)
 				local challenge = Config.Challenges.ById[entry.Id]
 				if not challenge then
 					return
@@ -142,6 +182,10 @@ function OrdersBoard.Start()
 					BackgroundColor3 = if entry.Done then Ui.GREEN else Color3.fromRGB(60, 170, 235),
 				}, back)
 				Ui.round(fill, 7)
+				if entry.Done and entry.Claimed == false then
+					claimButton(card, `{if weekly then "W" else "D"}{index}`, `+{challenge.Diamonds} 💎`)
+					return
+				end
 				Ui.label(card, {
 					AnchorPoint = Vector2.new(1, 0.5),
 					Position = UDim2.new(1, -12, 0.5, 0),
@@ -150,15 +194,15 @@ function OrdersBoard.Start()
 					TextXAlignment = Enum.TextXAlignment.Right,
 					TextColor3 = if entry.Done then Ui.GREEN else Ui.BROWN,
 					Text = if entry.Done
-						then "DONE ✓"
+						then "CLAIMED ✓"
 						else `{entry.Progress}/{challenge.Count}   +{challenge.Diamonds} 💎`,
 				})
 			end
-			for _, entry in state.Daily do
-				challengeCard(entry, false)
+			for index, entry in state.Daily do
+				challengeCard(entry, false, index)
 			end
-			for _, entry in state.Weekly do
-				challengeCard(entry, true)
+			for index, entry in state.Weekly do
+				challengeCard(entry, true, index)
 			end
 			if state.Streak > 0 then
 				order += 1
@@ -204,6 +248,10 @@ function OrdersBoard.Start()
 				TextColor3 = Color3.fromRGB(110, 100, 90),
 				Text = CONDITION_TEXT[order.Condition] or order.Condition,
 			})
+			if order.Done and order.Claimed == false then
+				claimButton(frame, `O{index}`, Format.Short(order.Reward))
+				continue
+			end
 			Ui.label(frame, {
 				AnchorPoint = Vector2.new(1, 0.5),
 				Position = UDim2.new(1, -14, 0.5, 0),
@@ -211,7 +259,7 @@ function OrdersBoard.Start()
 				TextSize = 20,
 				TextXAlignment = Enum.TextXAlignment.Right,
 				TextColor3 = if order.Done then Ui.GREEN else Color3.fromRGB(200, 140, 0),
-				Text = if order.Done then "DONE ✓" else `+{Format.Short(order.Reward)} coins`,
+				Text = if order.Done then "CLAIMED ✓" else `+{Format.Short(order.Reward)} coins`,
 			})
 		end
 		local minutes = math.max(0, math.ceil((profile.OrdersRefreshAt - os.time()) / 60))
@@ -220,7 +268,6 @@ function OrdersBoard.Start()
 
 	-- The ORDERS side button and the board in town both open it. Opening asks the server for fresh orders
 	-- if the old ones have expired.
-	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
 	Menus.Register("Orders", gui, function()
 		shopAction:FireServer("RefreshOrders")
 		redraw()

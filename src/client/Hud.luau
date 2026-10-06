@@ -735,7 +735,10 @@ function Hud.Start()
 		elseif kind == "MailReceipt" then
 			-- You mailed your bag at the chute: coins fly into your counter
 			flyInto("Hud_Coins", math.clamp(6 + data.Count * 2, 8, 18), coinRow)
-			local extras = if data.OrderBonus > 0 then `   +{Format.Short(data.OrderBonus)} from orders!` else ""
+			local ready = data.OrdersReady or 0
+			local extras = if ready > 0
+				then `   📋 {ready} order{if ready == 1 then "" else "s"} ready to CLAIM!`
+				else ""
 			local plural = if data.Count == 1 then "parcel" else "parcels"
 			showToast(
 				`✉️ {data.Count} {plural} mailed ({data.Chute})`,
@@ -847,7 +850,7 @@ function Hud.Start()
 				if data.Mailed
 					then "Mailed it in time: rewards x1.5! Your next job is a guaranteed Shiny!"
 					else "Your next job is a guaranteed Shiny!",
-				`+{data.Diamonds} 💎   +{Format.Short(data.Coins)} coins`,
+				`CLAIM +{data.Diamonds} 💎  +{Format.Short(data.Coins)} coins in MENU > ORDERS`,
 				nil,
 				Ui.GOLD
 			)

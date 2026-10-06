@@ -16,6 +16,7 @@ local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Menus = require(script.Parent.Menus)
+local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
 local player = Players.LocalPlayer
@@ -139,7 +140,7 @@ function SideButtons.Start()
 		end
 	)
 
-	add(
+	local ordersButton = add(
 		popup,
 		{ Label = "ORDERS", Icon = "Button_Orders", Color = Ui.PURPLE, LayoutOrder = 1 },
 		Enum.KeyCode.DPadRight,
@@ -180,6 +181,15 @@ function SideButtons.Start()
 		end
 	)
 	invite.Visible = false
+
+	-- Red "!" on MENU and ORDERS while a finished order or challenge is waiting for CLAIM
+	local menuDot = Ui.alertDot(menuButton)
+	local ordersDot = Ui.alertDot(ordersButton)
+	Profile.Watch(function()
+		local waiting = Profile.Claimable(Profile.Get()) > 0
+		menuDot.Visible = waiting
+		ordersDot.Visible = waiting
+	end)
 
 	local function layout()
 		local compact = Ui.compact()
