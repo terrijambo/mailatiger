@@ -880,6 +880,13 @@ function BoxingScreen.Start()
 			drawSeams()
 			shake(boxCard)
 			help.Text = "It peeled a strip of tape off! Re-tape that seam!"
+		elseif kind == "BossStrip" then
+			-- The boss box: a strip went on a seam that needs several
+			local seam = seams[data.Seam]
+			if seam then
+				local center = boxCard.AbsolutePosition + boxCard.AbsoluteSize * (seam.A + seam.B) / 2
+				floatText(`{data.Have}/{data.Need}`, center, Ui.WHITE)
+			end
 		elseif kind == "AngryTouch" then
 			shake(animalCard)
 			hurtFlash.BackgroundTransparency = 0.35

@@ -188,6 +188,28 @@ function Effects.Start()
 				confetti(at + Vector3.new(0, 3, 0), 90)
 			end
 			fovPunch(10, 0.8)
+		elseif kind == "BossStomp" then
+			-- A red ring on the ground that fills in: jump before it lands!
+			local ring = Instance.new("Part")
+			ring.Name = "StompWarning"
+			ring.Shape = Enum.PartType.Cylinder
+			ring.Anchored = true
+			ring.CanCollide = false
+			ring.CanQuery = false
+			ring.Material = Enum.Material.Neon
+			ring.Color = Color3.fromRGB(255, 60, 60)
+			ring.Transparency = 0.7
+			ring.Size = Vector3.new(0.3, 2, 2)
+			ring.CFrame = CFrame.new(data.At + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.rad(90))
+			ring.Parent = Workspace
+			TweenService:Create(ring, TweenInfo.new(data.Delay, Enum.EasingStyle.Linear), {
+				Size = Vector3.new(0.3, data.Radius * 2, data.Radius * 2),
+				Transparency = 0.35,
+			}):Play()
+			task.delay(data.Delay + 0.2, function()
+				ring:Destroy()
+				shakeCamera(1, 0.25)
+			end)
 		elseif kind == "Slip" then
 			-- Slipped on a banana peel: a little flop
 			shakeCamera(0.8, 0.2)

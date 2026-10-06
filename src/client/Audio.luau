@@ -36,6 +36,12 @@ local FOR_EVENT: { [string]: string } = {
 	ChallengeDone = "QuestDone",
 	AllDailies = "LevelUp",
 	StreakLost = "AngryHit",
+	EventStart = "ServerBoost",
+	EventWinner = "Ding",
+	StampedeCatch = "Pop",
+	BossStart = "Roar",
+	BossWin = "LevelUp",
+	BossReward = "CoinJingle",
 	NewSpecies = "CoinJingle",
 }
 

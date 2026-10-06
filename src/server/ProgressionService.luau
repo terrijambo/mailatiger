@@ -7,6 +7,7 @@
 --     "State" quests (own the Bunny, reach level 4, buy Sneakers...) complete the moment they're true.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Analytics = require(script.Parent.Analytics)
@@ -65,7 +66,12 @@ function ProgressionService.AddXP(player: Player, amount: number, reason: string
 	if not profile or amount <= 0 then
 		return
 	end
-	amount = math.floor(amount * (1 + Economy.UpgradeBonus(player, "QuickStudy") / 100)) -- diamond upgrade
+	local eventMult = Workspace:GetAttribute("XPMult") -- Double XP event
+	amount = math.floor(
+		amount
+			* (1 + Economy.UpgradeBonus(player, "QuickStudy") / 100) -- diamond upgrade
+			* (if typeof(eventMult) == "number" then eventMult else 1)
+	)
 	profile.XP += amount
 	notify(player, "XP", { Amount = amount, Reason = reason })
 	local leveled = false

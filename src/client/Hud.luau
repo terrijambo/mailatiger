@@ -784,6 +784,41 @@ function Hud.Start()
 				nil,
 				Ui.GREEN
 			)
+		elseif kind == "EventStart" then
+			local event = Config.Events.ById[data.Id]
+			if event then
+				showToast(`{event.Emoji} {event.DisplayName}!`, event.Description, nil, nil, Ui.PURPLE)
+			end
+		elseif kind == "EventWinner" then
+			showToast(`🏁 {data.Player}`, data.Text, nil, nil, Ui.PURPLE)
+		elseif kind == "StampedeCatch" then
+			showToast("🐹 Caught one!", `You grabbed a wild {data.Animal}!`, nil, nil, Ui.GREEN)
+		elseif kind == "BossStart" then
+			showToast(
+				`⚔️ {data.Boss} HAS LANDED!`,
+				"Step on the red BOSS pad in the plaza and help pin it down and box it!",
+				nil,
+				nil,
+				Ui.RED
+			)
+		elseif kind == "BossWin" then
+			showToast(
+				`🏆 {data.Boss} BOXED!`,
+				if data.Top then `Top helper: {data.Top} (crown until the next boss!)` else "The whole server did it!",
+				nil,
+				nil,
+				Ui.GOLD
+			)
+		elseif kind == "BossLose" then
+			showToast(`📮 {data.Boss} got away`, "RETURN TO SENDER. It'll be back next hour.", nil, nil, Ui.GREY)
+		elseif kind == "BossReward" then
+			showToast(
+				if data.Top then "👑 You were the top helper!" else "⚔️ Boss reward",
+				"Your next job is a guaranteed Shiny!",
+				`+{data.Diamonds} 💎   +{Format.Short(data.Coins)} coins`,
+				nil,
+				Ui.GOLD
+			)
 		elseif kind == "VariantFound" then
 			local variant = Config.Variants.ById[data.Variant]
 			if variant then

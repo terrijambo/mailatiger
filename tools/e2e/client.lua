@@ -614,6 +614,85 @@ local function run()
 	log(#broken == 0, "sounds load: " .. loaded .. " ok" .. (if #broken > 0 then ", broken: " .. table.concat(broken, ", ") else ""))
 	log(player:GetAttribute("MusicOff") == true, "music-off setting reached the music player")
 
+	-- Events (started with the Studio test buttons)
+	remotes.ShopAction:FireServer("StudioEvent", "GoldenHour")
+	log(waitFor(function()
+		return Workspace:GetAttribute("EventId") == "GoldenHour" and Workspace:GetAttribute("VariantLuck") == 5
+	end, 3), "Golden Hour started (Shiny odds x5)")
+	task.wait(0.5)
+	remotes.ShopAction:FireServer("StudioEvent", "Stampede")
+	local stuff = Workspace:WaitForChild("EventStuff", 5)
+	log(waitFor(function()
+		return stuff and stuff:FindFirstChild("StampedeCritter") ~= nil
+	end, 3), "stampede animals are running")
+	local critter = stuff and stuff:FindFirstChild("StampedeCritter")
+	local coinsBefore = profile().Coins
+	if critter then
+		-- (walk up to it first: a prompt only works once you're in range)
+		local stick = game:GetService("RunService").Heartbeat:Connect(function()
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root and critter.Parent then
+				root.CFrame = critter.CFrame * CFrame.new(0, 1, 2.5)
+			end
+		end)
+		task.wait(0.6)
+		stick:Disconnect()
+		holdPrompt(critter:FindFirstChildOfClass("ProximityPrompt"), critter)
+	end
+	log(waitFor(function()
+		return profile().Coins > coinsBefore
+	end, 3), "grabbed a stampede animal")
+
+	-- The boss: pin it by holding a rope, then box it
+	task.wait(0.5)
+	remotes.ShopAction:FireServer("StudioEvent", "Boss")
+	log(waitFor(function()
+		return Workspace:GetAttribute("BossPhase") == "Pin"
+	end, 3), "the boss landed")
+	local arena = Workspace:FindFirstChild("BossArena")
+	local handle = arena and arena:FindFirstChild("BossHandle")
+	local bossBall = arena and arena:FindFirstChild("Boss")
+	local pinned = false
+	if handle and bossBall then
+		local prompt = handle:FindFirstChildOfClass("ProximityPrompt")
+		local stick = game:GetService("RunService").Heartbeat:Connect(function()
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root and handle.Parent then
+				local away = handle.Position - bossBall.Position
+				away = Vector3.new(away.X, 0, away.Z).Unit
+				root.CFrame = CFrame.new(handle.Position + away * 3)
+			end
+		end)
+		local started = os.clock()
+		while os.clock() - started < 30 and player:GetAttribute("Stage") ~= "Box" do
+			pcall(function()
+				prompt:InputHoldEnd()
+				prompt:InputHoldBegin()
+			end)
+			task.wait(1.5)
+		end
+		pcall(function()
+			prompt:InputHoldEnd()
+		end)
+		stick:Disconnect()
+		pinned = player:GetAttribute("Stage") == "Box"
+	end
+	log(pinned, "pinned the boss (BOX stage for everyone there)")
+	if pinned then
+		for seam = 1, 5 do
+			remotes.BoxingInput:FireServer("Tape", seam)
+			task.wait(0.45)
+		end
+	end
+	log(waitFor(function()
+		return (events.BossWin or 0) > 0
+	end, 5), "boxed the boss and won")
+	log(waitFor(function()
+		return (events.BossReward or 0) > 0 and profile().LuckyNext == true
+	end, 3), "boss reward: diamonds, coins and a Shiny next job")
+
 	log(true, "events seen: " .. HttpService:JSONEncode(events))
 	local challenges = profile().Challenges
 	log(challenges ~= nil and #challenges.Daily == 3 and #challenges.Weekly == 1, "3 daily + 1 weekly challenge picked")

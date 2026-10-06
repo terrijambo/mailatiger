@@ -89,6 +89,8 @@ export type Profile = {
 	Challenges: ChallengeState,
 	-- This week's leaderboard stats (reset when a new week starts)
 	WeekStats: { Week: number, FiveStamps: number },
+	BossWins: number, -- hourly bosses beaten
+	LuckyNext: boolean, -- the next job is a guaranteed Shiny (a boss reward)
 }
 
 local DataService = {}
@@ -142,6 +144,8 @@ local function newProfile(): Profile
 		GoldenMailed = 0,
 		Challenges = { Day = 0, Daily = {}, Week = 0, Weekly = {}, Streak = 0, LastAllDay = 0 },
 		WeekStats = { Week = 0, FiveStamps = 0 },
+		BossWins = 0,
+		LuckyNext = false,
 	}
 end
 

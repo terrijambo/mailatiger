@@ -13,6 +13,7 @@ local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local EventService = require(script.Parent.EventService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local MonetizationService = require(script.Parent.MonetizationService)
 local Orders = require(script.Parent.Orders)
@@ -50,6 +51,9 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		return
 	elseif action == "StudioBuy" then
 		MonetizationService.StudioBuy(player, itemId)
+		return
+	elseif action == "StudioEvent" then
+		EventService.StudioStart(itemId) -- (does nothing outside Studio)
 		return
 	elseif action == "RefreshOrders" then
 		-- Opening Gruff's Orders from the side button: new orders if the old ones ran out

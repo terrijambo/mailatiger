@@ -140,6 +140,9 @@ local function refreshCarried(player: Player)
 	end
 end
 
+-- Set by EventService: runs for each animal mailed
+MailService.OnMailed = nil :: ((Player, string) -> ())?
+
 function MailService.AddParcel(player: Player, parcel: Parcel)
 	local profile = DataService.Get(player)
 	if not profile then
@@ -264,6 +267,10 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		for _, entry in progress do
 			ProgressionService.OnParcelMailed(player, entry.AnimalId, entry.Stars, entry.Variant)
 			ChallengeService.Track(player, "Mail", { Variant = entry.Variant })
+			local hook = MailService.OnMailed
+			if hook then
+				hook(player, entry.AnimalId) -- (EventService: Rush Order)
+			end
 			for _ = 1, entry.Orders do
 				ProgressionService.OnOrderDone(player, entry.AnimalId)
 				ChallengeService.Track(player, "Order", {})

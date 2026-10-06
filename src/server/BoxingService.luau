@@ -569,6 +569,10 @@ local function finishJob(s: Session)
 	local seconds = os.clock() - s.StartTime
 
 	local mult = Boxing.StarPayoutMult[stars] * Boxing.EscapePayoutMult ^ s.Escapes
+	local perfect = Workspace:GetAttribute("PerfectMult") -- Speed Tape event: 5-stamp jobs pay more
+	if stars == 5 and typeof(perfect) == "number" then
+		mult *= perfect
+	end
 	if stamp then
 		mult *= stamp.PayoutMult
 		if stamp.UnderParMult and underPar then
@@ -834,7 +838,8 @@ local function updateBox(s: Session, now: number, dt: number)
 	local elapsed = Workspace:GetServerTimeNow() - state.Start
 
 	local rate = (cfg.BaseAngerRate + cfg.AngerRatePerTier * (tier - 1)) * (1 + cfg.AngerGrowth * elapsed)
-	state.Anger += rate * state.AngerMult * dt
+	local eventMult = Workspace:GetAttribute("AngerMult") -- Speed Tape event
+	state.Anger += rate * state.AngerMult * (if typeof(eventMult) == "number" then eventMult else 1) * dt
 
 	if twists.Pound and now >= state.NextPound then
 		state.NextPound = now + Tuning.Pound.Interval
@@ -982,6 +987,10 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 	if not variant and jobsSoFar == Config.Variants.LuckyJob - 1 and next(profile.Shinies) == nil then
 		variant = Config.Variants.ById.Shiny
 	end
+	if not variant and profile.LuckyNext then
+		variant = Config.Variants.ById.Shiny -- a reward for beating the boss
+	end
+	profile.LuckyNext = false
 
 	local arenaId = Config.Arenas.ByTier[animal.Tier].Id
 	local s: Session = {
@@ -1176,6 +1185,9 @@ function BoxingService.AngerNearest(position: Vector3, radius: number, byPlayer:
 	return target.Player
 end
 
+-- Set by BossService: BOX screen messages from players who aren't on a normal job
+BoxingService.ExternalInput = nil :: ((Player, unknown, unknown) -> ())?
+
 function BoxingService.Stun(player: Player, seconds: number)
 	stun(player, seconds)
 end
@@ -1202,6 +1214,11 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 	Remotes.Listen(Remotes.BoxingInput, 30, function(player: Player, action: unknown, index: unknown)
 		local s = jobOf(player)
 		if not s or s.Stage ~= "Box" then
+			-- (the boss fight has its own shared box: BossService)
+			local external = BoxingService.ExternalInput
+			if external then
+				external(player, action, index)
+			end
 			return
 		end
 		if action == "Pet" then

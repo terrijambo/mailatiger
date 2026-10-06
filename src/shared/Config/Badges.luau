@@ -33,6 +33,7 @@ local badges: { [string]: Badge } = {
 	},
 	ChaosCourier = { Id = 0, DisplayName = "Chaos Courier", Description = "Mailed an animal in Chaos Mode." },
 	Reborn = { Id = 0, DisplayName = "Reborn", Description = "Rebirthed for a permanent coin bonus." },
+	BossHunter = { Id = 0, DisplayName = "Boss Hunter", Description = "Helped box one of the hourly bosses." },
 }
 
 return badges

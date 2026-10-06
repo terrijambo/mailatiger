@@ -1,6 +1,6 @@
 # Events plan: a small event every 10 minutes, a boss every hour
 
-**Status: plan for your approval.** Nothing here is built yet. Change anything, then tell me which phases to build.
+**Status: built (2026-10-06).** Phases A–D and most of E are in: the clock schedule and banner, all 7 small events, and the hourly boss (Mega Tiger, King Yeti and Mama Dragon in turn) with pin it, box it, rewards, a crown for the top helper and a Boss Hunter badge slot. Not built yet: Phase 3 "mail it" (pushing the giant parcel to the chute) and a Boss Hunters leaderboard. Numbers to tune are in `src/shared/Config/Events.luau`. In Studio, the Store has purple TEST buttons that start any event right away.
 
 ## The rhythm
 

@@ -210,6 +210,26 @@ function Store.Start()
 		end
 
 		if studio then
+			-- Studio only: start any event right now, to test it without waiting for the clock
+			header(nextOrder(), "STUDIO: start an event now")
+			local ids = { "Boss" }
+			for _, event in Config.Events.Small do
+				table.insert(ids, event.Id)
+			end
+			for _, id in ids do
+				local event = Config.Events.ById[id]
+				local button = Ui.button(list, {
+					LayoutOrder = nextOrder(),
+					Size = UDim2.new(1, -12, 0, 36),
+					BackgroundColor3 = TEST_PURPLE,
+					TextSize = 18,
+					Text = if event then `TEST: {event.Emoji} {event.DisplayName}` else "TEST: ⚔️ BOSS FIGHT",
+				})
+				button.Activated:Connect(function()
+					shopAction:FireServer("StudioEvent", id)
+					Menus.CloseAll()
+				end)
+			end
 			Ui.label(list, {
 				LayoutOrder = nextOrder(),
 				Size = UDim2.new(1, -12, 0, 40),
