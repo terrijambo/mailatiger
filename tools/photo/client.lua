@@ -33,7 +33,7 @@ local function run()
 	local function hideUi()
 		pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.All, false)
 		for _, gui in player.PlayerGui:GetChildren() do
-			if gui:IsA("ScreenGui") then
+			if gui:IsA("ScreenGui") and gui.Name ~= "PhotoTag" then
 				gui.Enabled = false
 			end
 		end
@@ -62,6 +62,11 @@ local function run()
 		local from = island.Center + toTown * (island.Radius + 70) + Vector3.new(0, 95, 0)
 		shot(island.Id, from, island.Center + Vector3.new(0, 4, 0), 58)
 		local side = Vector3.new(0, 1, 0):Cross(toTown)
+		local bridgeFrom, bridgeTo = World.Bridge(island)
+		if bridgeFrom and bridgeTo then
+			local inward = Vector3.new(island.Center.X - bridgeTo.X, 0, island.Center.Z - bridgeTo.Z).Unit
+			shot(island.Id .. "_arrive", bridgeTo - inward * 14 + Vector3.new(0, 26, 0), bridgeTo + inward * 40, 60)
+		end
 		shot(island.Id .. "_close", island.Center + side * 75 + toTown * 55 + Vector3.new(0, 52, 0), island.Center + Vector3.new(0, 6, 0), 65)
 	end
 	-- A bridge up close
@@ -69,7 +74,20 @@ local function run()
 	local from, to = World.Bridge(barn)
 	shot("bridge", (from + to) / 2 + Vector3.new(26, 12, 10), (from + to) / 2 + Vector3.new(0, 1, 0), 60)
 
+	local tagGui = Instance.new("ScreenGui")
+	tagGui.Name = "PhotoTag"
+	tagGui.IgnoreGuiInset = true
+	local tag = Instance.new("TextLabel")
+	tag.Size = UDim2.fromOffset(260, 22)
+	tag.Position = UDim2.new(1, -270, 1, -30)
+	tag.BackgroundColor3 = Color3.new(0, 0, 0)
+	tag.TextColor3 = Color3.new(1, 1, 1)
+	tag.Font = Enum.Font.Code
+	tag.TextSize = 16
+	tag.Parent = tagGui
+	tagGui.Parent = player.PlayerGui
 	for index, s in shots do
+		tag.Text = s.Name
 		hideUi()
 		camera.CameraType = Enum.CameraType.Scriptable
 		camera.FieldOfView = s.Fov

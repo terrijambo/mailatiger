@@ -1059,8 +1059,74 @@ local function clearing(ctx: Ctx)
 	end
 	oval("ClearingEdge", 16, 0.05, colors[2])
 	oval("Clearing", 11, 0.08, colors[1])
+	if ctx.Zone.Id == "Backyard" then
+		-- a freshly mowed lawn: lighter stripes running toward the road
+		local a, b = ctx.HU + 11, ctx.HW + 11
+		local stripe = 4
+		local x = -a + stripe * 1.5
+		local index = 0
+		while x < a - stripe do
+			index += 1
+			if index % 2 == 0 then
+				local half = b * math.sqrt(math.max(0, 1 - (x / a) ^ 2)) - 1
+				if half > 2 then
+					local mid = ctx.Center + ctx.R * x
+					part(ctx.Folder, {
+						Name = "MowStripe",
+						Size = Vector3.new(stripe, 0.04, half * 2),
+						CFrame = CFrame.lookAt(mid + Vector3.new(0, 0.1, 0), mid + Vector3.new(0, 0.1, 0) + ctx.F),
+						Color = colors[1]:Lerp(Color3.new(1, 1, 0.8), 0.12),
+						CanCollide = false,
+					})
+				end
+			end
+			x += stripe
+		end
+	end
 	if ctx.Zone.Id == "IceRink" then
-		-- low boards round the rink, open in the middle of each side
+		-- Hockey markings on the ice (Ice material too, so you still slide on them)
+		local function mark(name: string, at: Vector3, size: Vector3, facing: Vector3, color: Color3)
+			part(ctx.Folder, {
+				Name = name,
+				Size = size,
+				CFrame = CFrame.lookAt(at + Vector3.new(0, 0.12, 0), at + Vector3.new(0, 0.12, 0) + facing),
+				Color = color,
+				Material = Enum.Material.Ice,
+				CanCollide = false,
+			})
+		end
+		local red, blue = Color3.fromRGB(220, 60, 60), Color3.fromRGB(60, 110, 210)
+		mark("RinkLine", ctx.Center, Vector3.new(0.9, 0.04, ctx.HW * 2 - 1), ctx.F, red)
+		for _, u in { -1, 1 } do
+			mark(
+				"RinkLine",
+				ctx.Center + ctx.R * u * ctx.HU * 0.36,
+				Vector3.new(0.9, 0.04, ctx.HW * 2 - 1),
+				ctx.F,
+				blue
+			)
+			mark("RinkLine", ctx.Center + ctx.R * u * (ctx.HU - 5), Vector3.new(0.4, 0.04, ctx.HW * 2 - 3), ctx.F, red)
+			for _, w in { -1, 1 } do
+				local dot = ctx.Center + ctx.R * u * ctx.HU * 0.62 + ctx.F * w * ctx.HW * 0.45
+				part(ctx.Folder, {
+					Name = "FaceoffDot",
+					Shape = Enum.PartType.Cylinder,
+					Size = Vector3.new(0.04, 1.6, 1.6),
+					CFrame = CFrame.new(dot + Vector3.new(0, 0.12, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+					Color = red,
+					Material = Enum.Material.Ice,
+					CanCollide = false,
+				})
+			end
+		end
+		local segments = 28
+		for k = 1, segments do
+			local a = k / segments * math.pi * 2
+			local dir = ctx.R * math.cos(a) + ctx.F * math.sin(a)
+			local p = ctx.Center + dir * 7
+			mark("RinkCircle", p, Vector3.new(7 * 2 * math.pi / segments + 0.1, 0.04, 0.5), dir, blue)
+		end
+		-- boards round the rink, open in the middle of each side
 		local white = Color3.fromRGB(246, 248, 252)
 		type Side = { Normal: Vector3, Out: number, Along: Vector3, Half: number }
 		local sides: { Side } = {
@@ -1073,20 +1139,182 @@ local function clearing(ctx: Ctx)
 				for _, piece in { -1, 1 } do
 					local length = half - 5
 					local mid = ctx.Center + normal * sign * (out + 0.5) + along * piece * (5 + length / 2)
-					part(ctx.Folder, {
-						Name = "RinkBoard",
-						Size = Vector3.new(1, 1.4, length),
-						CFrame = CFrame.lookAt(mid + Vector3.new(0, 0.7, 0), mid + Vector3.new(0, 0.7, 0) + along),
-						Color = white,
-					})
-					part(ctx.Folder, {
-						Name = "RinkBoardTrim",
-						Size = Vector3.new(1.1, 0.25, length),
-						CFrame = CFrame.lookAt(mid + Vector3.new(0, 1.45, 0), mid + Vector3.new(0, 1.45, 0) + along),
-						Color = Color3.fromRGB(60, 110, 200),
-					})
+					local function strip(name: string, y: number, h: number, thick: number, color: Color3)
+						part(ctx.Folder, {
+							Name = name,
+							Size = Vector3.new(thick, h, length),
+							CFrame = CFrame.lookAt(mid + Vector3.new(0, y, 0), mid + Vector3.new(0, y, 0) + along),
+							Color = color,
+						})
+					end
+					strip("RinkBoard", 1.25, 2.5, 0.8, white)
+					strip("RinkKick", 0.3, 0.6, 0.9, Color3.fromRGB(250, 200, 60))
+					strip("RinkCap", 2.6, 0.3, 1.1, Color3.fromRGB(60, 110, 200))
 				end
 			end
+		end
+	end
+end
+
+-- How you arrive on each island: a road from the bridge in the island's style (with lights down both sides,
+-- and rail fences on the farm lane), a themed archway where you step off the bridge, and a round paved
+-- landing with a glowing ring where the road meets the open ground (MENU > TRAVEL drops you there too).
+type Arrival = { Road: Kit.RoadStyle, Lights: string, Arch: string? }
+local ARRIVALS: { [string]: Arrival } = {
+	Backyard = { Road = Kit.ROADS.Brick, Lights = "Lantern", Arch = "Arbor" },
+	Barn = { Road = Kit.ROADS.Farm, Lights = "Lantern", Arch = "Timber" },
+	Jungle = { Road = Kit.ROADS.Jungle, Lights = "Lantern", Arch = "Ruin" },
+	IceRink = { Road = Kit.ROADS.Ice, Lights = "IceLantern", Arch = "Ice" },
+	Rooftop = { Road = Kit.ROADS.City, Lights = "Lamp" },
+}
+
+local function archway(ctx: Ctx, at: Vector3, inward: Vector3, kind: string)
+	local f = ctx.Folder
+	local cf = CFrame.lookAt(at, at + inward)
+	local half = World.BridgeWidth / 2 + 2.2
+	local pillar, beam, signColor
+	if kind == "Arbor" then
+		pillar, beam, signColor =
+			Color3.fromRGB(248, 246, 240), Color3.fromRGB(248, 246, 240), Color3.fromRGB(70, 140, 80)
+	elseif kind == "Timber" then
+		pillar, beam, signColor = Color3.fromRGB(128, 88, 56), Color3.fromRGB(110, 74, 46), Color3.fromRGB(190, 52, 44)
+	elseif kind == "Ruin" then
+		pillar, beam, signColor =
+			Color3.fromRGB(150, 150, 136), Color3.fromRGB(130, 132, 118), Color3.fromRGB(60, 100, 60)
+	else
+		pillar, beam, signColor =
+			Color3.fromRGB(200, 232, 252), Color3.fromRGB(176, 220, 248), Color3.fromRGB(60, 120, 200)
+	end
+	local height = 12
+	for _, side in { -1, 1 } do
+		local base = cf * CFrame.new(side * half, 0, 0)
+		part(f, {
+			Name = "ArchPost",
+			Size = Vector3.new(2, height, 2),
+			CFrame = base * CFrame.new(0, height / 2, 0),
+			Color = pillar,
+			Material = if kind == "Ice" then Enum.Material.Glacier else nil,
+		})
+		part(f, {
+			Name = "ArchFoot",
+			Size = Vector3.new(3, 1.2, 3),
+			CFrame = base * CFrame.new(0, 0.6, 0),
+			Color = beam:Lerp(Color3.new(0, 0, 0), 0.15),
+		})
+		if kind == "Timber" then
+			-- a wagon wheel on each post
+			part(f, {
+				Name = "WagonWheel",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.4, 4.4, 4.4),
+				CFrame = base * CFrame.new(0, 4, -1.2) * CFrame.Angles(0, math.pi / 2, 0),
+				Color = Color3.fromRGB(96, 64, 40),
+			})
+		elseif kind == "Ruin" then
+			for k = 1, 3 do
+				part(f, {
+					Name = "Vine",
+					Size = Vector3.new(0.3, 4 + k, 0.3),
+					CFrame = base * CFrame.new((k - 2) * 0.6, height - (4 + k) / 2, -1.15),
+					Color = Color3.fromRGB(60, 140, 60),
+					CanCollide = false,
+				})
+			end
+			Kit.ball(f, "Moss", (base * CFrame.new(0, height + 0.4, 0)).Position, 2.6, Color3.fromRGB(80, 150, 70))
+		elseif kind == "Ice" then
+			local crystal = part(f, {
+				Name = "ArchCrystal",
+				Size = Vector3.new(1.2, 3.6, 1.2),
+				CFrame = base * CFrame.new(0, height + 1.8, 0) * CFrame.Angles(0, math.pi / 4, 0.15 * side),
+				Color = Color3.fromRGB(150, 230, 255),
+				Material = Enum.Material.Neon,
+			})
+			crystal.CanCollide = false
+		else
+			Kit.ball(f, "Roses", (base * CFrame.new(0, height + 0.3, 0)).Position, 3.2, Color3.fromRGB(80, 160, 80))
+			for k = 1, 4 do
+				Kit.ball(
+					f,
+					"Rose",
+					(base * CFrame.new(
+						math.cos(k * 1.6) * 1.2,
+						height + 0.4 + math.sin(k) * 0.6,
+						math.sin(k * 1.6) * 1.2
+					)).Position,
+					0.8,
+					Color3.fromRGB(240, 110, 150)
+				)
+			end
+		end
+	end
+	part(f, {
+		Name = "ArchBeam",
+		Size = Vector3.new(half * 2 + 3, 1.4, 2.2),
+		CFrame = cf * CFrame.new(0, height - 0.6, 0),
+		Color = beam,
+		Material = if kind == "Ice" then Enum.Material.Glacier else nil,
+	})
+	local sign = part(f, {
+		Name = "ArchSign",
+		Size = Vector3.new(half * 2 - 3, 3.4, 0.6),
+		CFrame = cf * CFrame.new(0, height - 3.2, 0),
+		Color = signColor,
+	})
+	local title = `{ctx.Zone.Icon} {string.upper(ctx.Zone.Name)}`
+	for _, face in { Enum.NormalId.Front, Enum.NormalId.Back } do
+		Kit.signText(sign, face, title, Color3.new(1, 1, 1), nil, signColor)
+	end
+	if kind == "Ice" then
+		for k = -3, 3 do
+			part(f, {
+				ClassName = "WedgePart",
+				Name = "Icicle",
+				Size = Vector3.new(0.5, 1.6 + (k % 2) * 0.8, 0.5),
+				CFrame = cf
+					* CFrame.new(k * 2.4, height - 1.3 - (0.8 + (k % 2) * 0.4), -0.8)
+					* CFrame.Angles(math.pi, 0, 0),
+				Color = Color3.fromRGB(210, 240, 255),
+				CanCollide = false,
+			})
+		end
+	end
+end
+
+local function arrival(ctx: Ctx)
+	local look = ARRIVALS[ctx.Zone.Id]
+	if not look then
+		return
+	end
+	local f = ctx.Folder
+	local start = ctx.BridgeEnd
+	local inward = Vector3.new(ctx.Gate.X - start.X, 0, ctx.Gate.Z - start.Z)
+	if inward.Magnitude < 1 then
+		return
+	end
+	inward = inward.Unit
+	local width = World.BridgeWidth
+	if ctx.Zone.Id == "Rooftop" then
+		-- (the road runs to the tower's door: the roof is the play area)
+		Kit.road(f, start, ctx.Gate, width, look.Road)
+		Kit.roadLights(f, start + inward * 6, ctx.Gate, width, look.Lights, 16)
+		return
+	end
+	-- The landing sits where the road meets the open ground; the road runs up to its edge
+	local landingRadius = 7
+	local landingAt = ctx.Center + ctx.F * (ctx.HW + 4)
+	local roadEnd = landingAt - inward * (landingRadius - 1)
+	Kit.road(f, start, roadEnd, width, look.Road)
+	Kit.landing(f, landingAt, landingRadius, look.Road, ctx.Zone.Color)
+	Kit.roadLights(f, start + inward * 9, roadEnd, width, look.Lights, 13)
+	if look.Arch then
+		archway(ctx, start + inward * 4, inward, look.Arch)
+	end
+	if ctx.Zone.Id == "Barn" then
+		-- a farm lane: split-rail fences down both sides
+		local across = Vector3.new(0, 1, 0):Cross(inward)
+		for _, side in { -1, 1 } do
+			local offset = across * side * (width / 2 + 3.4)
+			Kit.railFence(f, start + inward * 7 + offset, roadEnd - inward * 1 + offset)
 		end
 	end
 end
@@ -1127,16 +1355,7 @@ function Zones.Build(island: Islands.Island, zone: Zone, bridgeEnd: Vector3)
 			return center + r * u + f * w
 		end,
 	}
-	-- A path from the bridge to the gate
-	local along = Vector3.new(gate.X - bridgeEnd.X, 0, gate.Z - bridgeEnd.Z)
-	if along.Magnitude > 1 then
-		local style = if zone.Id == "IceRink"
-			then Kit.ROADS.Snow
-			elseif zone.Id == "Rooftop" then Kit.ROADS.City
-			elseif zone.Id == "Jungle" then Kit.ROADS.Jungle
-			else Kit.ROADS.Dirt
-		Kit.road(folder, bridgeEnd, gate, World.BridgeWidth, style)
-	end
+	arrival(ctx)
 	clearing(ctx)
 	local theme = THEMES[zone.Id]
 	if theme then

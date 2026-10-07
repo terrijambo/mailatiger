@@ -649,6 +649,8 @@ export type RoadStyle = {
 	Bed: Color3, -- what's under and between the stones (mortar, dirt, snow, tarmac)
 	Stones: { Color3 }, -- stone colors to vary between
 	Curb: Color3?, -- raised edge stones (nil = no curbs)
+	Stone: Vector2?, -- paver size (across, along); default 3.2 x 2.6
+	Border: Color3?, -- a band of stones laid lengthwise just inside each curb
 }
 
 Kit.ROADS = {
@@ -680,6 +682,29 @@ Kit.ROADS = {
 		Stones = { Color3.fromRGB(70, 64, 68), Color3.fromRGB(84, 78, 80), Color3.fromRGB(62, 56, 60) },
 		Curb = Color3.fromRGB(46, 42, 46),
 	},
+	Brick = {
+		Pattern = "Pavers",
+		Bed = Color3.fromRGB(200, 186, 160),
+		Stones = { Color3.fromRGB(184, 86, 64), Color3.fromRGB(168, 74, 56), Color3.fromRGB(198, 100, 72) },
+		Curb = Color3.fromRGB(236, 232, 222),
+		Stone = Vector2.new(1.5, 3.0),
+		Border = Color3.fromRGB(150, 64, 50),
+	},
+	Farm = {
+		Pattern = "Pavers",
+		Bed = Color3.fromRGB(150, 118, 82),
+		Stones = { Color3.fromRGB(168, 156, 136), Color3.fromRGB(150, 140, 122), Color3.fromRGB(184, 170, 148) },
+		Curb = Color3.fromRGB(120, 86, 56),
+		Stone = Vector2.new(1.8, 1.8),
+	},
+	Ice = {
+		Pattern = "Pavers",
+		Bed = Color3.fromRGB(150, 190, 224),
+		Stones = { Color3.fromRGB(116, 186, 238), Color3.fromRGB(96, 170, 230), Color3.fromRGB(136, 200, 244) },
+		Curb = Color3.fromRGB(236, 244, 252),
+		Stone = Vector2.new(3.6, 3.0),
+		Border = Color3.fromRGB(60, 130, 206),
+	},
 	City = {
 		Pattern = "Asphalt",
 		Bed = Color3.fromRGB(70, 72, 80),
@@ -710,9 +735,23 @@ function Kit.road(parent: Instance, a: Vector3, b: Vector3, width: number, style
 		Color = style.Bed,
 	})
 	local inner = if style.Curb then width - 2 else width
+	local border = style.Border
+	if border and style.Pattern == "Pavers" then
+		-- a band of long stones down each side, just inside the curbs
+		for _, side in { -1, 1 } do
+			part(parent, {
+				Name = "RoadBorder",
+				Size = Vector3.new(1.1, 0.16, length - 0.2),
+				CFrame = at(side * (inner / 2 - 0.6), 0.35, 0),
+				Color = border,
+			})
+		end
+		inner -= 2.4
+	end
 	if style.Pattern == "Pavers" then
-		local rowLength = 2.6
-		local stoneWidth = 3.2
+		local size = style.Stone or Vector2.new(3.2, 2.6)
+		local rowLength = size.Y
+		local stoneWidth = size.X
 		local rows = math.max(1, math.floor(length / rowLength))
 		local across = math.max(1, math.floor(inner / stoneWidth))
 		local w = inner / across
@@ -726,7 +765,7 @@ function Kit.road(parent: Instance, a: Vector3, b: Vector3, width: number, style
 				if x1 - x0 > 0.6 then
 					part(parent, {
 						Name = "Paver",
-						Size = Vector3.new(x1 - x0 - 0.22, 0.14, length / rows - 0.22),
+						Size = Vector3.new(x1 - x0 - 0.2, 0.14, length / rows - 0.2),
 						CFrame = at((x0 + x1) / 2, 0.34 + random:NextNumber(-0.02, 0.02), z),
 						Color = style.Stones[random:NextInteger(1, #style.Stones)],
 					})
@@ -777,23 +816,112 @@ function Kit.road(parent: Instance, a: Vector3, b: Vector3, width: number, style
 	end
 end
 
+-- Lights down both sides of a road from a to b, every `spacing` studs: "Lantern" (a wooden post),
+-- "Lamp" (a town street lamp) or "IceLantern" (a frosty post with a cold blue glow)
+function Kit.roadLights(parent: Instance, a: Vector3, b: Vector3, width: number, kind: string, spacing: number?)
+	local flatA, flatB = Vector3.new(a.X, 0, a.Z), Vector3.new(b.X, 0, b.Z)
+	local length = (flatB - flatA).Magnitude
+	if length < 8 then
+		return
+	end
+	local along = (flatB - flatA).Unit
+	local across = Vector3.new(0, 1, 0):Cross(along)
+	local count = math.max(1, math.floor(length / (spacing or 14)))
+	for i = 1, count do
+		local p = flatA + along * (length * (i - 0.5) / count)
+		for _, side in { -1, 1 } do
+			local spot = p + across * side * (width / 2 + 1.6)
+			if kind == "Lamp" then
+				Kit.lamppost(parent, spot)
+			elseif kind == "IceLantern" then
+				Kit.lantern(parent, spot, 5, Color3.fromRGB(150, 220, 255), Color3.fromRGB(226, 238, 250))
+			else
+				Kit.lantern(parent, spot, 5)
+			end
+		end
+	end
+end
+
+-- A split-rail farm fence from a to b (posts and two rails), standing on the ground
+function Kit.railFence(parent: Instance, a: Vector3, b: Vector3, color: Color3?)
+	local flatA, flatB = Vector3.new(a.X, 0, a.Z), Vector3.new(b.X, 0, b.Z)
+	local length = (flatB - flatA).Magnitude
+	if length < 2 then
+		return
+	end
+	local wood = color or Color3.fromRGB(150, 104, 66)
+	local along = (flatB - flatA).Unit
+	local posts = math.max(1, math.floor(length / 4))
+	for i = 0, posts do
+		local p = flatA + along * (length * i / posts)
+		box(
+			parent,
+			"FencePost",
+			p + Vector3.new(0, 1.6, 0),
+			Vector3.new(0.5, 3.2, 0.5),
+			wood:Lerp(Color3.new(0, 0, 0), 0.15)
+		)
+	end
+	local mid = (flatA + flatB) / 2
+	for _, y in { 1.2, 2.5 } do
+		part(parent, {
+			Name = "FenceRail",
+			Size = Vector3.new(0.3, 0.35, length),
+			CFrame = CFrame.lookAt(mid + Vector3.new(0, y, 0), mid + Vector3.new(0, y, 0) + along),
+			Color = wood,
+		})
+	end
+end
+
+-- Where a road arrives: a round paved landing with a glowing ring in the zone color, rings of stones and
+-- a glowing emblem in the middle
+function Kit.landing(parent: Instance, center: Vector3, radius: number, style: RoadStyle, accent: Color3)
+	local flat = Vector3.new(center.X, 0, center.Z)
+	Kit.disc(parent, "LandingBed", flat, 0.3, 0.3, radius + 0.6, style.Curb or style.Bed)
+	Kit.disc(parent, "Landing", flat, 0.36, 0.3, radius, style.Bed)
+	local ring = Kit.disc(parent, "LandingRing", flat, 0.4, 0.3, radius - 0.6, accent)
+	ring.Material = Enum.Material.Neon
+	Kit.disc(parent, "Landing", flat, 0.42, 0.3, radius - 1.3, style.Bed)
+	local rings = math.max(1, math.floor((radius - 2.5) / 2.2))
+	for r = 1, rings do
+		local ringRadius = 2.2 + (radius - 4) * (r - 1) / math.max(1, rings - 1)
+		local count = math.max(6, math.floor(ringRadius * 2 * math.pi / 2.4))
+		for k = 1, count do
+			local a = (k + (r % 2) * 0.5) / count * math.pi * 2
+			local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+			part(parent, {
+				Name = "LandingStone",
+				Size = Vector3.new(ringRadius * 2 * math.pi / count - 0.25, 0.1, 1.8),
+				CFrame = CFrame.lookAt(
+					flat + dir * ringRadius + Vector3.new(0, 0.46, 0),
+					flat + dir * (ringRadius + 1) + Vector3.new(0, 0.46, 0)
+				),
+				Color = style.Stones[(k + r) % #style.Stones + 1],
+				CanCollide = false,
+			})
+		end
+	end
+	local emblem = Kit.disc(parent, "LandingEmblem", flat, 0.52, 0.2, 1.2, accent)
+	emblem.Material = Enum.Material.Neon
+end
+
 -- A wooden lantern post (bridges, piers): a post with a glowing lantern that brightens at night
-function Kit.lantern(parent: Instance, at: Vector3, height: number?)
+function Kit.lantern(parent: Instance, at: Vector3, height: number?, glowColor: Color3?, postColor: Color3?)
 	local h = height or 6
-	box(parent, "LanternPost", at + Vector3.new(0, h / 2, 0), Vector3.new(0.7, h, 0.7), C.DarkWood)
+	box(parent, "LanternPost", at + Vector3.new(0, h / 2, 0), Vector3.new(0.7, h, 0.7), postColor or C.DarkWood)
 	box(parent, "LanternCap", at + Vector3.new(0, h + 1.15, 0), Vector3.new(1.4, 0.3, 1.4), Color3.fromRGB(45, 40, 38))
 	local glow = box(
 		parent,
 		"Lantern",
 		at + Vector3.new(0, h + 0.4, 0),
 		Vector3.new(0.9, 1.1, 0.9),
-		Color3.fromRGB(255, 214, 120),
+		glowColor or Color3.fromRGB(255, 214, 120),
 		Enum.Material.Neon
 	)
 	local light = Instance.new("PointLight")
 	light.Range = 18
 	light.Brightness = 0.3
-	light.Color = Color3.fromRGB(255, 210, 140)
+	light.Color = glowColor or Color3.fromRGB(255, 210, 140)
 	light:SetAttribute("DayBrightness", 0.3)
 	light:SetAttribute("NightBrightness", 2.2)
 	CollectionService:AddTag(light, "NightLight")
