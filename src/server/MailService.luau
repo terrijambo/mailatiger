@@ -8,6 +8,7 @@
 --     you press M to mail from anywhere.
 -- Chutes and bag size are in src/shared/Config/Mail.luau.
 
+local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -181,6 +182,38 @@ local function flyParcels(player: Player, count: number)
 	end
 end
 
+-- After they drop into the chute, parcels ride the Mail Room belt through the machines into the mail truck.
+-- Everyone sees them; each player's client makes the machines they own stamp, weigh and wrap them as they
+-- pass (client/MailRoom.luau finds them by the "BeltParcel" tag).
+local BELT_SPEED = 11
+local function rideBelt(player: Player, count: number)
+	local room = map.MailRoom
+	for i = 1, math.min(count, 5) do
+		task.delay(0.9 + (i - 1) * 0.55, function()
+			local look = CFrame.lookAt(room.Start, room.Start + room.Direction)
+			local parcel = makeParcel(look * CFrame.new(0, 1.15, 0))
+			parcel:SetAttribute("OwnerId", player.UserId)
+			CollectionService:AddTag(parcel, "BeltParcel")
+			parcel.Parent = Workspace
+			local start = parcel:GetPivot()
+			local travelled = 0
+			while travelled < room.Length do
+				travelled += BELT_SPEED * task.wait()
+				parcel:PivotTo(start + room.Direction * math.min(travelled, room.Length))
+			end
+			-- hop into the back of the truck
+			local from = parcel:GetPivot()
+			local to = CFrame.new(room.Truck + Vector3.new(0, 3, 0))
+			for step = 1, 12 do
+				local t = step / 12
+				parcel:PivotTo(CFrame.new(0, math.sin(t * math.pi) * 2, 0) * from:Lerp(to, t))
+				task.wait()
+			end
+			parcel:Destroy()
+		end)
+	end
+end
+
 -- Mail everything in the player's bag. fromChute = false means they pressed M (Rocket Chute only).
 function MailService.MailAll(player: Player, fromChute: boolean)
 	local profile = DataService.Get(player)
@@ -289,6 +322,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	refreshCarried(player)
 	LeaderboardService.Submit(player)
 	flyParcels(player, count)
+	rideBelt(player, count)
 	notify(player, "MailReceipt", {
 		Count = count,
 		Coins = total,

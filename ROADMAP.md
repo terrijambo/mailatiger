@@ -110,6 +110,18 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 - [x] **Playtest checkpoint:** passed in Studio on 2026-09-29 (shop, tools, stamps, orders all work)
 - [ ] **Save test on Roblox:** deferred to Phase 8 (Launch Prep) at your request. Needs the place published
 
+## Post Office Machines (decided 2026-10-07) ✅
+- **Loop:** catch → box → mail. Parcels ride the Mail Room belt (beside the Post Office) through your
+  machines; each owned machine multiplies that parcel's XP (they stack). XP levels up your **chute** — your
+  chute level *is* your level (opens zones, unlocks machines, upgrades the chute's look/speed).
+- **Coins:** the chute pays coins per minute (scales with the best animal your level allows); mailing pays a
+  30% tip right away. Machines unlock at a level, then are bought with coins.
+- **Rebirth:** needs a level 20 chute + coins. Resets chute level (zones lock again), machines, coins,
+  animals, boxes, stamps. Gives x1.5 coins/minute per rebirth (stacking) and Rebirth Points.
+- **Tools** (Sneakers, Gloves, Tape Gun, Net, Mail Bag) are bought with Rebirth Points and kept forever.
+- Porcupine replaced by a Raccoon (it looked like the Hedgehog).
+- Numbers: `src/shared/Config/Machines.luau`.
+
 ## Phase 4 — World & Arenas
 - [x] Hub town: a cobblestone plaza with the spawn, Animal Pen, Supply Shop, Post Office (Gruff and the chute), Gruff's Orders, and a row of **travel pads**, one per arena
 - [x] Five themed arenas (`MapBuilder.luau`, tiers in `Config/Arenas.luau`). Picking an animal **teleports you to its arena**:

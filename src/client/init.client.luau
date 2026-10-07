@@ -15,6 +15,7 @@ local DiamondUpgrades = require(script.DiamondUpgrades)
 local EventBanner = require(script.EventBanner)
 local FollowPrompt = require(script.FollowPrompt)
 local ChuteVisual = require(script.ChuteVisual)
+local MailRoom = require(script.MailRoom)
 local Movement = require(script.Movement)
 local Music = require(script.Music)
 local OrdersBoard = require(script.OrdersBoard)
@@ -54,6 +55,7 @@ BossLook.Start()
 FollowPrompt.Start()
 PromoKit.Start() -- (Studio only)
 task.spawn(ChuteVisual.Start) -- waits for the map to load, so it runs on its own
+task.spawn(MailRoom.Start) -- (the Post Office machines; also waits for the map)
 task.spawn(Tutorial.Start) -- waits for your save to load
 
 print(`[Mail a Tiger] Client started for {Players.LocalPlayer.Name}.`)

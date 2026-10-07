@@ -11,6 +11,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local MapBuilder = require(script.Parent.MapBuilder)
 local Remotes = require(script.Parent.Remotes)
 
 local Machines = Config.Machines
@@ -51,7 +52,17 @@ function MachineService.Buy(player: Player, machineId: string): boolean
 	return true
 end
 
-function MachineService.Start()
+function MachineService.Start(map: MapBuilder.Map)
+	-- Hold E at a machine in the Mail Room to buy it (the client changes what its prompt says for you)
+	for machineId, station in map.MailRoom.Stations do
+		local buy = station:FindFirstChild("BuyPrompt") :: ProximityPrompt?
+		if buy then
+			buy.Triggered:Connect(function(player: Player)
+				MachineService.Buy(player, machineId)
+			end)
+		end
+	end
+
 	-- The chute pays out in small chunks every few seconds (so the coins keep ticking up)
 	task.spawn(function()
 		local every = Machines.PayEverySeconds

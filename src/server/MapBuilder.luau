@@ -64,6 +64,14 @@ export type Map = {
 	OrdersPrompt: ProximityPrompt,
 	OrdersBoard: BasePart,
 	Leaderboards: { [string]: BasePart }, -- board id -> the part whose +X (Right) face shows the board
+	-- The Mail Room: a conveyor from the chute through the Post Office machines to the mail truck
+	MailRoom: {
+		Start: Vector3, -- where parcels come out of the chute onto the belt (ground level)
+		Direction: Vector3, -- along the belt
+		Length: number,
+		Truck: Vector3, -- where parcels land at the end
+		Stations: { [string]: BasePart }, -- machine id -> its spot over the belt (the client draws the machine)
+	},
 }
 
 -- Bright, flat colors (the look of popular simulators: smooth plastic, no gritty textures)
@@ -713,6 +721,147 @@ function MapBuilder.Build(): Map
 		letter:SetAttribute("Spin", true)
 	end
 
+	-- The Mail Room: a conveyor belt runs from the chute's east side, angled away from the plaza (it misses
+	-- the orders board and the roads), through a row of stations, one per Post Office machine
+	-- (Config/Machines.luau), to a mail truck. Each player's client draws the machines: bright if you own one,
+	-- a grey hologram with its level or price if not (client/MailRoom.luau). Mailed parcels ride it.
+	local mailRoom = Instance.new("Folder")
+	mailRoom.Name = "MailRoom"
+	mailRoom.Parent = map
+	local beltStart = Vector3.new(9.5, 0, -23 + N) -- (the middle of the chute's east face)
+	local beltDir = Vector3.new(0.94, 0, -0.34).Unit
+	local beltLength = 64
+	local beltMid = beltStart + beltDir * (beltLength / 2)
+	local beltCFrame = CFrame.lookAt(beltMid, beltMid + beltDir)
+	part(mailRoom, {
+		Name = "BeltFrame",
+		Size = Vector3.new(3.4, 0.9, beltLength),
+		CFrame = beltCFrame * CFrame.new(0, 0.55, 0),
+		Color = Color3.fromRGB(70, 74, 86),
+	})
+	part(mailRoom, {
+		Name = "Belt",
+		Size = Vector3.new(2.6, 0.12, beltLength - 0.4),
+		CFrame = beltCFrame * CFrame.new(0, 1.06, 0),
+		Color = Color3.fromRGB(34, 34, 40),
+		CanCollide = false,
+	})
+	for _, side in { -1, 1 } do
+		part(mailRoom, {
+			Name = "BeltRail",
+			Size = Vector3.new(0.3, 0.35, beltLength),
+			CFrame = beltCFrame * CFrame.new(side * 1.55, 1.25, 0),
+			Color = COLORS.Yellow,
+		})
+	end
+	local stations: { [string]: BasePart } = {}
+	local across = Vector3.new(0, 1, 0):Cross(beltDir) -- (points toward the plaza)
+	for index, machine in Config.Machines.List do
+		local at = beltStart + beltDir * (9 + (index - 1) * 8)
+		local station = part(mailRoom, {
+			Name = "MachineStation",
+			Size = Vector3.new(7, 8, 6),
+			CFrame = CFrame.lookAt(at + Vector3.new(0, 4, 0), at + Vector3.new(0, 4, 0) + beltDir),
+			Transparency = 1,
+			CanCollide = false,
+		})
+		station:SetAttribute("MachineId", machine.Id)
+		station:SetAttribute("Index", index)
+		local buy = prompt(station, "Install", machine.DisplayName, 0.6)
+		buy.Name = "BuyPrompt"
+		buy.MaxActivationDistance = 11
+		stations[machine.Id] = station
+		-- a little name plate on the plaza side
+		local plate = part(mailRoom, {
+			Name = "MachinePlate",
+			Size = Vector3.new(4.4, 0.9, 0.3),
+			CFrame = CFrame.lookAt(
+				at + across * 4.4 + Vector3.new(0, 0.9, 0),
+				at + across * 6 + Vector3.new(0, 0.9, 0)
+			),
+			Color = machine.Color,
+		})
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = Enum.NormalId.Front
+		gui.LightInfluence = 0
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(1, 1)
+		label.BackgroundTransparency = 1
+		label.Font = Enum.Font.LuckiestGuy
+		label.TextScaled = true
+		label.TextColor3 = Color3.new(1, 1, 1)
+		label.TextStrokeTransparency = 0
+		label.Text = string.upper(machine.DisplayName)
+		label.Parent = gui
+		gui.Parent = plate
+		part(mailRoom, {
+			Name = "MachinePlatePost",
+			Size = Vector3.new(0.3, 0.6, 0.3),
+			CFrame = CFrame.new(at + across * 4.4 + Vector3.new(0, 0.3, 0)),
+			Color = Color3.fromRGB(70, 74, 86),
+		})
+	end
+	-- The mail truck at the end (its open back faces the belt)
+	local truckAt = beltStart + beltDir * (beltLength + 4.5)
+	local truckCFrame = CFrame.lookAt(truckAt, truckAt + beltDir)
+	local truckBlue = Color3.fromRGB(60, 100, 200)
+	local truckBody = part(mailRoom, {
+		Name = "TruckBody",
+		Size = Vector3.new(5.6, 5.4, 8),
+		CFrame = truckCFrame * CFrame.new(0, 3.6, 0),
+		Color = Color3.new(1, 1, 1),
+	})
+	for _, face in { Enum.NormalId.Left, Enum.NormalId.Right } do
+		local gui = Instance.new("SurfaceGui")
+		gui.Face = face
+		gui.LightInfluence = 0
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.fromScale(1, 0.5)
+		label.Position = UDim2.fromScale(0, 0.25)
+		label.BackgroundTransparency = 1
+		label.Font = Enum.Font.LuckiestGuy
+		label.TextScaled = true
+		label.TextColor3 = truckBlue
+		label.Text = "MAIL A TIGER"
+		label.Parent = gui
+		gui.Parent = truckBody
+	end
+	part(mailRoom, {
+		Name = "TruckStripe",
+		Size = Vector3.new(5.7, 0.6, 8.1),
+		CFrame = truckCFrame * CFrame.new(0, 1.6, 0),
+		Color = COLORS.PostRed,
+	})
+	part(mailRoom, {
+		Name = "TruckCab",
+		Size = Vector3.new(5.4, 3.6, 3.4),
+		CFrame = truckCFrame * CFrame.new(0, 2.6, -5.6),
+		Color = truckBlue,
+	})
+	part(mailRoom, {
+		Name = "TruckWindshield",
+		Size = Vector3.new(4.6, 1.5, 0.2),
+		CFrame = truckCFrame * CFrame.new(0, 3.5, -7.25),
+		Color = Color3.fromRGB(150, 200, 240),
+	})
+	part(mailRoom, {
+		Name = "TruckInside",
+		Size = Vector3.new(4.8, 4.6, 0.2),
+		CFrame = truckCFrame * CFrame.new(0, 3.7, 4.0),
+		Color = Color3.fromRGB(60, 50, 44),
+	})
+	for _, x in { -2.7, 2.7 } do
+		for _, z in { -5.4, 2.6 } do
+			part(mailRoom, {
+				Name = "TruckWheel",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.9, 2.2, 2.2),
+				CFrame = truckCFrame * CFrame.new(x, 1.1, z),
+				Color = Color3.fromRGB(34, 34, 40),
+			})
+		end
+	end
+
 	-- Animal Pen counter (southwest of the fountain): sends you to your best zone
 	local penAt = Vector3.new(-36, 0, 30)
 	local penFacing = (Vector3.zero - penAt).Unit
@@ -899,6 +1048,14 @@ function MapBuilder.Build(): Map
 			{ 44, 0, 14 }, -- the Supply Shop and its table
 			{ -57, 0, 22 }, -- leaderboards
 			{ 0, 44, 8 }, -- spawn
+			-- the Mail Room belt, its machines and the truck
+			{ 19, -48, 7 },
+			{ 28, -52, 8 },
+			{ 38, -55, 8 },
+			{ 47, -59, 8 },
+			{ 57, -62, 8 },
+			{ 66, -65, 8 },
+			{ 75, -69, 9 },
 		},
 	})
 
@@ -920,6 +1077,13 @@ function MapBuilder.Build(): Map
 		ShopCounter = shopCounter,
 		OrdersPrompt = ordersPrompt,
 		OrdersBoard = board,
+		MailRoom = {
+			Start = beltStart,
+			Direction = beltDir,
+			Length = beltLength,
+			Truck = truckAt,
+			Stations = stations,
+		},
 	}
 end
 
