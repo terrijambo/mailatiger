@@ -1,5 +1,5 @@
 --!strict
--- The DIVE (Fall Guys style): press Q (keyboard), L1 (controller) or the DIVE button (phone) and you launch
+-- The DIVE (Fall Guys style): DOUBLE JUMP, or press Q (keyboard), L1 (controller) or DIVE (phone), and you launch
 -- yourself flat out, arms first, in the direction you're moving. While you're diving:
 --   * animal attacks and the boss's stomp can't hit you (that's how you dodge them)
 --   * diving into an animal grabs it instantly, no holding E (that's how you catch the fast ones)

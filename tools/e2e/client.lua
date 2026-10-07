@@ -404,6 +404,33 @@ local function run()
 	log(player:GetAttribute("Stage") == "", "...and no job started")
 	task.wait(3)
 
+	-- 7b2. The dive move itself (on this client): you go flat, arms first, then get back up
+	remotes.ShopAction:FireServer("Travel", "Backyard")
+	task.wait(1.5)
+	local clientFolder = player:WaitForChild("PlayerScripts"):FindFirstChild("Client")
+	local diveModule = clientFolder and clientFolder:FindFirstChild("Dive")
+	local DiveMove = diveModule and require(diveModule)
+	local me = player.Character
+	local myHumanoid = me and me:FindFirstChildOfClass("Humanoid")
+	local myRoot = me and me:FindFirstChild("HumanoidRootPart")
+	local wentPhysics, wentFlat, flew = false, false, 0
+	if DiveMove and myHumanoid and myRoot then
+		local from = myRoot.Position
+		DiveMove.Try()
+		local t0 = os.clock()
+		while os.clock() - t0 < 0.7 do
+			wentPhysics = wentPhysics or myHumanoid:GetState() == Enum.HumanoidStateType.Physics
+			wentFlat = wentFlat or myRoot.CFrame.UpVector.Y < 0.6
+			flew = math.max(flew, (Vector3.new(myRoot.Position.X, 0, myRoot.Position.Z) - Vector3.new(from.X, 0, from.Z)).Magnitude)
+			task.wait()
+		end
+	end
+	log(wentPhysics and wentFlat and flew > 8, `the dive lays you flat and flies you forward ({math.floor(flew)} studs)`)
+	log(myHumanoid ~= nil and waitFor(function()
+		return myHumanoid:GetState() ~= Enum.HumanoidStateType.Physics and myRoot.CFrame.UpVector.Y > 0.8
+	end, 3), "...and you get back up")
+	task.wait(1.3)
+
 	-- 7c. The DIVE: diving into a wild animal grabs it on the spot
 	remotes.ShopAction:FireServer("Travel", "Backyard")
 	task.wait(1)

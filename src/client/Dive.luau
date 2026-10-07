@@ -1,5 +1,6 @@
 --!strict
--- The DIVE (Fall Guys style). Q on a keyboard, L1 on a controller, the DIVE button on a phone.
+-- The DIVE (Fall Guys style). DOUBLE JUMP (press jump again in the air) on any device, or Q on a keyboard,
+-- L1 on a controller, the DIVE button on a phone.
 -- You launch flat out, arms first, in the direction you're moving (or facing), belly-slide on landing, and
 -- hop back up. Your own client moves your character, so the whole move happens here; the server is told,
 -- and while the dive lasts animal attacks can't hit you and diving into an animal grabs it
@@ -13,6 +14,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
@@ -111,6 +113,23 @@ function Dive.Try()
 		end
 	end
 
+	-- A white speed streak behind you while you fly
+	local tail0 = Instance.new("Attachment")
+	tail0.Position = Vector3.new(0, 0.8, 0)
+	tail0.Parent = root
+	local tail1 = Instance.new("Attachment")
+	tail1.Position = Vector3.new(0, -0.8, 0)
+	tail1.Parent = root
+	local trail = Instance.new("Trail")
+	trail.Attachment0 = tail0
+	trail.Attachment1 = tail1
+	trail.Lifetime = 0.35
+	trail.Color = ColorSequence.new(Color3.new(1, 1, 1))
+	trail.Transparency = NumberSequence.new(0.3, 1)
+	trail.LightEmission = 0.5
+	trail.FaceCamera = true
+	trail.Parent = root
+
 	-- WHOOSH
 	root.AssemblyLinearVelocity = direction * Tuning.Speed + Vector3.new(0, Tuning.Up, 0)
 
@@ -123,6 +142,12 @@ function Dive.Try()
 		end
 		align:Destroy()
 		attachment:Destroy()
+		trail.Enabled = false
+		task.delay(0.4, function()
+			trail:Destroy()
+			tail0:Destroy()
+			tail1:Destroy()
+		end)
 		for joint, c0 in saved do
 			if joint.Parent then
 				joint.C0 = c0
@@ -159,6 +184,40 @@ function Dive.Start()
 		return Enum.ContextActionResult.Sink
 	end, true, Enum.KeyCode.Q, Enum.KeyCode.ButtonL1)
 	ContextActionService:SetTitle("Dive", "DIVE")
+
+	-- Double jump = dive: pressing jump again while you're in the air from a jump
+	local jumpedAt = 0
+	local usedThisJump = false
+	local function watch(character: Model)
+		local humanoid = character:WaitForChild("Humanoid", 10) :: Humanoid?
+		if not humanoid then
+			return
+		end
+		humanoid.StateChanged:Connect(function(_, new)
+			if new == Enum.HumanoidStateType.Jumping then
+				jumpedAt = os.clock()
+				usedThisJump = false
+			end
+		end)
+	end
+	if player.Character then
+		task.spawn(watch, player.Character)
+	end
+	player.CharacterAdded:Connect(watch)
+	UserInputService.JumpRequest:Connect(function()
+		local character = player.Character
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if not humanoid or usedThisJump then
+			return
+		end
+		local state = humanoid:GetState()
+		local airborne = state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.Freefall
+		-- (JumpRequest fires right away for the first jump too: wait a moment so holding jump isn't a dive)
+		if airborne and os.clock() - jumpedAt > 0.18 then
+			usedThisJump = true
+			Dive.Try()
+		end
+	end)
 	ContextActionService:SetPosition("Dive", UDim2.new(1, -170, 1, -90)) -- (left of the jump button)
 
 	-- "DODGE!" over your head when a dive made an attack miss

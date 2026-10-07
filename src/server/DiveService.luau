@@ -72,7 +72,7 @@ function DiveService.Hit(player: Player, from: Vector3, kind: string, attacker: 
 	}
 	Remotes.Notify:FireClient(player, "Message", {
 		Speaker = attacker,
-		Text = `{lines[kind] or "VINE BOOM!"} (Dive with Q / L1 to dodge!)`,
+		Text = `{lines[kind] or "VINE BOOM!"} (Double-jump to dive and dodge!)`,
 	})
 	return true
 end
