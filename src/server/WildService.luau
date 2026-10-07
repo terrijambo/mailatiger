@@ -99,7 +99,8 @@ end
 
 local function radiusOf(animalId: string): number
 	local animal = Config.Animals.ById[animalId]
-	return 0.8 + (if animal then animal.Tier else 1) * 0.25
+	-- (big: a Hamster comes up to your shoulder, a tier 6 animal towers over you; Config/World PlayerScale)
+	return 0.7 + (if animal then animal.Tier else 1) * 0.45
 end
 
 -- Shiny or Golden? (events like Golden Hour raise the odds too)

@@ -110,6 +110,8 @@ local function bridge(island: Island): (Vector3, Vector3)
 end
 
 return {
+	-- Your character is drawn at this size (0.6 = 60%), so the world, the animals and Gruff feel big
+	PlayerScale = 0.6,
 	Islands = islands,
 	ById = byId,
 	Town = {

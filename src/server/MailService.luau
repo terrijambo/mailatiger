@@ -30,7 +30,7 @@ type Parcel = DataService.Parcel
 
 local MailService = {}
 
-local PARCEL_SIZE = 1.0
+local PARCEL_SIZE = 1.0 * Config.World.PlayerScale -- (in your arms: your size)
 local SHOWN_IN_HANDS = 3 -- at most this many parcels are drawn in your arms
 local CARDBOARD = Color3.fromRGB(198, 156, 109)
 local TAPE = Color3.fromRGB(215, 175, 105)
@@ -124,7 +124,8 @@ local function refreshCarried(player: Player)
 	local stack = Instance.new("Model")
 	stack.Name = "CarriedParcels"
 	for i = 1, count do
-		local floor = root.CFrame * CFrame.new(0, -1.0 + (i - 1) * (PARCEL_SIZE + 0.05), -1.4)
+		local scale = Config.World.PlayerScale
+		local floor = root.CFrame * CFrame.new(0, -1.0 * scale + (i - 1) * (PARCEL_SIZE + 0.05), -1.4 * scale)
 		makeParcel(floor).Parent = stack
 	end
 	stack.Parent = character

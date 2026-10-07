@@ -227,8 +227,28 @@ function Economy.BoostMult(player: Player): number
 	return mult
 end
 
+-- Characters are drawn small (Config/World.luau PlayerScale), so the world feels big
+local function shrink(character: Model)
+	character:WaitForChild("HumanoidRootPart", 10)
+	task.defer(function()
+		if character.Parent then
+			character:ScaleTo(Config.World.PlayerScale)
+		end
+	end)
+end
+
 function Economy.Start()
 	DataService.Loaded:Connect(setupPlayer)
+	local function watch(player: Player)
+		player.CharacterAdded:Connect(shrink)
+		if player.Character then
+			shrink(player.Character)
+		end
+	end
+	Players.PlayerAdded:Connect(watch)
+	for _, player in Players:GetPlayers() do
+		watch(player)
+	end
 	Players.PlayerRemoving:Connect(Analytics.Forget)
 end
 

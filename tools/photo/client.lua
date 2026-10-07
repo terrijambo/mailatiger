@@ -52,6 +52,8 @@ local function run()
 	shot("town_low", Vector3.new(30, 26, 70), Vector3.new(0, 8, -40), 60)
 	shot("leaderboards", Vector3.new(-30, 10, 0), Vector3.new(-55, 5, 0), 60)
 	shot("leaderboards_side", Vector3.new(-40, 8, 26), Vector3.new(-55, 5, -4), 60)
+	table.insert(shots, { Name = "@Scale" })
+	table.insert(shots, { Name = "scale", Follow = true })
 	shot("machines_ring", Vector3.new(-6, 46, 70), Vector3.new(0, 4, -6), 62)
 	shot("gruff_east", Vector3.new(12, 12, 6), Vector3.new(52, 5, 0), 62)
 	shot("machine_locked", Vector3.new(-6, 12, -16), Vector3.new(-19, 7, -33), 62)
@@ -93,6 +95,31 @@ local function run()
 	tag.Parent = tagGui
 	tagGui.Parent = player.PlayerGui
 	for index, s in shots do
+		if s.Name == "@Scale" then
+			-- stand in the Backyard with a small and a big animal right in front (to see the sizes)
+			local yard = World.ById.Backyard
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root then
+				root.CFrame = CFrame.new(yard.Center + Vector3.new(0, 4, 0))
+				task.wait(0.6)
+				remotes.ShopAction:FireServer("Promo", "WildCalm")
+				remotes.ShopAction:FireServer("Promo", "Wild:Hamster")
+				task.wait(0.4)
+				remotes.ShopAction:FireServer("Promo", "Wild:Elephant")
+				task.wait(2.5)
+			end
+			continue
+		end
+		if s.Follow then
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart")
+			if root then
+				local at = root.Position
+				s.CFrame = CFrame.lookAt(at + root.CFrame.RightVector * 14 + Vector3.new(0, 5, 0) - root.CFrame.LookVector * 6, at + root.CFrame.LookVector * 5)
+				s.Fov = 60
+			end
+		end
 		if s.Name == "@AllMachines" then
 			remotes.ShopAction:FireServer("Promo", "AllMachines")
 			task.wait(1.5)

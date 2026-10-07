@@ -25,7 +25,7 @@ export type Lure = {
 }
 
 local Wild = {
-	PerZone = 7, -- animals roaming each zone at once (a grabbed one is replaced after RespawnSeconds)
+	PerZone = 4, -- animals roaming each zone at once (a grabbed one is replaced after RespawnSeconds)
 	RespawnSeconds = 3,
 	VisitorChance = 0.12, -- a normal spawn is a visitor from the next zone up this often
 	RarityFalloff = 0.7, -- higher-level animals in a zone are rarer: weight = 1 / (1 + rank x this)
