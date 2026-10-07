@@ -34,11 +34,12 @@ local List: { Tool } = {
 	{
 		Id = "Sneakers",
 		DisplayName = "Sneakers",
-		Description = "Run faster: +2 speed per level (you start at 16).",
-		MaxLevel = 5,
-		BasePrice = 300,
-		PriceGrowth = 3,
-		PerLevel = 2,
+		-- 15 levels: you start at 16 speed and end at 76 (nearly 5x). The last few levels are pricey.
+		Description = "Run faster: +4 speed per level, 15 levels (you start at 16, max 76!).",
+		MaxLevel = 15,
+		BasePrice = 150,
+		PriceGrowth = 1.9,
+		PerLevel = 4,
 		Effect = "+{} speed",
 	},
 	{
