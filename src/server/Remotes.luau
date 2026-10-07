@@ -10,6 +10,7 @@
 --   Setting        client -> server   turn a setting (Music, Sfx, Motion) on or off; saved with your progress
 --   RedeemCode     client -> server   a reward code typed into Settings (server checks it)
 --   Troll          client -> server   use a troll item from the hotbar (server checks ownership and cooldown)
+--   Dive           client -> server   the player dived (Q / Y / DIVE button): dodge window + dive-grab (DiveService)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -34,6 +35,7 @@ local tutorial = remote("Tutorial")
 local setting = remote("Setting")
 local redeemCode = remote("RedeemCode")
 local troll = remote("Troll")
+local dive = remote("Dive")
 
 folder.Parent = ReplicatedStorage
 
@@ -74,4 +76,5 @@ return {
 	Setting = setting,
 	RedeemCode = redeemCode,
 	Troll = troll,
+	Dive = dive,
 }

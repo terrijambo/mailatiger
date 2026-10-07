@@ -30,6 +30,7 @@ local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
 local ChallengeService = require(script.Parent.ChallengeService)
 local DataService = require(script.Parent.DataService)
+local DiveService = require(script.Parent.DiveService)
 local Economy = require(script.Parent.Economy)
 local MailService = require(script.Parent.MailService)
 local ProgressionService = require(script.Parent.ProgressionService)
@@ -1319,6 +1320,23 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 	boxesFolder.Name = "Boxes"
 	boxesFolder.Parent = Workspace
 
+	-- Diving: animal attacks stun you this way, and diving into your own job's animal grabs it
+	DiveService.Stun = stun
+	table.insert(DiveService.OnDive, function(player: Player, root: BasePart): boolean
+		local s = jobOf(player)
+		if not s or s.Stage ~= "Catch" then
+			return false
+		end
+		local critter = s.Critter
+		if not critter then
+			return false
+		end
+		if (critter.Position - root.Position).Magnitude > critter.Size.X / 2 + Config.Dive.GrabReach then
+			return false
+		end
+		onPrompt(s, player) -- (the same as HOLD E: crews, slippery animals and all)
+		return true
+	end)
 	CatchAI.Init(map, {
 		Stun = stun,
 		Effect = notify,

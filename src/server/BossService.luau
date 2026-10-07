@@ -26,6 +26,7 @@ local Badges = require(script.Parent.Badges)
 local BossArena = require(script.Parent.BossArena)
 local BoxingService = require(script.Parent.BoxingService)
 local DataService = require(script.Parent.DataService)
+local DiveService = require(script.Parent.DiveService)
 local Economy = require(script.Parent.Economy)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local LeaderboardService = require(script.Parent.LeaderboardService)
@@ -601,7 +602,7 @@ local function stomp(f: Fight?)
 			local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 			if root and humanoid then
 				local flat = Vector3.new(root.Position.X - at.X, 0, root.Position.Z - at.Z)
-				local airborne = humanoid.FloorMaterial == Enum.Material.Air
+				local airborne = humanoid.FloorMaterial == Enum.Material.Air or DiveService.IsDodging(player)
 				if flat.Magnitude < Boss.StompRadius and not airborne then
 					-- Didn't jump: the shockwave throws you, tumbling, across the arena
 					stunnedUntil[player] = os.clock() + Boss.StompStun

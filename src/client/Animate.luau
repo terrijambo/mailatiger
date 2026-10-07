@@ -40,6 +40,7 @@ type CritterRig = {
 	StillFor: number, -- seconds it's been standing still (a sudden dash after a rest pops a "!")
 	Boss: Highlight?, -- hourly bosses: a glowing outline that turns red when it's about to blow
 	Smooth: CFrame?, -- (bosses) a smoothed copy of the ball's position, so the giant doesn't jitter
+	AttackMark: BillboardGui?, -- the red "!!" while a wild animal winds up an attack
 }
 
 -- Hourly bosses: what swirls around each one
@@ -308,6 +309,33 @@ local function updateCritter(rig: CritterRig, dt: number, now: number)
 		bossOutline.FillTransparency = if typeof(anger) == "number" and anger >= 70
 			then 0.55 + 0.3 * math.sin(now * 10)
 			else 1
+	end
+	-- A wild animal winding up an attack (WildService): crouch, shake, and a red "!!" (dive or back off!)
+	local attackAt = ball:GetAttribute("AttackAt")
+	if typeof(attackAt) == "number" and Workspace:GetServerTimeNow() < attackAt then
+		stretch = -0.12
+		roll += math.sin(now * 45) * 0.09
+		if not rig.AttackMark then
+			local mark = Instance.new("BillboardGui")
+			mark.Size = UDim2.fromOffset(80, 60)
+			mark.StudsOffsetWorldSpace = Vector3.new(0, h + 2, 0)
+			mark.AlwaysOnTop = true
+			mark.MaxDistance = 120
+			local text = Instance.new("TextLabel")
+			text.Size = UDim2.fromScale(1, 1)
+			text.BackgroundTransparency = 1
+			text.Font = Enum.Font.LuckiestGuy
+			text.TextScaled = true
+			text.TextColor3 = Color3.fromRGB(255, 50, 50)
+			text.TextStrokeTransparency = 0
+			text.Text = "!!"
+			text.Parent = mark
+			mark.Parent = ball
+			rig.AttackMark = mark
+		end
+	elseif rig.AttackMark then
+		rig.AttackMark:Destroy()
+		rig.AttackMark = nil
 	end
 	rig.Model:ScaleTo(rig.BaseScale * (1 + stretch))
 	local base = ball.CFrame

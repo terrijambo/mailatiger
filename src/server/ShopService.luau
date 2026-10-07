@@ -8,6 +8,7 @@
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -41,7 +42,9 @@ local function promo(player: Player, profile: DataService.Profile, id: string)
 		return
 	end
 	local wildId = string.match(id, "^Wild:(%w+)$")
-	if wildId then
+	if id == "WildCalm" or id == "WildWild" then
+		Workspace:SetAttribute("WildCalm", id == "WildCalm") -- (Studio: wild animals stop / start attacking)
+	elseif wildId then
 		WildService.SpawnNear(player, wildId) -- a wild animal of your choice, right in front of you
 	elseif id == "Golden" or id == "Shiny" then
 		player:SetAttribute("PromoVariant", id)

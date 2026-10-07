@@ -30,6 +30,7 @@ return {
 	Challenges = require(script.Challenges),
 	Events = require(script.Events),
 	Wild = require(script.Wild),
+	Dive = require(script.Dive),
 
 	Dev = {
 		-- In Roblox Studio every animal is free, so you can test any of them right away.

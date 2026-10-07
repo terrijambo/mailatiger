@@ -22,6 +22,7 @@ local Analytics = require(script.Parent.Analytics)
 local BoxingService = require(script.Parent.BoxingService)
 local CatchAI = require(script.Parent.CatchAI)
 local DataService = require(script.Parent.DataService)
+local DiveService = require(script.Parent.DiveService)
 local MailService = require(script.Parent.MailService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local MonetizationService = require(script.Parent.MonetizationService)
@@ -45,6 +46,13 @@ type Entry = {
 	LuredFor: Player?,
 	Expires: number?,
 	Taken: boolean,
+	-- Animals with an attack (Roar / Freeze / Spray / Charge, from Boxing.Twists) wind up and strike at players
+	-- who come too close
+	Attack: string?,
+	NextAttack: number,
+	AttackAt: number?, -- (os.clock) it strikes then; the client shows a red "!!" until it does
+	Victim: Player?, -- who it's attacking
+	ChargeUntil: number?,
 }
 
 local WildService = {}
@@ -157,6 +165,8 @@ local function pickLured(arenaId: string, lure: Lure, level: number): string?
 	return candidates[#candidates]
 end
 
+local updateAttack: (Entry, MapBuilder.Arena, number, number) -> boolean
+
 local function remove(entry: Entry)
 	entry.Taken = true
 	local index = table.find(wilds, entry)
@@ -164,6 +174,20 @@ local function remove(entry: Entry)
 		table.remove(wilds, index)
 	end
 	entry.Ball:Destroy()
+end
+
+-- Its attack, if it has one (the first of these twists it has)
+local function attackOf(animalId: string): string?
+	local twists = Config.Boxing.Twists[animalId]
+	if not twists then
+		return nil
+	end
+	for _, kind in { "Roar", "Freeze", "Spray", "Charge" } do
+		if (twists :: any)[kind] then
+			return kind
+		end
+	end
+	return nil
 end
 
 -- Too strong for you: VINE BOOM, out of the zone, back to town
@@ -293,6 +317,8 @@ local function spawn(arenaId: string, near: Vector3?, lure: Lure?, luredFor: Pla
 		LuredFor = luredFor,
 		Expires = if luredFor then os.clock() + Wild.LuredLifetime else nil,
 		Taken = false,
+		Attack = attackOf(animalId),
+		NextAttack = os.clock() + 2,
 	}
 	prompt.Triggered:Connect(function(player: Player)
 		onGrab(entry, player)
@@ -300,6 +326,94 @@ local function spawn(arenaId: string, near: Vector3?, lure: Lure?, luredFor: Pla
 	ball.Parent = folder
 	CollectionService:AddTag(ball, "Critter") -- (the client draws the Blender model on it)
 	table.insert(wilds, entry)
+end
+
+-- The nearest player this animal could attack (in range, not busy boxing)
+local function attackTarget(entry: Entry, range: number): Player?
+	if Workspace:GetAttribute("WildCalm") == true then
+		return nil -- (Studio test switch: the automated playtest turns attacks off for its scripted steps)
+	end
+	local best, bestDistance = nil, range
+	for _, player in Players:GetPlayers() do
+		local root = rootOf(player)
+		if root and player:GetAttribute("Stage") ~= "Box" and player:GetAttribute("Frozen") ~= true then
+			local distance = (flat(root.Position) - flat(entry.Ball.Position)).Magnitude
+			if distance < bestDistance and math.abs(root.Position.Y - entry.Ball.Position.Y) < 12 then
+				best, bestDistance = player, distance
+			end
+		end
+	end
+	return best
+end
+
+-- Winds up (red "!!"), then strikes: Roar / Freeze / Spray hit everyone close; Charge dashes at its target.
+-- Returns true while the attack is moving the animal (so it doesn't wander meanwhile).
+updateAttack = function(entry: Entry, arena: MapBuilder.Arena, now: number, dt: number): boolean
+	local attack = Config.Dive.Attack
+	local kind = entry.Attack :: string
+	local range = (attack.Range :: any)[kind] or 10
+	local animal = Config.Animals.ById[entry.AnimalId]
+	local name = if animal then animal.DisplayName else entry.AnimalId
+	-- Charging: run straight at the target; contact = VINE BOOM
+	if entry.ChargeUntil then
+		local target = entry.Victim
+		local root = target and rootOf(target)
+		if now > entry.ChargeUntil or not root then
+			entry.ChargeUntil = nil
+			return false
+		end
+		local here = flat(entry.Ball.Position)
+		local toward = flat(root.Position) - here
+		if toward.Magnitude < entry.Radius + 2.5 then
+			entry.ChargeUntil = nil
+			DiveService.Hit(target :: Player, entry.Ball.Position, "Charge", name)
+			return false
+		end
+		local nextPos = here + toward.Unit * math.min(28 * dt, toward.Magnitude)
+		nextPos = CatchAI.ClampToArena(arena, nextPos, entry.Radius)
+		local y = arena.FloorY + entry.Radius
+		entry.Ball.CFrame =
+			CFrame.lookAt(Vector3.new(nextPos.X, y, nextPos.Z), Vector3.new(root.Position.X, y, root.Position.Z))
+		return true
+	end
+	-- Winding up
+	if entry.AttackAt then
+		if now < entry.AttackAt then
+			return true -- (stands still, shaking, with the red "!!")
+		end
+		entry.AttackAt = nil
+		entry.Ball:SetAttribute("AttackAt", nil)
+		entry.NextAttack = now + attack.Cooldown
+		if kind == "Charge" then
+			entry.ChargeUntil = now + 0.8
+			return true
+		end
+		for _, player in Players:GetPlayers() do
+			local root = rootOf(player)
+			if
+				root
+				and player:GetAttribute("Stage") ~= "Box"
+				and (flat(root.Position) - flat(entry.Ball.Position)).Magnitude < range * 1.15
+				and math.abs(root.Position.Y - entry.Ball.Position.Y) < 12
+			then
+				DiveService.Hit(player, entry.Ball.Position, kind, name)
+			end
+		end
+		return false
+	end
+	-- Ready to attack? Pick on the closest player in range
+	if now >= entry.NextAttack then
+		local target = attackTarget(entry, range)
+		if target then
+			entry.Victim = target
+			entry.AttackAt = now + attack.WindUp
+			entry.Ball:SetAttribute("AttackAt", Workspace:GetServerTimeNow() + attack.WindUp)
+			entry.Ball:SetAttribute("AttackKind", kind)
+			return true
+		end
+		entry.NextAttack = now + 0.5 -- (nobody near: look again soon)
+	end
+	return false
 end
 
 local function step(dt: number)
@@ -313,10 +427,13 @@ local function step(dt: number)
 			remove(entry)
 			continue
 		end
+		local arena = map.Arenas[entry.ArenaId]
+		if entry.Attack and updateAttack(entry, arena, now, dt) then
+			continue -- (winding up or charging: the attack moves it)
+		end
 		if now < entry.PauseUntil then
 			continue
 		end
-		local arena = map.Arenas[entry.ArenaId]
 		local here = flat(entry.Ball.Position)
 		local toTarget = entry.Target - here
 		if toTarget.Magnitude < 1 then
@@ -419,6 +536,23 @@ function WildService.Start(builtMap: MapBuilder.Map)
 			spawn(arenaId, nil, nil, nil)
 		end
 	end
+	-- Diving into a wild animal grabs it (no holding E). Too strong for you? Same VINE BOOM.
+	table.insert(DiveService.OnDive, function(player: Player, root: BasePart): boolean
+		local best, bestDistance = nil, math.huge
+		for _, entry in wilds do
+			if not entry.Taken then
+				local distance = (entry.Ball.Position - root.Position).Magnitude
+				if distance < entry.Radius + Config.Dive.GrabReach and distance < bestDistance then
+					best, bestDistance = entry, distance
+				end
+			end
+		end
+		if not best then
+			return false
+		end
+		onGrab(best, player)
+		return true
+	end)
 	MonetizationService.OnMegaLure = function(player: Player)
 		WildService.StartLure(player, "MegaLure")
 	end

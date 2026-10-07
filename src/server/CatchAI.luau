@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 
 local BoxingConfig = require(ReplicatedStorage.Shared.Config.Boxing)
 local Config = require(ReplicatedStorage.Shared.Config)
+local DiveService = require(script.Parent.DiveService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -394,19 +395,19 @@ function CatchAI.Update(s: Session, now: number, dt: number)
 
 	-- Close-range attacks
 	if root then
+		-- (every attack VINE BOOMs you away; diving dodges it: DiveService.Hit)
+		local at = Vector3.new(st.Pos.X, root.Position.Y, st.Pos.Z)
 		if twists.Roar and distance < Tuning.Roar.Radius and now > (st.RoarReady or 0) then
 			st.RoarReady = now + Tuning.Roar.Cooldown
-			api.Stun(player, Tuning.Roar.StunSeconds)
-			api.Effect(player, "Roar", {})
+			DiveService.Hit(player, at, "Roar", animal.DisplayName)
 		end
 		if twists.Freeze and distance < Tuning.Freeze.Radius and now > (st.FreezeReady or 0) then
 			st.FreezeReady = now + Tuning.Freeze.Cooldown
-			api.Stun(player, Tuning.Freeze.StunSeconds)
-			api.Effect(player, "Freeze", {})
+			DiveService.Hit(player, at, "Freeze", animal.DisplayName)
 		end
 		if twists.Spray and distance < Tuning.Spray.Radius and now > (st.SprayReady or 0) then
 			st.SprayReady = now + Tuning.Spray.Cooldown
-			api.Effect(player, "Spray", { Seconds = Tuning.Spray.Seconds })
+			DiveService.Hit(player, at, "Spray", animal.DisplayName)
 		end
 		if twists.Charge and distance < Tuning.Charge.Range and every(st, "Charge", now, Tuning.Charge.Interval) then
 			st.ChargeUntil = now + Tuning.Charge.Seconds
@@ -427,8 +428,9 @@ function CatchAI.Update(s: Session, now: number, dt: number)
 		speed *= Tuning.Charge.SpeedMult
 		if distance < st.Radius + 2.5 then
 			st.ChargeUntil = nil
-			api.Effect(player, "Knockback", { Direction = -away, Strength = Tuning.Charge.Knockback })
-			api.Say(player, animal.DisplayName, "*WHAM!*")
+			if root then
+				DiveService.Hit(player, root.Position + away * 3, "Charge", animal.DisplayName)
+			end
 		end
 	elseif distance < Catch.FleeRadius then
 		local smarts = (tier - 1) * 0.25 -- higher tiers steer away from walls, so they're harder to corner

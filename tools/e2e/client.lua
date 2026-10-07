@@ -149,6 +149,8 @@ local function run()
 
 	local startCoins = profile().Coins
 	sampling = true
+	-- (wild animals don't attack us during the scripted steps; 7d turns them back on to test attacks)
+	remotes.ShopAction:FireServer("Promo", "WildCalm")
 	log(waitFor(function()
 		return #(profile().Orders or {}) == 3
 	end, 5), "Gruff's orders are ready (3)")
@@ -401,6 +403,54 @@ local function run()
 	end, 4), "a too-strong wild Unicorn (10+ levels above) VINE BOOMs you")
 	log(player:GetAttribute("Stage") == "", "...and no job started")
 	task.wait(3)
+
+	-- 7c. The DIVE: diving into a wild animal grabs it on the spot
+	remotes.ShopAction:FireServer("Travel", "Backyard")
+	task.wait(1)
+	remotes.ShopAction:FireServer("Promo", "Wild:Bunny")
+	local wildBunny = nil
+	waitFor(function()
+		wildBunny = wildNamed("Bunny")
+		return wildBunny ~= nil
+	end, 3)
+	if wildBunny then
+		root.CFrame = wildBunny.CFrame * CFrame.new(0, 1, 2.5)
+		task.wait(0.2)
+		remotes.Dive:FireServer()
+	end
+	log(waitFor(function()
+		return player:GetAttribute("Stage") == "Box"
+	end, 3), "diving into a wild Bunny grabs it")
+	goTo(map.PenCounter)
+	local penAgain = map.PenCounter:FindFirstChildOfClass("ProximityPrompt")
+	holdPrompt(penAgain)
+	task.wait(0.3)
+	holdPrompt(penAgain)
+	waitFor(function()
+		return player:GetAttribute("Stage") == ""
+	end, 3)
+
+	-- 7d. Animal attacks VINE BOOM you: stand next to a wild Skunk until it sprays
+	remotes.ShopAction:FireServer("Promo", "WildWild")
+	remotes.ShopAction:FireServer("Travel", "Backyard")
+	task.wait(1.5)
+	remotes.ShopAction:FireServer("Promo", "Wild:Skunk")
+	local wildSkunk = nil
+	waitFor(function()
+		wildSkunk = wildNamed("Skunk")
+		return wildSkunk ~= nil
+	end, 3)
+	local launchesBefore = events.Launch or 0
+	if wildSkunk then
+		local started = os.clock()
+		while os.clock() - started < 5 and (events.Launch or 0) == launchesBefore do
+			root.CFrame = wildSkunk.CFrame * CFrame.new(0, 1, 5)
+			task.wait(0.1)
+		end
+	end
+	log((events.Launch or 0) > launchesBefore, "a wild Skunk's spray VINE BOOMs you away")
+	remotes.ShopAction:FireServer("Promo", "WildCalm")
+	task.wait(2.5)
 	remotes.ShopAction:FireServer("BuyLure")
 	log(waitFor(function()
 		local untilTime = player:GetAttribute("LureUntil")
@@ -469,14 +519,23 @@ local function run()
 		return false
 	end
 	local function giveUp()
-		goTo(map.PenCounter)
-		local pen = map.PenCounter:FindFirstChildOfClass("ProximityPrompt")
-		holdPrompt(pen)
-		task.wait(0.3)
-		holdPrompt(pen)
-		return waitFor(function()
-			return player:GetAttribute("Stage") == ""
-		end, 3)
+		-- (an animal attack may have just thrown us: wait to get back up, and try a few times)
+		for _ = 1, 3 do
+			waitFor(function()
+				return player:GetAttribute("Frozen") ~= true
+			end, 4)
+			goTo(map.PenCounter)
+			local pen = map.PenCounter:FindFirstChildOfClass("ProximityPrompt")
+			holdPrompt(pen)
+			task.wait(0.3)
+			holdPrompt(pen)
+			if waitFor(function()
+				return player:GetAttribute("Stage") == ""
+			end, 2) then
+				return true
+			end
+		end
+		return false
 	end
 	-- Zone locks: a low-level player can't take a Tiger yet
 	goTo(map.PenCounter)
@@ -794,7 +853,8 @@ local function run()
 	end, 45), "pushed the box into the chute and won")
 	push:Disconnect()
 	log(waitFor(function()
-		return (events.BossReward or 0) > 0 and profile().LuckyNext == true and (profile().BossKills or {}).Tiger == 1
+		-- (any boss: if the run crosses the top of the hour, a real hourly boss comes first and rotates the list)
+		return (events.BossReward or 0) > 0 and profile().LuckyNext == true and next(profile().BossKills or {}) ~= nil
 	end, 3), "boss reward: diamonds, coins and a Shiny next job")
 
 	log(true, "events seen: " .. HttpService:JSONEncode(events))
