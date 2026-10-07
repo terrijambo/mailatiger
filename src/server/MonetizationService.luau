@@ -92,7 +92,13 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 				return true
 			end
 		end
-		return false
+		-- Nothing left to unlock (they bought it just as they unlocked the last one): they paid, so give
+		-- coins instead of leaving the purchase stuck
+		local coins = Economy.BestBaseValue(player) * Money.CoinPackJobs.CoinsMedium
+		profile.Coins += coins
+		Analytics.Earn(player, coins, profile.Coins, key, true)
+		say(player, `Nothing left to unlock right now, so here's {Format.Short(coins)} coins instead.`)
+		return true
 	elseif key == "PriorityStamps" then
 		profile.Stamps.Priority = (profile.Stamps.Priority or 0) + Money.PriorityStampCount
 		say(player, `{Money.PriorityStampCount} Priority stamps. Use them wisely. You won't.`)

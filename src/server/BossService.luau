@@ -142,6 +142,7 @@ local function bigBox(f: Fight): Model
 	wall("Back", Vector3.new(0, h / 2, -s / 2), Vector3.new(s, h, 1))
 	wall("Left", Vector3.new(-s / 2, h / 2, 0), Vector3.new(1, h, s))
 	wall("Right", Vector3.new(s / 2, h / 2, 0), Vector3.new(1, h, s))
+	model.WorldPivot = CFrame.new(base + Vector3.new(0, h / 2 + 150, 0))
 	model.Parent = arena
 	-- Drop it from the sky
 	task.spawn(function()
@@ -553,6 +554,14 @@ local function startBox()
 		return
 	end
 	f.Phase = "Box"
+	-- The tape rolls go away while it's boxed (updatePin brings them back if it breaks free)
+	for _, handle in f.Handles do
+		handle.CFrame = CFrame.new(handle.Position.X, platformTop - 60, handle.Position.Z)
+		local prompt = handle:FindFirstChildOfClass("ProximityPrompt")
+		if prompt then
+			prompt.Enabled = false
+		end
+	end
 	f.Holding = {}
 	for player in f.Ropes do
 		dropRope(f, player)
@@ -608,8 +617,8 @@ local function stomp(f: Fight?)
 	f.Ball:SetAttribute("StompAt", Workspace:GetServerTimeNow() + 1)
 	notifyHere("BossStomp", { At = Vector3.new(at.X, platformTop, at.Z), Radius = Boss.StompRadius, Delay = 1 })
 	task.delay(1, function()
-		if fight ~= f then
-			return
+		if fight ~= f or f.Phase ~= "Pin" then
+			return -- (pinned during the wind-up: the stomp never lands, so it can't knock anyone out of BOX IT)
 		end
 		Sfx.Play("BossStomp", f.Ball)
 		for _, player in playersHere() do
@@ -658,12 +667,18 @@ local function kickCrates(f: Fight)
 		crate.Touched:Connect(function(hit)
 			local model = hit:FindFirstAncestorOfClass("Model")
 			local player = model and Players:GetPlayerFromCharacter(model)
-			if player and not hits[player] and crate.AssemblyLinearVelocity.Magnitude > 20 then
+			local current = fight
+			if
+				player
+				and not hits[player]
+				and crate.AssemblyLinearVelocity.Magnitude > 20
+				and current
+				and current.Phase == "Pin" -- (a crate still flying once it's pinned can't knock anyone out of BOX IT)
+			then
 				hits[player] = true
 				BoxingService.Stun(player, 0.8)
-				if fight then
-					fight.Holding[player] = nil
-				end
+				current.Holding[player] = nil
+				dropRope(current, player)
 				Remotes.Notify:FireClient(player, "Knockback", { Direction = direction, Strength = 35 })
 			end
 		end)
@@ -770,6 +785,10 @@ local function updatePin(f: Fight?, dt: number)
 		local at = Vector3.new(ball.Position.X, platformTop + 3, ball.Position.Z) + offset
 		-- (the ring faces outward, toward whoever grabs it)
 		handle.CFrame = CFrame.lookAt(at, at + offset) * CFrame.Angles(0, math.rad(90), 0)
+		local prompt = handle:FindFirstChildOfClass("ProximityPrompt")
+		if prompt and not prompt.Enabled then
+			prompt.Enabled = true
+		end
 	end
 
 	if now >= f.NextStomp then
