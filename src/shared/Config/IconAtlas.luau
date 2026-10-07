@@ -75,7 +75,6 @@ local cells: { [string]: Cell } = {
 	Animal_Parrot = { Sheet = 6, X = 262, Y = 6 },
 	Animal_Penguin = { Sheet = 6, X = 518, Y = 6 },
 	Animal_Pig = { Sheet = 6, X = 774, Y = 6 },
-	Animal_Porcupine = { Sheet = 6, X = 6, Y = 262 },
 	Animal_Skunk = { Sheet = 6, X = 262, Y = 262 },
 	Animal_Tiger = { Sheet = 6, X = 518, Y = 262 },
 	Animal_Unicorn = { Sheet = 6, X = 774, Y = 262 },
