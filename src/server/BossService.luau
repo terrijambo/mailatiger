@@ -562,7 +562,8 @@ local function startBox()
 	f.BigBox = bigBox(f)
 	f.Boxers = {}
 	for _, player in playersHere() do
-		if (stunnedUntil[player] or 0) < os.clock() and rootOf(player) then
+		if rootOf(player) then
+			stunnedUntil[player] = nil -- (just thrown by a stomp? you still get to box)
 			table.insert(f.Boxers, player)
 		end
 	end
@@ -603,6 +604,8 @@ local function stomp(f: Fight?)
 		return
 	end
 	local at = f.Ball.Position
+	-- It leaps into the air and slams down 1 second later (the client animates the jump from StompAt)
+	f.Ball:SetAttribute("StompAt", Workspace:GetServerTimeNow() + 1)
 	notifyHere("BossStomp", { At = Vector3.new(at.X, platformTop, at.Z), Radius = Boss.StompRadius, Delay = 1 })
 	task.delay(1, function()
 		if fight ~= f then
@@ -616,12 +619,15 @@ local function stomp(f: Fight?)
 				local flat = Vector3.new(root.Position.X - at.X, 0, root.Position.Z - at.Z)
 				local airborne = humanoid.FloorMaterial == Enum.Material.Air
 				if flat.Magnitude < Boss.StompRadius and not airborne then
+					-- Didn't jump: the shockwave throws you, tumbling, across the arena
 					stunnedUntil[player] = os.clock() + Boss.StompStun
 					f.Holding[player] = nil
+					dropRope(f, player)
 					BoxingService.Stun(player, Boss.StompStun)
-					Remotes.Notify:FireClient(player, "Knockback", {
-						Direction = if flat.Magnitude > 0.1 then flat.Unit else Vector3.xAxis,
-						Strength = 45,
+					local away = if flat.Magnitude > 0.1 then flat.Unit else Vector3.xAxis
+					Remotes.Notify:FireClient(player, "Launch", {
+						Velocity = away * 55 + Vector3.new(0, 70, 0),
+						Seconds = Boss.StompStun,
 					})
 				end
 			end
@@ -783,27 +789,32 @@ end
 ---------------------------------------------------------------------------------------------------
 -- BOX IT
 
+-- The giant box bursts apart (the boss broke out)
+local function burstBox(f: Fight)
+	local broken = f.BigBox
+	if not broken then
+		return
+	end
+	f.BigBox = nil
+	for _, part in broken:GetChildren() do
+		if part:IsA("BasePart") then
+			part.Anchored = false
+			part.CanCollide = false
+			part.AssemblyLinearVelocity = Vector3.new(math.random(-50, 50), math.random(40, 70), math.random(-50, 50))
+		end
+	end
+	task.delay(3, function()
+		broken:Destroy()
+	end)
+end
+
 local function launchAll(f: Fight?)
 	if not f then
 		return
 	end
 	local boxers = f.Boxers
 	endBox(boxers)
-	if f.BigBox then
-		-- The box bursts apart
-		for _, part in f.BigBox:GetChildren() do
-			if part:IsA("BasePart") then
-				part.Anchored = false
-				part.AssemblyLinearVelocity =
-					Vector3.new(math.random(-50, 50), math.random(40, 70), math.random(-50, 50))
-			end
-		end
-		local broken = f.BigBox
-		f.BigBox = nil
-		task.delay(3, function()
-			broken:Destroy()
-		end)
-	end
+	burstBox(f)
 	for _, player in boxers do
 		Remotes.Notify:FireClient(player, "Breakout", { Animal = f.Name }) -- RETURN TO SENDER stamp
 	end
@@ -968,9 +979,13 @@ local function updateBox(f: Fight?, dt: number)
 		end
 	end
 	if #f.Boxers == 0 then
+		-- Nobody's boxing it any more: it bursts out and gets back up
+		burstBox(f)
 		f.Phase = "Pin"
 		f.Pin = 0
 		Workspace:SetAttribute("BossPhase", "Pin")
+		Workspace:SetAttribute("BossTaped", nil)
+		notifyHere("Message", { Speaker = "BOSS", Text = `The {f.Name} got back up! Pin it again!` })
 		return
 	end
 	f.Anger += Boss.AngerRate * dt

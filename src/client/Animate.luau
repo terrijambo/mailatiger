@@ -284,6 +284,25 @@ local function updateCritter(rig: CritterRig, dt: number, now: number)
 				else 0
 			pitch += 0.18 * strain -- leaning back against the pull
 			roll += math.sin(now * 30) * 0.05 * strain -- shaking
+			-- STOMP: a crouch, a big leap, and a slam right as the shockwave hits (StompAt is the server time
+			-- of the impact). That leap is your cue to jump too.
+			local stompAt = ball:GetAttribute("StompAt")
+			if typeof(stompAt) == "number" then
+				local left = stompAt - Workspace:GetServerTimeNow()
+				if left > 0.85 and left <= 1 then
+					stretch = -0.1 -- crouching to spring
+					pitch = 0
+				elseif left > 0 and left <= 0.85 then
+					local u = 1 - left / 0.85 -- 0 at take-off, 1 at the slam
+					lift = h * 0.9 * math.sin(u * math.pi) ^ 0.7
+					stretch = 0.06 * (1 - u)
+					pitch = -0.15 + 0.3 * u -- nose up going up, nose down coming down
+					roll = 0
+				elseif left <= 0 and left > -0.3 then
+					stretch = -0.14 * (1 + left / 0.3) -- squashed flat by the landing
+					lift = 0
+				end
+			end
 		end
 		local anger = Workspace:GetAttribute("BossAnger")
 		bossOutline.FillTransparency = if typeof(anger) == "number" and anger >= 70
