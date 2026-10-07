@@ -52,6 +52,8 @@ local function run()
 	shot("town_low", Vector3.new(30, 26, 70), Vector3.new(0, 8, -40), 60)
 	shot("leaderboards", Vector3.new(-30, 10, 0), Vector3.new(-55, 5, 0), 60)
 	shot("leaderboards_side", Vector3.new(-40, 8, 26), Vector3.new(-55, 5, -4), 60)
+	table.insert(shots, { Name = "egg_barn", EggZone = "Barn" })
+	table.insert(shots, { Name = "egg_backyard", EggZone = "Backyard" })
 	table.insert(shots, { Name = "@Scale" })
 	table.insert(shots, { Name = "scale", Follow = true })
 	shot("machines_ring", Vector3.new(-6, 46, 70), Vector3.new(0, 4, -6), 62)
@@ -110,6 +112,18 @@ local function run()
 				task.wait(2.5)
 			end
 			continue
+		end
+		if s.EggZone then
+			for _, stand in game:GetService("CollectionService"):GetTagged("EggStand") do
+				if stand:GetAttribute("ZoneId") == s.EggZone then
+					local from = stand.Position + stand.CFrame.LookVector * 15 + Vector3.new(0, 3, 0)
+					s.CFrame = CFrame.lookAt(from, stand.Position + Vector3.new(0, 4, 0))
+					s.Fov = 60
+				end
+			end
+			if not s.CFrame then
+				continue
+			end
 		end
 		if s.Follow then
 			local character = player.Character

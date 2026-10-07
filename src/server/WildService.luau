@@ -305,17 +305,19 @@ local function spawn(
 		radius + 1.5,
 		if variant then variant.Color else nil
 	)
-	-- its rarity, in the rarity's color, just under the name (Config/Rarity.luau)
+	-- its rarity, in the rarity's color, as a second line of the name tag (Config/Rarity.luau). (The name stays
+	-- the tag's first TextLabel: client/WildTags.luau recolors it.)
 	local rarity = Config.Rarity.ById[Wild.RarityOf[animal.Id] or "Common"]
-	if rarity then
-		local tag = Instance.new("BillboardGui")
-		tag.Name = "RarityTag"
-		tag.Size = UDim2.fromOffset(140, 22)
-		tag.StudsOffset = Vector3.new(0, radius + 0.7, 0)
-		tag.MaxDistance = 70
-		tag.LightInfluence = 0
+	local nameTag = ball:FindFirstChild("Label") :: BillboardGui?
+	local nameText = nameTag and nameTag:FindFirstChildOfClass("TextLabel")
+	if rarity and nameTag and nameText then
+		nameTag.Size = UDim2.fromOffset(190, 50)
+		nameTag.StudsOffset += Vector3.new(0, 0.4, 0)
+		nameText.Size = UDim2.fromScale(1, 0.6)
 		local text = Instance.new("TextLabel")
-		text.Size = UDim2.fromScale(1, 1)
+		text.Name = "Rarity"
+		text.Position = UDim2.fromScale(0, 0.62)
+		text.Size = UDim2.fromScale(1, 0.38)
 		text.BackgroundTransparency = 1
 		text.Font = Enum.Font.LuckiestGuy
 		text.TextScaled = true
@@ -323,8 +325,7 @@ local function spawn(
 		text.TextStrokeTransparency = 0
 		text.TextStrokeColor3 = if rarity.Id == "Secret" then Color3.new(1, 0.85, 0.3) else Color3.new(0, 0, 0)
 		text.Text = string.upper(rarity.DisplayName)
-		text.Parent = tag
-		tag.Parent = ball
+		text.Parent = nameTag
 	end
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = if animal.Carriers > 1 then "Grab (needs a crew)" else "Grab"

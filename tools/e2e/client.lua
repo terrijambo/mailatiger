@@ -638,7 +638,7 @@ local function run()
 	log(eggStand ~= nil, "the Backyard has an egg stand")
 	if eggStand then
 		root.CFrame = eggStand.CFrame * CFrame.new(0, -3, -6)
-		task.wait(0.6)
+		task.wait(1.2) -- (let the prompt show up before holding it)
 		local hatched = events.EggHatched or 0
 		holdPrompt(eggStand:FindFirstChildOfClass("ProximityPrompt"), eggStand)
 		log(waitFor(function()

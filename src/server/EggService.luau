@@ -29,7 +29,7 @@ end
 
 -- The egg on the stand wobbles, then a copy flies up and bursts
 local function crack(stand: BasePart)
-	local egg = stand:FindFirstChild("Egg") :: BasePart?
+	local egg = stand:FindFirstChild("HatchEgg") :: BasePart?
 	if not egg then
 		return
 	end

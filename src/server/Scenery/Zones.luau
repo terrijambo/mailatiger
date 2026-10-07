@@ -1302,7 +1302,7 @@ local function eggStand(ctx: Ctx, at: Vector3, facing: Vector3)
 	})
 	stand:SetAttribute("ZoneId", ctx.Zone.Id)
 	local egg = part(f, {
-		Name = "Egg",
+		Name = "HatchEgg",
 		Size = Vector3.new(4.2, 5.4, 4.2),
 		CFrame = cf * CFrame.new(0, 5.8, 0),
 		Color = Color3.fromRGB(252, 248, 236),
@@ -1328,17 +1328,33 @@ local function eggStand(ctx: Ctx, at: Vector3, facing: Vector3)
 	-- the sign: title, price, and the odds of each animal in its rarity color
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "EggSign"
-	gui.Size = UDim2.fromOffset(260, 40 + 22 * 8)
-	gui.StudsOffset = Vector3.new(0, 5.5, 0)
-	gui.MaxDistance = 60
+	local rows = #Config.Eggs.Odds(ctx.Zone.Id)
+	gui.Size = UDim2.fromOffset(230, 70 + 21 * rows)
+	gui.SizeOffset = Vector2.new(0, 0.5) -- (the sign sits ABOVE the egg, its bottom edge just over the top)
+	gui.StudsOffset = Vector3.new(0, 3.4, 0)
+	gui.MaxDistance = 55
 	gui.LightInfluence = 0
 	local list = Instance.new("Frame")
 	list.Size = UDim2.fromScale(1, 1)
-	list.BackgroundTransparency = 1
+	list.BackgroundColor3 = Color3.fromRGB(24, 22, 34)
+	list.BackgroundTransparency = 0.25
 	list.Parent = gui
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 12)
+	corner.Parent = list
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Thickness = 3
+	stroke.Parent = list
+	local padding = Instance.new("UIPadding")
+	padding.PaddingTop = UDim.new(0, 6)
+	padding.PaddingBottom = UDim.new(0, 6)
+	padding.PaddingLeft = UDim.new(0, 10)
+	padding.PaddingRight = UDim.new(0, 10)
+	padding.Parent = list
 	local layout = Instance.new("UIListLayout")
-	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
 	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Padding = UDim.new(0, 2)
 	layout.Parent = list
 	local function line(order: number, text: string, textColor: Color3, size: number)
 		local label = Instance.new("TextLabel")
@@ -1347,22 +1363,23 @@ local function eggStand(ctx: Ctx, at: Vector3, facing: Vector3)
 		label.BackgroundTransparency = 1
 		label.Font = Enum.Font.LuckiestGuy
 		label.TextScaled = true
+		label.TextXAlignment = if order >= 2 then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center
 		label.TextColor3 = textColor
 		label.TextStrokeTransparency = 0
 		label.Text = text
 		label.Parent = list
 	end
-	line(0, `🥚 {string.upper(ctx.Zone.Name)} EGG`, Color3.new(1, 1, 1), 30)
-	line(1, `{Format.Short(price)} coins`, Color3.fromRGB(255, 220, 80), 22)
+	line(0, `🥚 {string.upper(ctx.Zone.Name)} EGG`, Color3.new(1, 1, 1), 26)
+	line(1, `{Format.Short(price)} coins · hold E to hatch`, Color3.fromRGB(255, 220, 80), 18)
 	for index, odd in Config.Eggs.Odds(ctx.Zone.Id) do
 		local animal = Config.Animals.ById[odd.AnimalId]
 		local rarity = Config.Rarity.ById[Config.Wild.RarityOf[odd.AnimalId] or "Common"]
 		local chance = math.round(odd.Chance * 1000) / 10
 		line(
 			index + 1,
-			`{if animal then animal.DisplayName else odd.AnimalId}  {chance}%  {string.upper(rarity.DisplayName)}`,
+			`{chance}%  {if animal then animal.DisplayName else odd.AnimalId}  ·  {rarity.DisplayName}`,
 			rarity.Color,
-			19
+			17
 		)
 	end
 	gui.Parent = stand
