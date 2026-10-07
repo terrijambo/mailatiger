@@ -29,6 +29,9 @@ local EXPECTED = {
 		"SpawnPad", "Lamppost", "Bench", "Mailbox", "Planter", "ArenaGate", "PicketFence", "Bush", "Doghouse",
 		"Flowerbed", "Barn", "HayBale", "FarmFence", "Trough", "JungleTree", "MudPuddle", "BambooFence", "Rock",
 		"RinkBoard", "HockeyGoal", "Snowman", "ACUnit", "WaterTower", "Chimney",
+		-- scenery (art/blender_scripts/scenery.py)
+		"OakTree", "BirchTree", "PineTree", "SnowPine", "PalmTree", "Tractor", "Windmill", "Silo", "Scarecrow",
+		"Lighthouse", "Rowboat", "Shipwreck", "TikiHut", "Igloo", "Cottage",
 	},
 }
 local FRONT_PARTS = { Eyes = true, Face = true, Door = true, Nose = true }
