@@ -138,15 +138,43 @@ for _, tool in Config.Tools.List do
 		last = price
 	end
 end
-local lastPrice, lastHold, lastPay = -1, math.huge, 0
+local lastLevel, lastHold = 0, math.huge
 for index, chute in Config.Mail.Chutes do
 	check(Config.Mail.ChuteIndex[chute.Id] == index, `ChuteIndex for {chute.Id}`)
-	check(chute.Price >= lastPrice, `{chute.Id} is cheaper than the chute before it`)
+	check(chute.Level > lastLevel, `{chute.Id} arrives at a level no higher than the chute before it`)
 	check(chute.HoldTime <= lastHold, `{chute.Id} is slower than the chute before it`)
-	check(chute.PayMult >= lastPay, `{chute.Id} pays less than the chute before it`)
 	check(artColors[chute.Model], `chute model {chute.Model} has no ArtColors file`)
-	lastPrice, lastHold, lastPay = chute.Price, chute.HoldTime, chute.PayMult
+	check(Config.Mail.ChuteFor(chute.Level).Id == chute.Id, `ChuteFor({chute.Level}) should be {chute.Id}`)
+	lastLevel, lastHold = chute.Level, chute.HoldTime
 end
+for _, tool in Config.Tools.List do
+	check(Config.Tools.PointsFor(tool, 0) >= 1, `{tool.Id} level 1 should cost at least 1 Rebirth Point`)
+end
+
+section("Machines and the chute")
+local Machines = Config.Machines
+local lastMachineLevel, lastMachinePrice = 0, 0
+for _, machine in Machines.List do
+	local price = Machines.Price(machine)
+	check(machine.Level > lastMachineLevel, `{machine.Id} unlocks no later than the machine before it`)
+	check(price > lastMachinePrice, `{machine.Id} isn't pricier than the machine before it`)
+	check(machine.XPMult > 1, `{machine.Id} XPMult should be above 1`)
+	print(string.format("    %-20s Lv %2d  x%.1f XP  costs %s", machine.DisplayName, machine.Level, machine.XPMult, tostring(price)))
+	lastMachineLevel, lastMachinePrice = machine.Level, price
+end
+local lastRate = 0
+for level = 1, Config.Levels.MaxLevel do
+	local rate = Machines.ChuteRate(level)
+	check(rate >= lastRate, `coins per minute drop at chute level {level}`)
+	lastRate = rate
+	if level % 5 == 0 or level == 1 then
+		print(string.format("    Lv %2d: %8.0f coins/min, %9d XP to next", level, rate, Config.Levels.XPToNext(level)))
+	end
+end
+for rebirths = 0, 3 do
+	print(`    rebirth #{rebirths + 1}: costs {Machines.RebirthCost(rebirths)}, pays {Machines.RebirthPoints(rebirths + 1)} RP`)
+end
+check(Machines.ById.Rocket ~= nil, "the Rocket Launcher gives mail-anywhere, so it must exist")
 
 section("Robux store")
 local keys = {}

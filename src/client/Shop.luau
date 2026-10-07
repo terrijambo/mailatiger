@@ -1,5 +1,5 @@
 --!strict
--- The Supply Shop window: Boxes, Tools, Stamps, Chutes and Rebirth tabs.
+-- The Supply Shop window: Machines, Boxes, Tools, Stamps, Lures, Trolls and Rebirth tabs.
 -- Buttons only ASK the server (ShopAction). The server checks coins and distance, then updates your profile,
 -- and this window redraws from the new profile.
 
@@ -16,11 +16,10 @@ local player = Players.LocalPlayer
 
 local Shop = {}
 
-local TABS = { "Boxes", "Tools", "Stamps", "Lures", "Chutes", "Trolls", "Rebirth" }
+local TABS = { "Machines", "Boxes", "Tools", "Stamps", "Lures", "Trolls", "Rebirth" }
 
-local function rebirthCost(rebirths: number): number
-	local rebirth = Config.Progression.Rebirth
-	return math.round(rebirth.BaseCost * rebirth.CostGrowth ^ rebirths)
+local function multText(mult: number): string
+	return string.format("%g", math.round(mult * 100) / 100)
 end
 
 function Shop.Start()
@@ -51,7 +50,7 @@ function Shop.Start()
 	}, window)
 	Ui.make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, list)
 
-	local currentTab = "Boxes"
+	local currentTab = "Machines"
 	local tabButtons: { [string]: TextButton } = {}
 	local rebirthArmedUntil = 0
 
@@ -112,7 +111,41 @@ function Shop.Start()
 		end
 
 		local profile = Profile.Get()
-		if currentTab == "Boxes" then
+		if currentTab == "Machines" then
+			-- Post Office machines: unlock with your chute level, buy with coins; each multiplies parcel XP
+			local owned = profile.Machines or {}
+			local level = profile.Level or 1
+			row(
+				0,
+				`Every parcel gives x{multText(Config.Machines.XPMult(owned))} XP`,
+				"XP levels up your chute, and your chute level sets your coins per minute.",
+				"Machine_Stamp"
+			)
+			for index, machine in Config.Machines.List do
+				local frame = row(
+					index,
+					`{machine.DisplayName}  (x{multText(machine.XPMult)} XP)`,
+					machine.Description,
+					`Machine_{machine.Id}`
+				)
+				if owned[machine.Id] then
+					rowButton(frame, 1, "Installed ✓", Ui.GREEN, nil)
+				elseif level < machine.Level then
+					rowButton(frame, 1, `🔒 Level {machine.Level}`, Ui.GREY, nil)
+				else
+					local price = Config.Machines.Price(machine)
+					rowButton(
+						frame,
+						1,
+						`Buy: {Format.Short(price)}`,
+						if profile.Coins >= price then Ui.ORANGE else Ui.GREY,
+						function()
+							shopAction:FireServer("BuyMachine", machine.Id)
+						end
+					)
+				end
+			end
+		elseif currentTab == "Boxes" then
 			for index, box in Config.Boxes.List do
 				local frame = row(
 					index,
@@ -133,6 +166,14 @@ function Shop.Start()
 				end
 			end
 		elseif currentTab == "Tools" then
+			-- Tools are bought with Rebirth Points (from rebirthing) and kept forever
+			local points = profile.RebirthPoints or 0
+			row(
+				0,
+				`You have {points} Rebirth Point{if points == 1 then "" else "s"}`,
+				"Rebirth to earn more. Tool upgrades are yours forever, through every rebirth.",
+				"Button_Upgrades"
+			)
 			for index, tool in Config.Tools.List do
 				local level = profile.Tools[tool.Id] or 0
 				local now = if level > 0 then `  ·  now: {Config.Tools.EffectText(tool, level)}` else ""
@@ -145,15 +186,10 @@ function Shop.Start()
 				if level >= tool.MaxLevel then
 					rowButton(frame, 1, "MAXED", Ui.GREEN, nil)
 				else
-					rowButton(
-						frame,
-						1,
-						`Upgrade: {Format.Short(Config.Tools.PriceFor(tool, level))}`,
-						Ui.ORANGE,
-						function()
-							shopAction:FireServer("UpgradeTool", tool.Id)
-						end
-					)
+					local cost = Config.Tools.PointsFor(tool, level)
+					rowButton(frame, 1, `Upgrade: {cost} RP`, if points >= cost then Ui.PURPLE else Ui.GREY, function()
+						shopAction:FireServer("UpgradeTool", tool.Id)
+					end)
 				end
 			end
 		elseif currentTab == "Stamps" then
@@ -209,29 +245,6 @@ function Shop.Start()
 			rowButton(megaFrame, 1, "Open Store", Ui.GOLD, function()
 				Menus.Open("Store")
 			end)
-		elseif currentTab == "Chutes" then
-			-- Your personal chute upgrade: bought in order, each one mails faster and pays more
-			local current = Config.Mail.ChuteIndex[profile.ChuteTier] or 1
-			for index, chute in Config.Mail.Chutes do
-				local pay = math.round((chute.PayMult - 1) * 100)
-				local frame = row(
-					index,
-					`{chute.DisplayName}  (+{pay}% pay, {chute.HoldTime}s to mail)`,
-					chute.Description,
-					`Chute_{chute.Id}`
-				)
-				if index == current then
-					rowButton(frame, 1, "Installed", Ui.GREEN, nil)
-				elseif index < current then
-					rowButton(frame, 1, "Owned", Ui.GREY, nil)
-				elseif index == current + 1 then
-					rowButton(frame, 1, `Buy: {Format.Short(chute.Price)}`, Ui.ORANGE, function()
-						shopAction:FireServer("BuyChute", chute.Id)
-					end)
-				else
-					rowButton(frame, 1, "Locked", Ui.GREY, nil)
-				end
-			end
 		elseif currentTab == "Trolls" then
 			-- Troll items: unlock by level, buy once, use from the hotbar. Only affect Chaos Mode players.
 			for index, troll in Config.Trolls.List do
@@ -254,37 +267,53 @@ function Shop.Start()
 				end
 			end
 		elseif currentTab == "Rebirth" then
-			local rebirth = Config.Progression.Rebirth
-			local cost = rebirthCost(profile.Rebirths)
-			local bonusNow = math.round(profile.Rebirths * rebirth.PayoutBonusPerRebirth * 100)
-			local bonusNext = math.round((profile.Rebirths + 1) * rebirth.PayoutBonusPerRebirth * 100)
+			local rebirth = Config.Machines.Rebirth
+			local cost = Config.Machines.RebirthCost(profile.Rebirths)
+			local level = profile.Level or 1
+			local ready = level >= rebirth.MinLevel and profile.Coins >= cost
+			local points = Config.Machines.RebirthPoints(profile.Rebirths + 1)
 			local frame = row(
 				1,
-				`Rebirth #{profile.Rebirths + 1}   (costs {Format.Short(cost)} coins)`,
-				`Resets coins, animals, boxes, tools and stamps. Coin bonus: +{bonusNow}% now, +{bonusNext}% after. Forever.`
+				`Rebirth #{profile.Rebirths + 1}   (Level {rebirth.MinLevel} chute + {Format.Short(cost)} coins)`,
+				`Coins per minute x{multText(rebirth.ChuteMult ^ (profile.Rebirths + 1))} forever, and +{points} Rebirth Points for tools.`
 			)
 			local armed = os.clock() < rebirthArmedUntil
-			rowButton(
-				frame,
-				1,
-				if armed then "SURE? Again!" else "REBIRTH",
-				if armed then Ui.RED else Ui.ORANGE,
-				function()
-					if os.clock() < rebirthArmedUntil then
-						rebirthArmedUntil = 0
-						shopAction:FireServer("Rebirth")
-					else
-						rebirthArmedUntil = os.clock() + 3 -- click again within 3 seconds to confirm
-						redraw()
-						task.delay(3.1, function()
-							if gui.Enabled and currentTab == "Rebirth" then
-								redraw()
-							end
-						end)
+			if level < rebirth.MinLevel then
+				rowButton(frame, 1, `🔒 Level {rebirth.MinLevel}`, Ui.GREY, nil)
+			else
+				rowButton(
+					frame,
+					1,
+					if armed then "SURE? Again!" else "REBIRTH",
+					if armed then Ui.RED elseif ready then Ui.ORANGE else Ui.GREY,
+					function()
+						if os.clock() < rebirthArmedUntil then
+							rebirthArmedUntil = 0
+							shopAction:FireServer("Rebirth")
+						else
+							rebirthArmedUntil = os.clock() + 3 -- click again within 3 seconds to confirm
+							redraw()
+							task.delay(3.1, function()
+								if gui.Enabled and currentTab == "Rebirth" then
+									redraw()
+								end
+							end)
+						end
 					end
-				end
+				)
+			end
+			row(
+				2,
+				"What resets",
+				"Your chute level (back to 1), coins, machines, animals, boxes and stamps. Zones lock again."
 			)
-			row(2, `Jobs mailed so far: {profile.Mailed}`, "Every rebirth makes every future job pay more.")
+			row(
+				3,
+				"What you keep",
+				`Tools, your collection, quests, diamonds and troll items. Now: x{multText(
+					rebirth.ChuteMult ^ profile.Rebirths
+				)} coins per minute.`
+			)
 		end
 	end
 

@@ -1,14 +1,17 @@
 --!strict
 -- Levels and XP. You earn XP by mailing animals (more for harder animals and better ratings), from Gruff's
 -- orders and quests, and a big bonus the first time you mail each kind of animal. Levels open new zones.
--- Levels are kept through rebirths.
+-- Rebirth starts you back at level 1 (Config/Machines.luau).
+
+local Machines = require(script.Parent.Machines)
 
 local Levels = {
 	MaxLevel = 50,
 
 	-- XP needed to go from `level` to the next one
+	-- (times the XP multiplier from the machines you'd own by then: Config/Machines.luau)
 	XPToNext = function(level: number): number
-		return math.floor(40 * level ^ 1.5)
+		return math.floor(40 * level ^ 1.5 * Machines.ExpectedMult(level))
 	end,
 
 	-- XP for each parcel you mail = MailXPPerTier x the animal's tier x the star multiplier

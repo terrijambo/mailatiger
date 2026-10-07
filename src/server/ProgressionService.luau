@@ -2,7 +2,8 @@
 -- Levels, XP and Gruff's main quests (numbers in Config/Levels.luau and Config/Quests.luau).
 --   * XP comes from mailing (ProgressionService.OnParcelMailed), orders (OnOrderDone), quests, and the tutorial.
 --   * Leveling up pays a coin bonus and tells the client (a big LEVEL UP popup with what just unlocked).
---   * Zones open by level (ProgressionService.ZoneOpen). Levels are kept through rebirths.
+--   * Zones open by level (ProgressionService.ZoneOpen). Your level is your chute level: it also sets the
+--     chute's coins per minute and which machines you can buy (Config/Machines.luau). Rebirth resets it.
 --   * Quests run one at a time. "Count" quests (mail X, complete X orders) count from when the quest starts.
 --     "State" quests (own the Bunny, reach level 4, buy Sneakers...) complete the moment they're true.
 
@@ -49,6 +50,16 @@ local function unlocksAt(level: number): { string }
 	for _, troll in Config.Trolls.List do
 		if troll.Level == level then
 			table.insert(list, `{troll.Emoji} {troll.DisplayName} (troll item)`)
+		end
+	end
+	for _, machine in Config.Machines.List do
+		if machine.Level == level then
+			table.insert(list, `{machine.Emoji} The {machine.DisplayName} (Shop > Machines)`)
+		end
+	end
+	for _, chute in Config.Mail.Chutes do
+		if chute.Level == level and level > 1 then
+			table.insert(list, `📮 Your chute becomes the {chute.DisplayName}`)
 		end
 	end
 	return list
@@ -106,8 +117,8 @@ local function questDone(profile: Profile, quest: Quest): boolean
 		return profile.Level >= (quest.Level or 1)
 	elseif quest.Type == "Tool" then
 		return (profile.Tools[quest.Tool or ""] or 0) >= (quest.Level or 1)
-	elseif quest.Type == "Chute" then
-		return (Config.Mail.ChuteIndex[profile.ChuteTier] or 1) >= (Config.Mail.ChuteIndex[quest.Chute or ""] or 99)
+	elseif quest.Type == "Machine" then
+		return profile.Machines[quest.Machine or ""] == true
 	elseif quest.Type == "Troll" then
 		return profile.Trolls[quest.Troll or ""] == true
 	end
@@ -174,6 +185,7 @@ function ProgressionService.OnParcelMailed(player: Player, animalId: string, sta
 		* animal.Tier
 		* (Levels.StarXPMult[stars] or 1)
 		* (if variant then variant.XPMult else 1)
+		* Economy.MachineXPMult(player) -- the Post Office machines (Config/Machines.luau)
 	local first = (profile.Species[animalId] or 0) == 0
 	profile.Species[animalId] = (profile.Species[animalId] or 0) + 1
 	if first then

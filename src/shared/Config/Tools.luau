@@ -17,6 +17,7 @@ export type Tool = {
 	PerLevel: number,
 	Effect: string,
 	Percent: boolean?,
+	RPPerLevel: number, -- Rebirth Points: the next level costs ceil((level + 1) x this)
 }
 
 local List: { Tool } = {
@@ -28,6 +29,7 @@ local List: { Tool } = {
 		BasePrice = 200,
 		PriceGrowth = 3,
 		PerLevel = 0.15,
+		RPPerLevel = 1,
 		Effect = "grab {}% faster",
 		Percent = true,
 	},
@@ -40,6 +42,7 @@ local List: { Tool } = {
 		BasePrice = 150,
 		PriceGrowth = 1.9,
 		PerLevel = 4,
+		RPPerLevel = 0.5,
 		Effect = "+{} speed",
 	},
 	{
@@ -50,6 +53,7 @@ local List: { Tool } = {
 		BasePrice = 400,
 		PriceGrowth = 3,
 		PerLevel = 0.15,
+		RPPerLevel = 1,
 		Effect = "tape annoys {}% less",
 		Percent = true,
 	},
@@ -61,6 +65,7 @@ local List: { Tool } = {
 		BasePrice = 1000,
 		PriceGrowth = 4,
 		PerLevel = 2,
+		RPPerLevel = 1.5,
 		Effect = "+{} studs of reach",
 	},
 	{
@@ -71,6 +76,7 @@ local List: { Tool } = {
 		BasePrice = 500,
 		PriceGrowth = 3,
 		PerLevel = 2,
+		RPPerLevel = 1,
 		Effect = "+{} bag slots",
 	},
 }
@@ -81,6 +87,11 @@ for _, tool in List do
 end
 
 -- The price of the NEXT level when the tool is currently at `currentLevel`.
+-- Tools are bought with Rebirth Points (from rebirthing, Config/Machines.luau) and kept forever
+local function PointsFor(tool: Tool, currentLevel: number): number
+	return math.ceil((currentLevel + 1) * tool.RPPerLevel)
+end
+
 local function PriceFor(tool: Tool, currentLevel: number): number
 	return math.round(tool.BasePrice * tool.PriceGrowth ^ currentLevel)
 end
@@ -97,4 +108,5 @@ return {
 	List = List,
 	ById = ById,
 	PriceFor = PriceFor,
+	PointsFor = PointsFor,
 }

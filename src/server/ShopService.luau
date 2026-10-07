@@ -1,8 +1,8 @@
 --!strict
 -- The Supply Shop (boxes, tools, stamps, chutes, rebirth) and Gruff's orders board.
 -- Clients send ShopAction(action, id). The server checks coins, distance and ownership before changing anything.
---   BuyBox / EquipBox (box id)   UpgradeTool (tool id)   BuyStamp / SelectStamp (stamp id, "" = none)
---   BuyChute (chute id, must be the next one up)   Rebirth   BuyTroll (troll id)
+--   BuyBox / EquipBox (box id)   UpgradeTool (tool id, paid in Rebirth Points)
+--   BuyStamp / SelectStamp (stamp id, "" = none)   BuyMachine (machine id)   Rebirth   BuyTroll (troll id)
 --   BuyUpgrade (diamond upgrade id)   StudioBuy (Robux item key, Studio testing only)
 --   Claim ("O2" / "D1" / "W1" / "All")   Promo (Promo Kit shot setup, Studio only)
 
@@ -20,6 +20,7 @@ local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local Look = require(script.Parent.Look)
 local EventService = require(script.Parent.EventService)
+local MachineService = require(script.Parent.MachineService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local MonetizationService = require(script.Parent.MonetizationService)
 local Orders = require(script.Parent.Orders)
@@ -63,6 +64,14 @@ local function promo(player: Player, profile: DataService.Profile, id: string)
 			"Message",
 			{ Speaker = "Promo Kit", Text = "Every animal and zone unlocked, +1M coins." }
 		)
+	elseif id == "Points" then
+		profile.RebirthPoints += 50 -- (Studio testing: tool upgrades)
+		Economy.Sync(player)
+	elseif id == "AllMachines" then
+		for _, machine in Config.Machines.List do
+			profile.Machines[machine.Id] = true
+		end
+		Economy.Sync(player)
 	elseif id == "Noon" then
 		Look.SetClock(13) -- (the photo tool: bright daylight)
 	elseif id == "Sunset" then
@@ -131,6 +140,9 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	-- Coins and everything else are still checked below.)
 	if action == "BuyTroll" then
 		TrollService.Buy(player, itemId)
+		return
+	elseif action == "BuyMachine" then
+		MachineService.Buy(player, itemId)
 		return
 	elseif action == "BuyUpgrade" then
 		local ok, text = Economy.BuyUpgrade(player, itemId)
@@ -218,13 +230,19 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			reply(player, `Your {tool.DisplayName} are maxed out.`)
 			return
 		end
-		local price = Config.Tools.PriceFor(tool, level)
-		if not Economy.TrySpend(player, price, `Tool_{itemId}_{level + 1}`) then
-			reply(player, `Level {level + 1} {tool.DisplayName} costs {Format.Short(price)} coins.`)
+		-- Tools are bought with Rebirth Points, and kept forever
+		local points = Config.Tools.PointsFor(tool, level)
+		if profile.RebirthPoints < points then
+			reply(
+				player,
+				`Level {level + 1} {tool.DisplayName} costs {points} Rebirth Point{if points == 1 then "" else "s"}. You have {profile.RebirthPoints}. Rebirth to earn more!`
+			)
 			return
 		end
+		profile.RebirthPoints -= points
+		Analytics.Custom(player, `Tool_{itemId}`, level + 1)
 		profile.Tools[itemId] = level + 1
-		reply(player, `{tool.DisplayName} upgraded to level {level + 1}!`)
+		reply(player, `{tool.DisplayName} upgraded to level {level + 1}! (Yours forever.)`)
 	elseif action == "BuyStamp" then
 		local stamp = Config.Stamps.ById[itemId]
 		if not stamp then
@@ -243,26 +261,19 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		elseif (profile.Stamps[itemId] or 0) > 0 then
 			profile.SelectedStamp = itemId
 		end
-	elseif action == "BuyChute" then
-		-- Chutes are bought in order: you can only buy the next one up
-		local chute = Config.Mail.ChuteById[itemId]
-		local current = Config.Mail.ChuteIndex[profile.ChuteTier] or 1
-		if not chute or Config.Mail.ChuteIndex[itemId] ~= current + 1 then
-			return
-		end
-		if not Economy.TrySpend(player, chute.Price, `Chute_{itemId}`) then
-			reply(player, `The {chute.DisplayName} costs {Format.Short(chute.Price)} coins.`)
-			return
-		end
-		profile.ChuteTier = itemId
-		reply(player, `{chute.DisplayName} installed! {chute.Description}`)
 	elseif action == "Rebirth" then
+		local rebirth = Config.Machines.Rebirth
+		if profile.Level < rebirth.MinLevel then
+			reply(player, `Rebirth needs a Level {rebirth.MinLevel} chute. You're Level {profile.Level}.`)
+			return
+		end
 		local cost = Economy.RebirthCost(profile.Rebirths)
 		if profile.Coins < cost then
 			reply(player, `Rebirth costs {Format.Short(cost)} coins.`)
 			return
 		end
-		-- Start over, but keep a permanent coin bonus
+		-- Start over (chute level, machines, coins, animals, boxes, stamps), but keep your tools, collection
+		-- and quests, and earn a permanent coins-per-minute multiplier plus Rebirth Points
 		Analytics.Spend(player, profile.Coins, 0, `Rebirth_{profile.Rebirths + 1}`)
 		Analytics.Custom(player, "Rebirth", profile.Rebirths + 1)
 		Badges.Award(player, "Reborn")
@@ -270,25 +281,29 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		profile.Owned = { Hamster = true }
 		profile.Boxes = { Cardboard = true }
 		profile.EquippedBox = "Cardboard"
-		profile.ChuteTier = "Basic" -- (parcels still in your bag are kept)
-		profile.Tools = {}
-		-- Rebirth Toolkit (diamond upgrade): tools start at a level instead of 0
-		local kit = Economy.UpgradeBonus(player, "RebirthKit")
-		if kit > 0 then
-			for _, tool in Config.Tools.List do
-				profile.Tools[tool.Id] = math.min(kit, tool.MaxLevel)
-			end
-		end
 		profile.Stamps = {}
 		profile.SelectedStamp = nil
+		profile.Level = 1
+		profile.XP = 0
+		profile.Machines = {}
+		-- Head Start (diamond upgrade): keep your first few machines
+		local keep = Economy.UpgradeBonus(player, "RebirthKit")
+		for index, machine in Config.Machines.List do
+			if index <= keep then
+				profile.Machines[machine.Id] = true
+			end
+		end
 		profile.Rebirths += 1
+		local points = Config.Machines.RebirthPoints(profile.Rebirths)
+		profile.RebirthPoints += points
 		profile.Diamonds += Config.Diamonds.PerRebirth
 		Orders.Refresh(profile, true)
-		local bonus = math.round(profile.Rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth * 100)
+		local mult = rebirth.ChuteMult ^ profile.Rebirths
 		reply(
 			player,
-			`REBIRTH #{profile.Rebirths}! Every job now pays +{bonus}% coins, forever. +{Config.Diamonds.PerRebirth} 💎`
+			`REBIRTH #{profile.Rebirths}! Your chute now pays x{string.format("%g", math.round(mult * 100) / 100)} coins per minute, forever. +{points} Rebirth Points (spend them on tools) and +{Config.Diamonds.PerRebirth} 💎`
 		)
+		Remotes.Notify:FireClient(player, "Rebirthed", { Rebirths = profile.Rebirths, Points = points })
 	end
 
 	Economy.Sync(player)

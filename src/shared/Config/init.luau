@@ -31,6 +31,7 @@ return {
 	Events = require(script.Events),
 	World = require(script.World),
 	Wild = require(script.Wild),
+	Machines = require(script.Machines),
 	Dive = require(script.Dive),
 
 	Dev = {

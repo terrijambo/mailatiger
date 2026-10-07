@@ -51,7 +51,10 @@ export type ChallengeState = {
 export type Profile = {
 	Coins: number,
 	Parcels: { Parcel }, -- your bag
-	ChuteTier: string, -- your mail chute upgrade (Config.Mail.Chutes id)
+	ChuteTier: string, -- (old: chutes used to be bought; now they come with your chute level)
+	Machines: { [string]: boolean }, -- Post Office machines you own (Config/Machines.luau; reset by rebirth)
+	RebirthPoints: number, -- from rebirthing; buy tool upgrades with them (kept through rebirths)
+	EconomyVersion: number, -- 1 = saved after machines came in (older saves get their chute refunded once)
 	Owned: { [string]: boolean }, -- animals
 	Boxes: { [string]: boolean },
 	EquippedBox: string,
@@ -118,6 +121,9 @@ local function newProfile(): Profile
 		Coins = 0,
 		Parcels = {},
 		ChuteTier = "Basic",
+		Machines = {},
+		RebirthPoints = 0,
+		EconomyVersion = 1,
 		Owned = { Hamster = true },
 		Boxes = { Cardboard = true },
 		EquippedBox = "Cardboard",
@@ -199,6 +205,12 @@ local function reconcile(saved: any): Profile
 				end
 			end
 			profile.Level = level
+		end
+		-- Saves from before machines: chutes aren't bought any more, so refund the one you bought
+		if (saved.EconomyVersion or 0) < 1 then
+			profile.Coins += Config.Mail.OldPrices[saved.ChuteTier or "Basic"] or 0
+			profile.ChuteTier = "Basic"
+			profile.EconomyVersion = 1
 		end
 		-- Saves from before the tutorial existed: anyone who has mailed something already knows how to play
 		if saved.TutorialDone == nil and type(saved.Mailed) == "number" and saved.Mailed > 0 then

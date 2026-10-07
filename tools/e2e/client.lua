@@ -264,6 +264,14 @@ local function run()
 		return (profile().Stamps.Fragile or 0) >= 1
 	end, 3), "bought a Fragile stamp")
 	task.wait(0.2)
+	local pointsBefore = profile().RebirthPoints or 0
+	remotes.ShopAction:FireServer("UpgradeTool", "Sneakers")
+	task.wait(1)
+	log((profile().Tools.Sneakers or 0) == 0, "tools need Rebirth Points (none yet)")
+	remotes.ShopAction:FireServer("Promo", "Points") -- (Studio only: +50 Rebirth Points)
+	log(waitFor(function()
+		return (profile().RebirthPoints or 0) >= pointsBefore + 50
+	end, 3), "got test Rebirth Points")
 	remotes.ShopAction:FireServer("UpgradeTool", "Sneakers")
 	log(waitFor(function()
 		return (profile().Tools.Sneakers or 0) >= 1
@@ -538,23 +546,53 @@ local function run()
 	dumpUi("shop")
 	gui.Shop.Enabled = false
 
-	-- 8. Chute upgrades, in order, up to the Rocket (mail from anywhere)
+	-- 8. Post Office machines: buy the ones your chute level allows; each multiplies parcel XP
 	goTo(map.ShopCounter)
-	for _, chute in { "Express", "Pneumatic", "Rocket" } do
-		remotes.ShopAction:FireServer("BuyChute", chute)
-		log(waitFor(function()
-			return profile().ChuteTier == chute
-		end, 3), "bought the " .. chute .. " chute")
-		task.wait(0.2)
-	end
-	task.wait(0.5)
-	local rocketModel = false
-	for _, d in Workspace:GetChildren() do
-		if d:IsA("Model") and d.Name == "MailChuteRocket" then
-			rocketModel = true
+	local machineLevel = profile().Level
+	local machinesBought = 0
+	for _, machine in Config.Machines.List do
+		if machine.Level <= machineLevel and Config.Machines.Price(machine) <= profile().Coins then
+			remotes.ShopAction:FireServer("BuyMachine", machine.Id)
+			if waitFor(function()
+				return (profile().Machines or {})[machine.Id] == true
+			end, 3) then
+				machinesBought += 1
+			end
+			task.wait(0.2)
 		end
 	end
-	log(rocketModel, "your chute now shows the Rocket Chute model")
+	log(machinesBought >= 1, `bought {machinesBought} Post Office machine(s) at chute level {machineLevel}`)
+	log(Config.Machines.XPMult(profile().Machines or {}) > 1, "machines multiply parcel XP")
+	local locked
+	for _, machine in Config.Machines.List do
+		if machine.Level > machineLevel then
+			locked = machine
+			break
+		end
+	end
+	if locked then
+		remotes.ShopAction:FireServer("BuyMachine", locked.Id)
+		task.wait(1)
+		log((profile().Machines or {})[locked.Id] ~= true, `the {locked.DisplayName} stays locked below level {locked.Level}`)
+	end
+	log(waitFor(function()
+		local rate = player:GetAttribute("ChuteRate")
+		return type(rate) == "number" and rate > 0
+	end, 3), "the chute pays coins per minute")
+	local coinsBeforeTick = profile().Coins
+	log(waitFor(function()
+		return profile().Coins > coinsBeforeTick
+	end, Config.Machines.PayEverySeconds + 3), "the chute paid out")
+	local chuteModel = Config.Mail.ChuteFor(machineLevel).Model
+	local propModels = ReplicatedStorage:FindFirstChild("PropModels")
+	if propModels and propModels:FindFirstChild(chuteModel) then
+		task.wait(0.5)
+		log(Workspace:FindFirstChild(chuteModel) ~= nil, "your chute shows the " .. chuteModel .. " model for your level")
+	end
+	remotes.ShopAction:FireServer("Promo", "AllMachines") -- (Studio only: the Rocket Launcher gives mail-anywhere)
+	log(waitFor(function()
+		return (profile().Machines or {}).Rocket == true
+	end, 3), "got every machine (test)")
 	local board = map:FindFirstChild("Leaderboard_FiveStamps")
 	log(board ~= nil and board:FindFirstChild("Board") ~= nil, "leaderboards are drawn")
 	local messages = events.Message or 0

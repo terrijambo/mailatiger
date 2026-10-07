@@ -41,11 +41,8 @@ function QuestText.Current(): Info
 		have, need = data.Level or 1, quest.Level or 1
 	elseif quest.Type == "Tool" then
 		have, need = data.Tools[quest.Tool or ""] or 0, quest.Level or 1
-	elseif quest.Type == "Chute" then
-		have = if (Config.Mail.ChuteIndex[data.ChuteTier] or 1)
-				>= (Config.Mail.ChuteIndex[quest.Chute or ""] or 99)
-			then 1
-			else 0
+	elseif quest.Type == "Machine" then
+		have = if data.Machines and data.Machines[quest.Machine or ""] then 1 else 0
 	elseif quest.Type == "Troll" then
 		have = if data.Trolls and data.Trolls[quest.Troll or ""] then 1 else 0
 	end

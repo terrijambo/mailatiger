@@ -110,6 +110,21 @@ function Hud.Start()
 	local boostRow, boostLabel = statRow(rightStack, 1, "Hud_Boost", BOOST_ORANGE, true)
 	local bagRow, bagLabel = statRow(rightStack, 2, "Hud_Bag", BAG_TAN, true)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
+	-- Coins per minute from your chute (Config/Machines.luau), just under your coins
+	local rateLabel = Ui.outlined(stack, {
+		LayoutOrder = 4,
+		Size = UDim2.fromOffset(260, 22),
+		TextSize = 20,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = COIN_GREEN,
+		Text = "",
+	})
+	local function refreshRate()
+		local rate = player:GetAttribute("ChuteRate")
+		rateLabel.Text = if typeof(rate) == "number" and rate > 0 then `📮 +{Hud.Short(rate)}/min` else ""
+	end
+	player:GetAttributeChangedSignal("ChuteRate"):Connect(refreshRate)
+	refreshRate()
 
 	-- Delivery streak: a flame next to your coins ("🔥x5") that pops each time it grows
 	local streakLabel = Ui.outlined(coinRow, {

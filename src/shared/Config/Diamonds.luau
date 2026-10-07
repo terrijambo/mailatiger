@@ -85,8 +85,8 @@ local list: { Upgrade } = {
 	},
 	{
 		Id = "RebirthKit",
-		DisplayName = "Rebirth Toolkit",
-		Description = "After a rebirth, your tools start at level {n}",
+		DisplayName = "Head Start",
+		Description = "After a rebirth, you keep your first {n} Post Office machines",
 		Emoji = "🧰",
 		MaxLevel = 3,
 		BaseCost = 30,

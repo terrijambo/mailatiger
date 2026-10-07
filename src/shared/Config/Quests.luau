@@ -8,7 +8,7 @@
 --   Level   reach Level
 --   Orders  complete Count of Gruff's side orders
 --   Tool    get Tool up to Level (Supply Shop -> Tools)
---   Chute   install the Chute (Supply Shop -> Chutes)
+--   Machine buy the Post Office Machine (Supply Shop -> Machines)
 --   Troll   own the troll item Troll (Supply Shop -> Trolls)
 
 export type Quest = {
@@ -20,6 +20,7 @@ export type Quest = {
 	Level: number?,
 	Tool: string?,
 	Chute: string?,
+	Machine: string?,
 	Troll: string?,
 	XP: number,
 	Jobs: number, -- coin reward: this many jobs' worth of your best animal
@@ -41,12 +42,12 @@ local quests: { Quest } = {
 	{ Text = "Complete 2 of Gruff's orders", Type = "Orders", Count = 2, XP = 60, Jobs = 5 },
 	{ Text = "Reach Level 2 (Goldfish stop running from you)", Type = "Level", Level = 2, XP = 40, Jobs = 3 },
 	{ Text = "Mail a Goldfish", Type = "Mail", Animal = "Goldfish", Count = 1, XP = 60, Jobs = 5 },
-	{ Text = "Buy Sneakers in the Supply Shop", Type = "Tool", Tool = "Sneakers", Level = 1, XP = 40, Jobs = 3 },
+	{ Text = "Buy the Stamp Machine (Shop > Machines)", Type = "Machine", Machine = "Stamp", XP = 40, Jobs = 3 },
 	{ Text = "Reach Level 4 to open the Barn", Type = "Level", Level = 4, XP = 50, Jobs = 5 },
 	{ Text = "Mail a Chicken from the Barn", Type = "Mail", Animal = "Chicken", Count = 1, XP = 60, Jobs = 3 },
 	{ Text = "Mail 2 Chickens", Type = "Mail", Animal = "Chicken", Count = 2, XP = 100, Jobs = 5 },
 	{ Text = "Mail a Pig with 4+ stars", Type = "Mail", Animal = "Pig", Count = 1, MinStars = 4, XP = 150, Jobs = 6 },
-	{ Text = "Install the Express Chute", Type = "Chute", Chute = "Express", XP = 120, Jobs = 4 },
+	{ Text = "Buy the Postage Scale", Type = "Machine", Machine = "Scale", XP = 120, Jobs = 4 },
 	{ Text = "Buy a Banana Peel (troll item)", Type = "Troll", Troll = "BananaPeel", XP = 100, Jobs = 3 },
 	{ Text = "Reach Level 8 to open the Jungle", Type = "Level", Level = 8, XP = 150, Jobs = 6 },
 	{ Text = "Mail a Monkey from the Jungle", Type = "Mail", Animal = "Monkey", Count = 1, XP = 250, Jobs = 6 },
@@ -61,7 +62,7 @@ local quests: { Quest } = {
 	},
 	{ Text = "Reach Level 12 to open the Ice Rink", Type = "Level", Level = 12, XP = 300, Jobs = 8 },
 	{ Text = "Mail a Penguin", Type = "Mail", Animal = "Penguin", Count = 1, XP = 400, Jobs = 6 },
-	{ Text = "Install the Pneumatic Chute", Type = "Chute", Chute = "Pneumatic", XP = 400, Jobs = 6 },
+	{ Text = "Buy the Sorting Belt", Type = "Machine", Machine = "Sorter", XP = 400, Jobs = 6 },
 	{ Text = "MAIL A TIGER", Type = "Mail", Animal = "Tiger", Count = 1, XP = 800, Jobs = 10 },
 	{
 		Text = "Mail 3 Tigers with 4+ stars",

@@ -35,6 +35,8 @@ function Economy.Sync(player: Player)
 	end
 	-- Your running speed (with Sneakers). The client's Movement module uses it, in town too.
 	player:SetAttribute("WalkSpeed", Economy.WalkSpeed(player))
+	-- Coins per minute from your chute (the HUD shows it)
+	player:SetAttribute("ChuteRate", math.floor(Economy.ChuteRate(player)))
 	DataService.Sync(player)
 	local hook = Economy.OnSync
 	if hook then
@@ -133,8 +135,23 @@ function Economy.BestBaseValue(player: Player): number
 end
 
 function Economy.RebirthCost(rebirths: number): number
-	local rebirth = Config.Progression.Rebirth
-	return math.round(rebirth.BaseCost * rebirth.CostGrowth ^ rebirths)
+	return Config.Machines.RebirthCost(rebirths)
+end
+
+-- XP multiplier from the Post Office machines you own
+function Economy.MachineXPMult(player: Player): number
+	local profile = DataService.Get(player)
+	return if profile then Config.Machines.XPMult(profile.Machines) else 1
+end
+
+-- Coins per minute your chute pays: your chute level, x1.5 per rebirth, and the usual boosts
+function Economy.ChuteRate(player: Player): number
+	local profile = DataService.Get(player)
+	if not profile then
+		return 0
+	end
+	local machines = Config.Machines
+	return machines.ChuteRate(profile.Level) * machines.Rebirth.ChuteMult ^ profile.Rebirths * Economy.BoostMult(player)
 end
 
 -- Diamond upgrades (Config/Diamonds.luau): your level in one, and its total bonus
@@ -186,13 +203,17 @@ function Economy.BoostActive(): boolean
 	return typeof(untilTime) == "number" and Workspace:GetServerTimeNow() < untilTime
 end
 
--- Your payout multiplier: rebirths, Golden Paws, the server boost, Roblox Premium, the group and friends
--- (MonetizationService sets those attributes)
+-- Your payout multiplier: rebirths, then the boosts below
 function Economy.PayoutMult(player: Player): number
 	local profile = DataService.Get(player)
 	local rebirths = if profile then profile.Rebirths else 0
-	local mult = 1 + rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
-	mult *= 1 + Economy.UpgradeBonus(player, "GoldenPaws") / 100
+	return (1 + rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth) * Economy.BoostMult(player)
+end
+
+-- Boosts on everything you earn: Golden Paws, the server boost, Roblox Premium, the group and friends
+-- (MonetizationService sets those attributes)
+function Economy.BoostMult(player: Player): number
+	local mult = 1 + Economy.UpgradeBonus(player, "GoldenPaws") / 100
 	local money = Config.Monetization
 	if Economy.BoostActive() then
 		mult *= money.BoostMult

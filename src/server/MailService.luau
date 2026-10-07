@@ -3,9 +3,10 @@
 --   * When you finish taping, the animal becomes a Parcel in your bag (saved with your progress).
 --   * You carry your parcels (they show in your hands) to the Mail Chute and hold E to mail them.
 --     That's when you get paid, orders get filled and the leaderboards update.
---   * Your chute upgrade (Supply Shop, Chutes tab) makes each parcel pay more. The Rocket Chute also lets you
---     press M to mail from anywhere.
--- Chute upgrades and bag size are in src/shared/Config/Mail.luau.
+--   * Each parcel pays a tip right away (Config/Machines.luau MailTip); the chute's coins per minute are the
+--     main income (MachineService). Your chute upgrades with your level, and the Rocket Launcher machine lets
+--     you press M to mail from anywhere.
+-- Chutes and bag size are in src/shared/Config/Mail.luau.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -186,8 +187,8 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	if not profile then
 		return
 	end
-	local chute = Config.Mail.ChuteById[profile.ChuteTier] or Config.Mail.ChuteById.Basic
-	if not fromChute and not chute.MailAnywhere then
+	local chute = Config.Mail.ChuteFor(profile.Level)
+	if not fromChute and not profile.Machines.Rocket then
 		return
 	end
 	if #profile.Parcels == 0 then
@@ -200,7 +201,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	local lines = {}
 	local progress: { { AnimalId: string, Stars: number, Orders: number, Variant: string? } } = {} -- XP and quests, after paying
 	for _, parcel in profile.Parcels do
-		local pay = math.max(1, math.round(parcel.Coins * chute.PayMult))
+		local pay = math.max(1, math.round(parcel.Coins * Config.Machines.MailTip))
 		if pay > bestPay then
 			local bestAnimal = Config.Animals.ById[parcel.AnimalId]
 			bestPay, bestVariant = pay, parcel.Variant

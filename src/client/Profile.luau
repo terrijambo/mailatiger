@@ -26,6 +26,8 @@ export type Data = {
 	OrdersRefreshAt: number,
 	Parcels: { { AnimalId: string, Stars: number, Coins: number } },
 	ChuteTier: string,
+	Machines: { [string]: boolean }?,
+	RebirthPoints: number?,
 	TutorialDone: boolean?,
 	Settings: { [string]: boolean }?,
 	Level: number,
