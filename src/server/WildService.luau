@@ -330,6 +330,9 @@ local function spawn(
 	prompt.Triggered:Connect(function(player: Player)
 		onGrab(entry, player)
 	end)
+	prompt.PromptButtonHoldBegan:Connect(function(player: Player)
+		DiveService.Engage(player, Wild.GrabHold + 1) -- (grabbing this one: the others hold off)
+	end)
 	ball.Parent = folder
 	CollectionService:AddTag(ball, "Critter") -- (the client draws the Blender model on it)
 	table.insert(wilds, entry)
@@ -343,7 +346,7 @@ local function attackTarget(entry: Entry, range: number): Player?
 	local best, bestDistance = nil, range
 	for _, player in Players:GetPlayers() do
 		local root = rootOf(player)
-		if root and player:GetAttribute("Stage") ~= "Box" and player:GetAttribute("Frozen") ~= true then
+		if root and not DiveService.IsEngaged(player) and player:GetAttribute("Frozen") ~= true then
 			local distance = (flat(root.Position) - flat(entry.Ball.Position)).Magnitude
 			if distance < bestDistance and math.abs(root.Position.Y - entry.Ball.Position.Y) < 12 then
 				best, bestDistance = player, distance
@@ -385,6 +388,14 @@ updateAttack = function(entry: Entry, arena: MapBuilder.Arena, now: number, dt: 
 	end
 	-- Winding up
 	if entry.AttackAt then
+		local victim = entry.Victim
+		if victim and DiveService.IsEngaged(victim) then
+			-- They grabbed another animal: never mind
+			entry.AttackAt = nil
+			entry.Ball:SetAttribute("AttackAt", nil)
+			entry.NextAttack = now + attack.Cooldown
+			return false
+		end
 		if now < entry.AttackAt then
 			return true -- (stands still, shaking, with the red "!!")
 		end
@@ -399,7 +410,7 @@ updateAttack = function(entry: Entry, arena: MapBuilder.Arena, now: number, dt: 
 			local root = rootOf(player)
 			if
 				root
-				and player:GetAttribute("Stage") ~= "Box"
+				and not DiveService.IsEngaged(player)
 				and (flat(root.Position) - flat(entry.Ball.Position)).Magnitude < range * 1.15
 				and math.abs(root.Position.Y - entry.Ball.Position.Y) < 12
 			then

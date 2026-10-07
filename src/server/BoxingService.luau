@@ -490,6 +490,7 @@ local function endSession(s: Session)
 	CatchAI.Remove(s)
 	sessions[s.Player] = nil
 	for _, member in membersOf(s) do
+		DiveService.Engage(member, 3) -- (a few seconds' peace after a job before anything attacks you)
 		crewOf[member] = nil
 		member:SetAttribute("Stage", "")
 		member:SetAttribute("Tip", "")

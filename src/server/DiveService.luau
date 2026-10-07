@@ -8,6 +8,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
@@ -35,6 +36,23 @@ function DiveService.IsDodging(player: Player): boolean
 	return os.clock() < (dodgeUntil[player] or 0)
 end
 
+-- Busy with an animal (grabbing one, in the BOX screen, or just finished): animals leave you alone
+function DiveService.IsEngaged(player: Player): boolean
+	if player:GetAttribute("Stage") == "Box" then
+		return true
+	end
+	local safeUntil = player:GetAttribute("SafeUntil")
+	return typeof(safeUntil) == "number" and Workspace:GetServerTimeNow() < safeUntil
+end
+
+-- Marks a player as busy with an animal for a few seconds (no attacks meanwhile)
+function DiveService.Engage(player: Player, seconds: number)
+	local now = Workspace:GetServerTimeNow()
+	local current = player:GetAttribute("SafeUntil")
+	local untilTime = math.max(if typeof(current) == "number" then current else 0, now + seconds)
+	player:SetAttribute("SafeUntil", untilTime)
+end
+
 -- An animal attack hits `player` from `from`: VINE BOOM, thrown away as a ragdoll. Diving dodges it.
 -- kind ("Roar", "Freeze", "Spray", "Charge") adds its own flavor on the player's screen.
 -- Returns whether it hit.
@@ -42,6 +60,9 @@ function DiveService.Hit(player: Player, from: Vector3, kind: string, attacker: 
 	local root = rootOf(player)
 	if not root then
 		return false
+	end
+	if DiveService.IsEngaged(player) then
+		return false -- (busy with an animal: the others leave you alone)
 	end
 	if DiveService.IsDodging(player) then
 		Remotes.Notify:FireClient(player, "Dodged", {})
