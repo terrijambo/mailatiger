@@ -290,6 +290,31 @@ local function buildArena(map: MapBuilder.Map)
 	local _ = map
 end
 
+-- Into the arena (the red BOSS pad, or GO on the boss banner). Not mid-job: finish that first.
+local function enterArena(player: Player)
+	if inArena(player) then
+		return
+	end
+	local stage = player:GetAttribute("Stage")
+	if typeof(stage) == "string" and stage ~= "" then
+		Remotes.Notify:FireClient(player, "Message", {
+			Speaker = "Postmaster Gruff",
+			Text = "Finish your job first. The boss can wait. Barely.",
+		})
+		return
+	end
+	teleport(player, center() + Vector3.new(math.random(-10, 10), 0, Boss.ArenaSize / 2 - 16))
+end
+
+-- GO on the boss banner: straight to the arena while a boss is coming or on
+function BossService.TeleportIn(player: Player)
+	if Workspace:GetAttribute("BossPadOpen") ~= true then
+		Remotes.Notify:FireClient(player, "Message", { Speaker = "Postmaster Gruff", Text = "No boss right now." })
+		return
+	end
+	enterArena(player)
+end
+
 -- The BOSS pad in the plaza (only there while a boss is coming or on)
 local function setPad(open: boolean)
 	Workspace:SetAttribute("BossPadOpen", open)
@@ -308,18 +333,9 @@ local function setPad(open: boolean)
 		part.Touched:Connect(function(hit)
 			local model = hit:FindFirstAncestorOfClass("Model")
 			local player = model and Players:GetPlayerFromCharacter(model)
-			if not player or inArena(player) then
-				return
+			if player then
+				enterArena(player)
 			end
-			local stage = player:GetAttribute("Stage")
-			if typeof(stage) == "string" and stage ~= "" then
-				Remotes.Notify:FireClient(player, "Message", {
-					Speaker = "Postmaster Gruff",
-					Text = "Finish your job first. The boss can wait. Barely.",
-				})
-				return
-			end
-			teleport(player, center() + Vector3.new(math.random(-10, 10), 0, Boss.ArenaSize / 2 - 16))
 		end)
 		pad = part
 	elseif not open and pad then
@@ -634,9 +650,10 @@ local function stomp(f: Fight?)
 					f.Holding[player] = nil
 					dropRope(f, player)
 					BoxingService.Stun(player, Boss.StompStun)
+					-- (a short tumble, ~15 studs: enough to feel it, not enough to fly off the island)
 					local away = if flat.Magnitude > 0.1 then flat.Unit else Vector3.xAxis
 					Remotes.Notify:FireClient(player, "Launch", {
-						Velocity = away * 55 + Vector3.new(0, 70, 0),
+						Velocity = away * 25 + Vector3.new(0, 55, 0),
 						Seconds = Boss.StompStun,
 					})
 				end

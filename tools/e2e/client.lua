@@ -674,7 +674,8 @@ local function run()
 		local stick = game:GetService("RunService").Heartbeat:Connect(function()
 			local character = player.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart")
-			if root and handle.Parent then
+			-- (let go once it's pinned: the tape rolls drop out of sight then)
+			if root and handle.Parent and handle.Position.Y > -10 and player:GetAttribute("Stage") ~= "Box" then
 				local away = handle.Position - bossBall.Position
 				away = Vector3.new(away.X, 0, away.Z).Unit
 				root.CFrame = CFrame.new(handle.Position + away * 3)

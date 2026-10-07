@@ -14,6 +14,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
+local BossService = require(script.Parent.BossService)
 local ChallengeService = require(script.Parent.ChallengeService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
@@ -142,6 +143,9 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		-- The Favorite / Get updates card was shown (so it's only asked a couple of times, ever)
 		profile.FollowAsked = math.min(profile.FollowAsked + 1, 99)
 		DataService.Sync(player)
+		return
+	elseif action == "GoToBoss" then
+		BossService.TeleportIn(player)
 		return
 	elseif action == "GoToGruff" then
 		Travel.ToGruff(player)

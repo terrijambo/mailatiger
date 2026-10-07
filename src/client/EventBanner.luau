@@ -5,6 +5,8 @@
 --   running      name, time left and what to do, plus live details:
 --                Rush Order: the animal to mail and the top 3 so far
 --                Boss: PIN IT (how many are holding on, and a pin bar) or BOX IT (seams done)
+-- While a boss is coming or on and you're not in the arena, the banner has GO (teleport straight there) and
+-- SKIP (no more boss banners, title card or popups until this fight is over).
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
@@ -80,6 +82,52 @@ function EventBanner.Start()
 	}, barBack)
 	Ui.round(barFill, 5)
 
+	-- GO / SKIP for the boss
+	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
+	local bossButtons = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 12, 1, -8),
+		Size = UDim2.new(1, -24, 0, 36),
+		BackgroundTransparency = 1,
+		Visible = false,
+	}, card)
+	Ui.make("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		Padding = UDim.new(0, 8),
+	}, bossButtons)
+	local goButton = Ui.button(bossButtons, {
+		Size = UDim2.new(0.62, -4, 1, 0),
+		BackgroundColor3 = Ui.RED,
+		Text = "⚔️ GO FIGHT",
+		TextSize = 18,
+		LayoutOrder = 1,
+	})
+	local skipButton = Ui.button(bossButtons, {
+		Size = UDim2.new(0.38, -4, 1, 0),
+		BackgroundColor3 = Ui.GREY,
+		Text = "Skip",
+		TextSize = 18,
+		LayoutOrder = 2,
+	})
+	local skipped = false
+	goButton.Activated:Connect(function()
+		shopAction:FireServer("GoToBoss")
+	end)
+	skipButton.Activated:Connect(function()
+		skipped = true
+		player:SetAttribute("SkipBoss", true) -- (the HUD skips its boss popups too)
+	end)
+	local function inArena(): boolean
+		local character = player.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not root then
+			return false
+		end
+		local offset = root.Position - Events.Boss.ArenaCenter
+		return math.abs(offset.X) < Events.Boss.ArenaSize / 2 + 10
+			and math.abs(offset.Z) < Events.Boss.ArenaSize / 2 + 10
+	end
+
 	local function refresh()
 		local now = Workspace:GetServerTimeNow()
 		local running = attr("EventId")
@@ -88,7 +136,19 @@ function EventBanner.Start()
 		local nextAt = attr("EventNextAt")
 		barBack.Visible = false
 
-		if typeof(bossPhase) == "string" then
+		-- A boss coming or on? (SKIP lasts until it's over)
+		local bossComing = nextId == "Boss" and typeof(nextAt) == "number" and nextAt > now
+		local bossSoon = typeof(bossPhase) == "string" or bossComing
+		if not bossSoon and skipped then
+			skipped = false
+			player:SetAttribute("SkipBoss", nil)
+		end
+		local buttons = bossSoon and not skipped and not inArena()
+		bossButtons.Visible = buttons
+		card.Size = UDim2.fromOffset(330, if buttons then 136 else 92)
+		barBack.Position = UDim2.new(0, 12, 1, if buttons then -56 else -18)
+
+		if typeof(bossPhase) == "string" and not skipped then
 			-- THE BIG ONE
 			local name = attr("BossName") or "BOSS"
 			local endsAt = attr("BossEndsAt")
@@ -148,7 +208,13 @@ function EventBanner.Start()
 			card.BackgroundColor3 = Color3.fromRGB(30, 40, 60)
 			if nextId == "Boss" then
 				title.Text = `⚔️ {attr("BossName") or "BOSS"} in {clock(nextAt - now)}`
-				line.Text = "A giant boss is coming! Step on the red BOSS pad in the plaza to join the fight."
+				line.Text = if inArena()
+					then "You're in the arena. Get ready!"
+					else "A giant boss is coming! Press GO FIGHT, or step on the red BOSS pad."
+				if skipped then
+					card.Visible = false
+					return
+				end
 			else
 				local event = Events.ById[nextId]
 				title.Text = if event then `Next: {event.Emoji} {event.DisplayName} in {clock(nextAt - now)}` else ""
@@ -313,7 +379,7 @@ function EventBanner.Start()
 			showVictory(data)
 			return
 		end
-		if kind ~= "BossTitle" then
+		if kind ~= "BossTitle" or skipped then
 			return
 		end
 		bigName.Text = `👑 {data.Boss} 👑`

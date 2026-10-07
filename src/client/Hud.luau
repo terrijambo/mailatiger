@@ -827,9 +827,12 @@ function Hud.Start()
 		elseif kind == "StampedeCatch" then
 			showToast("🐹 Caught one!", `You grabbed a wild {data.Animal}!`, nil, nil, Ui.GREEN)
 		elseif kind == "BossStart" then
+			if player:GetAttribute("SkipBoss") == true then
+				return -- (they pressed Skip on the boss banner)
+			end
 			showToast(
 				`⚔️ {data.Boss} HAS LANDED!`,
-				"Step on the red BOSS pad in the plaza and help pin it down and box it!",
+				"Press GO FIGHT on the boss banner (or step on the red BOSS pad) and help box it!",
 				nil,
 				nil,
 				Ui.RED
