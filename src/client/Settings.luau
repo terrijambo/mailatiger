@@ -15,13 +15,13 @@ local player = Players.LocalPlayer
 
 local Settings = {}
 
-local DEFAULTS: { [string]: boolean } = { Chaos = false }
+local DEFAULTS: { [string]: boolean } = { Chaos = true }
 
 local OPTIONS = {
 	{ Key = "Music", Label = "Music" },
 	{ Key = "Sfx", Label = "Sound effects" },
 	{ Key = "Motion", Label = "Camera shake & zoom" },
-	-- (off unless you turn it on: other players can troll your animal, but every job pays +50%)
+	-- (on unless you turn it off: other players can troll your animal, but every job pays +50%)
 	{ Key = "Chaos", Label = "Chaos Mode (+50% pay)" },
 }
 

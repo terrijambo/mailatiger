@@ -38,6 +38,10 @@ export type Arena = {
 	Max: Vector3,
 	Center: Vector3,
 	FloorY: number,
+	-- Islands with no pen: animals roam the whole island, kept within Roam.Radius of Roam.Center (and
+	-- inside Min..Max, which is then the box around that circle)
+	Roam: { Center: Vector3, Radius: number }?,
+	Ground: { Min: Vector3, Max: Vector3 }, -- the zone's open ground in the middle (kept clear of scenery)
 	Gate: CFrame, -- where players are teleported to, facing into the arena
 	Obstacles: { Obstacle },
 	Edges: boolean, -- true = no fence, you can fall off (Rooftop)
@@ -174,27 +178,6 @@ local function tint(model: Model?, partName: string, color: Color3)
 	end
 end
 
--- Lines a fence block with fence-segment models about `step` studs long, then hides the block
--- (it stays as the invisible wall that keeps animals in).
-local function dressFence(parent: Instance, name: string, fence: BasePart, step: number)
-	local size = fence.Size
-	local alongX = size.X >= size.Z
-	local length = if alongX then size.X else size.Z
-	local count = math.max(1, math.round(length / step))
-	local segment = length / count
-	local axis = if alongX then Vector3.xAxis else Vector3.zAxis
-	local facing = if alongX then Vector3.zAxis else Vector3.xAxis
-	local bottom = fence.Position - Vector3.new(0, size.Y / 2, 0)
-	local first = bottom - axis * (length / 2 - segment / 2)
-	for i = 0, count - 1 do
-		local position = first + axis * segment * i
-		if not dress(parent, name, spot(position.X, position.Y, position.Z, facing), segment) then
-			return -- not imported: keep the block
-		end
-	end
-	fence.Transparency = 1
-end
-
 -- A small floating name tag: white text with a dark outline (like "Tiny House $15K" in popular sims).
 -- It only shows when you're fairly close, so the town isn't a wall of text.
 -- widthStuds: size it in the world instead of on screen, so it shrinks with distance (labels standing
@@ -322,24 +305,9 @@ local function buildArena(parent: Instance, spec: ArenaSpec): Arena
 	local gate: CFrame
 	local fenceColor = spec.FenceColor
 	if fenceColor then
-		local h = 4
-		local fences = {
-			lbox(folder, "Fence", fr, -hu - 1, -hw - 1, hu + 1, -hw, y, y + h, fenceColor),
-			lbox(folder, "Fence", fr, -hu - 1, -hw - 1, -hu, hw + 1, y, y + h, fenceColor),
-			lbox(folder, "Fence", fr, hu, -hw - 1, hu + 1, hw + 1, y, y + h, fenceColor),
-			lbox(folder, "Fence", fr, -hu - 1, hw, -5, hw + 1, y, y + h, fenceColor),
-			lbox(folder, "Fence", fr, 5, hw, hu + 1, hw + 1, y, y + h, fenceColor),
-		}
-		if spec.FenceModel then
-			for _, fence in fences do
-				dressFence(folder, spec.FenceModel, fence, spec.FenceStep or 6)
-			end
-		end
-		local leftPost = lbox(folder, "GatePost", fr, -6, hw, -5, hw + 1, y, y + 8.5, COLORS.Stone)
-		local rightPost = lbox(folder, "GatePost", fr, 5, hw, 6, hw + 1, y, y + 8.5, COLORS.Stone)
-		local sign = lbox(folder, "GateSign", fr, -5, hw, 5, hw + 1, y + 7, y + 8.5, def.Color)
-		dress(folder, "ArenaGate", lspot(fr, 0, hw + 0.5, y), 12.5, { leftPost, rightPost, sign })
-		-- Land just outside the gate, facing in
+		-- (no pen any more: the animals roam the whole island, so there are no fences or gate, just the
+		-- landing spot at the end of the path from the bridge)
+		-- Land at the edge of the open ground, facing in
 		local landing = L(fr, 0, hw + 6, y + 3)
 		gate = CFrame.lookAt(landing, landing - fr.F)
 		lbox(folder, "GatePath", fr, -5, hw, 5, hw + 12, y - 0.5, y + 0.02, COLORS.Stone)
@@ -354,15 +322,36 @@ local function buildArena(parent: Instance, spec: ArenaSpec): Arena
 
 	local min = floor.Position - floor.Size / 2
 	local max = floor.Position + floor.Size / 2
+	local ground = { Min = Vector3.new(min.X, y, min.Z), Max = Vector3.new(max.X, y, max.Z) }
+	if fenceColor == nil then
+		-- the Rooftop: the roof is the play area, and you can fall off its edges
+		return {
+			Id = fr.Id,
+			Min = ground.Min,
+			Max = ground.Max,
+			Center = L(fr, 0, 0, y),
+			FloorY = y,
+			Gate = gate,
+			Obstacles = {},
+			Edges = true,
+			Ground = ground,
+		}
+	end
+	-- Everywhere else: the whole island (a bit in from its cliffs)
+	local island = World.ById[fr.Id]
+	local roamCenter = Vector3.new(island.Center.X, y, island.Center.Z)
+	local roamRadius = island.Radius * 0.82
 	return {
 		Id = fr.Id,
-		Min = Vector3.new(min.X, y, min.Z),
-		Max = Vector3.new(max.X, y, max.Z),
+		Min = roamCenter - Vector3.new(roamRadius, 0, roamRadius),
+		Max = roamCenter + Vector3.new(roamRadius, 0, roamRadius),
 		Center = L(fr, 0, 0, y),
 		FloorY = y,
 		Gate = gate,
 		Obstacles = {},
-		Edges = fenceColor == nil,
+		Edges = false,
+		Roam = { Center = roamCenter, Radius = roamRadius },
+		Ground = ground,
 	}
 end
 
@@ -423,6 +412,9 @@ local function buildBarn(parent: Instance): Arena
 	local wall = lbox(folder, "BarnWall", fr, -25, -hw - 14, 25, -hw - 2, 0, 16, COLORS.BarnRed)
 	local roof = lbox(folder, "BarnRoof", fr, -27, -hw - 16, 27, -hw, 16, 18, COLORS.Stone)
 	local barn = dress(folder, "Barn", lspot(fr, 0, -hw - 20, 0), 28, { wall, roof }, { Solid = true })
+	for _, u in { -16, 0, 16 } do -- (the animals roam the whole island: they go round the barn)
+		addObstacle(arena, fr, u, -hw - 8, 9)
+	end
 	if barn then
 		ModelFit.Align(barn, fr.F, L(fr, 0, -hw - 2):Dot(fr.F)) -- its front sits just behind the back fence
 	end
@@ -885,9 +877,10 @@ function MapBuilder.Build(): Map
 			Name = def.DisplayName,
 			Color = def.Color,
 			Icon = ZONE_ICONS[def.Id] or "",
-			Min = arena.Min,
-			Max = arena.Max,
+			Min = arena.Ground.Min,
+			Max = arena.Ground.Max,
 			FloorY = arena.FloorY,
+			Obstacles = arena.Obstacles,
 			Facing = fr.F,
 		})
 	end

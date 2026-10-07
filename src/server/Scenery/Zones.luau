@@ -26,10 +26,12 @@ export type Zone = {
 	Name: string,
 	Color: Color3,
 	Icon: string,
-	Min: Vector3, -- the play area (MapBuilder)
+	Min: Vector3, -- the open ground in the middle (MapBuilder): scenery keeps off it
 	Max: Vector3,
 	FloorY: number,
 	Facing: Vector3, -- toward the gate / town
+	-- The animals roam the whole island: scenery that's in the way goes in here, so they steer round it
+	Obstacles: { { Center: Vector3, Radius: number } },
 }
 
 type Ctx = {
@@ -56,6 +58,11 @@ local function segmentDistance(p: Vector3, a: Vector3, b: Vector3): number
 end
 
 -- Fills the free ground with `count` things made by `make`
+-- Something big the roaming animals should steer around
+local function solid(ctx: Ctx, at: Vector3, radius: number)
+	table.insert(ctx.Zone.Obstacles, { Center = at, Radius = radius })
+end
+
 local function scatter(ctx: Ctx, count: number, pad: number, make: (Vector3) -> ())
 	local placed = 0
 	for _ = 1, count * 12 do
@@ -68,6 +75,9 @@ local function scatter(ctx: Ctx, count: number, pad: number, make: (Vector3) -> 
 		if ctx.Free(p, pad) then
 			placed += 1
 			make(p)
+			if pad >= 3 then -- (trees, hay, rocks: not flowers and ferns)
+				table.insert(ctx.Zone.Obstacles, { Center = p, Radius = pad })
+			end
 		end
 	end
 end
@@ -86,6 +96,7 @@ local function backyard(ctx: Ctx)
 	for _, h in houses do
 		local p = ctx.At(h[1], h[2])
 		Kit.cottage(f, p, (ctx.Center - p).Unit, h[3], h[4], 1.05)
+		solid(ctx, p, 9)
 	end
 	-- A vegetable garden (rows of soil with sprouts), on the open side
 	local garden = ctx.At(-ctx.HU - 18, 8)
@@ -206,6 +217,7 @@ local function barnZone(ctx: Ctx)
 	local f, r, random = ctx.Folder, ctx.R, ctx.Random
 	-- A silo beside the barn (the barn itself is behind the play area: MapBuilder)
 	local silo = ctx.At(-34, -ctx.HW - 14)
+	solid(ctx, silo, 6)
 	if not Kit.model(f, "Silo", silo, (ctx.Center - silo).Unit, 30, true) then
 		Kit.cylinder(f, "Silo", silo, 30, 6.5, Color3.fromRGB(196, 64, 54))
 		for y = 4, 28, 6 do
@@ -215,6 +227,7 @@ local function barnZone(ctx: Ctx)
 	end
 	-- A windmill: a tapered tower, a cap, and four sails
 	local mill = ctx.At(ctx.HU + 20, -ctx.HW - 10)
+	solid(ctx, mill, 5)
 	if ctx.Free(mill, 4) then
 		local face = (ctx.Center - mill).Unit
 		local cf = CFrame.lookAt(mill, mill + face)
@@ -347,6 +360,7 @@ local function barnZone(ctx: Ctx)
 	end
 	-- A little red tractor
 	local tractor = ctx.At(ctx.HU + 14, -ctx.HW - 4)
+	solid(ctx, tractor, 5)
 	if ctx.Free(tractor, 4) then
 		local cf = CFrame.lookAt(tractor, tractor + r)
 		if not Kit.model(f, "Tractor", tractor, r, 9, false) then
@@ -409,6 +423,7 @@ local function jungle(ctx: Ctx)
 	local moss = Color3.fromRGB(80, 150, 70)
 	-- Temple ruins behind the play area: a stepped pyramid with a doorway and moss on every step
 	local temple = ctx.At(0, -ctx.HW - 24)
+	solid(ctx, temple, 16)
 	local tcf = CFrame.lookAt(temple, temple + ctx.F)
 	for i = 0, 4 do
 		local w = 30 - i * 5
@@ -668,6 +683,7 @@ local function iceRink(ctx: Ctx)
 	local ice = { Color3.fromRGB(150, 230, 255), Color3.fromRGB(120, 210, 250), Color3.fromRGB(190, 240, 255) }
 	-- An igloo
 	local igloo = ctx.At(-ctx.HU - 16, -ctx.HW + 4)
+	solid(ctx, igloo, 9)
 	if ctx.Free(igloo, 4) then
 		local face = (ctx.Center - igloo).Unit
 		local cf = CFrame.lookAt(igloo, igloo + face)

@@ -1327,7 +1327,7 @@ function BoxingService.StartWild(
 		return false
 	end
 	local profile = DataService.Get(player)
-	local chaos = profile ~= nil and profile.Settings.Chaos == true
+	local chaos = profile ~= nil and profile.Settings.Chaos ~= false -- (on unless you turned it off)
 	local s = newSession(player, animalId, arenaId, chaos, variant, difficulty)
 	if not s then
 		return false

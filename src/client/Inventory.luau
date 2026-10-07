@@ -216,7 +216,7 @@ function Inventory.Start()
 				Size = UDim2.new(1, -12, 0, 40),
 				TextSize = 14,
 				TextColor3 = Color3.fromRGB(110, 100, 90),
-				Text = `Troll items only work on players who turned on Chaos Mode (in the Pen). Use them from the hotbar {Ui.hint(
+				Text = `Troll items work on anyone in Chaos Mode (everyone, unless they turned it off in Settings). Use them from the hotbar {Ui.hint(
 					"or keys 1-5",
 					"(R1 picks, R2 uses)",
 					"(tap one)"

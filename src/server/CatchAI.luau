@@ -77,6 +77,17 @@ end
 
 -- Positions in the AI are flat (Y = 0). The arena's floor height is added only when placing the part.
 local function clampToArena(arena: MapBuilder.Arena, position: Vector3, radius: number): Vector3
+	local roam = arena.Roam
+	if roam then
+		-- a whole island: stay within the circle, a bit in from the cliffs
+		local center = Vector3.new(roam.Center.X, 0, roam.Center.Z)
+		local offset = Vector3.new(position.X, 0, position.Z) - center
+		local limit = roam.Radius - radius
+		if offset.Magnitude > limit then
+			offset = offset.Unit * limit
+		end
+		return center + offset
+	end
 	return Vector3.new(
 		math.clamp(position.X, arena.Min.X + radius, arena.Max.X - radius),
 		0,
@@ -130,6 +141,16 @@ end
 local function wallAvoidance(arena: MapBuilder.Arena, position: Vector3): Vector3
 	local range = 6
 	local push = Vector3.zero
+	local roam = arena.Roam
+	if roam then
+		-- near the island's edge: turn back inland
+		local inward = Vector3.new(roam.Center.X - position.X, 0, roam.Center.Z - position.Z)
+		local edge = roam.Radius - inward.Magnitude
+		if edge < range * 2 and inward.Magnitude > 0.01 then
+			push += inward.Unit * (1 - edge / (range * 2))
+		end
+		return push
+	end
 	local left = position.X - arena.Min.X
 	local right = arena.Max.X - position.X
 	local back = position.Z - arena.Min.Z
