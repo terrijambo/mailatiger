@@ -97,11 +97,12 @@ local products: { Product } = {
 		Description = "Coins worth 200 jobs of your best animal.",
 	},
 	{
+		-- (was "Skip the Wait": same product, now the MEGA Lure. Rename it on the Creator Dashboard to match.)
 		Key = "UnlockNext",
 		Id = 3715699375,
 		Price = 99,
-		DisplayName = "Skip the Wait",
-		Description = "Unlocks the next animal you don't own yet, in a zone you've opened (up to tier 4).",
+		DisplayName = "MEGA Lure",
+		Description = "10 minutes of rare animals turning up right next to you, with 8x Shiny & Golden odds.",
 	},
 	{
 		Key = "PriorityStamps",

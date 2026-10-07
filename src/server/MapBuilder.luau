@@ -772,7 +772,7 @@ function MapBuilder.Build(): Map
 	-- Animal Pen (west side of the plaza)
 	local counter = block(map, "PenCounter", Vector3.new(-44, 0, -12), Vector3.new(-36, 3, -10), COLORS.Wood)
 	MapBuilder.Label(counter, "ANIMAL PEN", 4, COLORS.Yellow)
-	local penPrompt = prompt(counter, "Choose an Animal", "Animal Pen", 0.3)
+	local penPrompt = prompt(counter, "Go to the wild", "Animal Pen", 0.3)
 	dress(map, "PenCounter", spot(-40, 0, -11), 8.5, { counter })
 
 	-- Supply Shop (east side), with a table of the tools it sells

@@ -420,9 +420,34 @@ function Hud.Start()
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = "",
 	})
+	-- Your lure (Supply Shop / Store): "🧲 MEGA Lure 7:12", under the boost timer
+	local lureLabel = Ui.outlined(gui, {
+		Size = UDim2.fromOffset(230, 30),
+		TextSize = 22,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(255, 120, 220),
+		Text = "",
+		Visible = false,
+	})
+	Ui.autoScale(lureLabel)
+	Ui.onResize(function()
+		local compact = Ui.compact()
+		lureLabel.AnchorPoint = Vector2.new(if compact then 1 else 0, 0)
+		lureLabel.TextXAlignment = if compact then Enum.TextXAlignment.Right else Enum.TextXAlignment.Left
+		lureLabel.Position = if compact
+			then UDim2.new(1, -Ui.margin(), 0, 64)
+			else UDim2.fromOffset(Ui.margin() + 4, 64)
+	end)
 	local wasBoosted = false
 	task.spawn(function()
 		while gui.Parent do
+			local lureUntil = player:GetAttribute("LureUntil")
+			local lureLeft = if typeof(lureUntil) == "number" then lureUntil - Workspace:GetServerTimeNow() else 0
+			lureLabel.Visible = lureLeft > 0
+			if lureLeft > 0 then
+				local lure = Config.Wild.Lures[player:GetAttribute("LureId") or ""]
+				lureLabel.Text = `🧲 {if lure then lure.DisplayName else "Lure"} {clock(lureLeft)}`
+			end
 			local left = boostLeft()
 			boostPill.Visible = left > 0
 			if left > 0 then
@@ -445,8 +470,8 @@ function Hud.Start()
 		else
 			local parcels = #Profile.Get().Parcels
 			objective.Text = if parcels > 0
-				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at the Mail Chute!`
-				else "🐹 Pick an animal at the PEN!"
+				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at the Mail Chute! (PEN = back to town)`
+				else "🐾 Grab a wild animal (HOLD E)! PEN = teleport to your best zone"
 		end
 		-- (the BOX screen has its own instructions; during the walkthrough, Gruff's panel is the only one)
 		banner.Visible = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()

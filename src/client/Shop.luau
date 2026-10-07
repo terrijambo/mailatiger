@@ -16,7 +16,7 @@ local player = Players.LocalPlayer
 
 local Shop = {}
 
-local TABS = { "Boxes", "Tools", "Stamps", "Chutes", "Trolls", "Rebirth" }
+local TABS = { "Boxes", "Tools", "Stamps", "Lures", "Chutes", "Trolls", "Rebirth" }
 
 local function rebirthCost(rebirths: number): number
 	local rebirth = Config.Progression.Rebirth
@@ -180,6 +180,35 @@ function Shop.Start()
 					end)
 				end
 			end
+		elseif currentTab == "Lures" then
+			-- Lures: for a few minutes, rarer animals you can take on keep turning up right next to you
+			local best = 1
+			for _, animal in Config.Animals.List do
+				if (Config.Wild.LevelOf[animal.Id] or 1) <= (profile.Level or 1) then
+					best = math.max(best, animal.BaseValue)
+				end
+			end
+			local lure = Config.Wild.Lures.Lure
+			local cost = best * Config.Wild.LureCoinJobs
+			local frame = row(
+				1,
+				`{lure.DisplayName}  ({lure.Seconds // 60} min)`,
+				`Rarer animals you're able to grab keep turning up right next to you, in any zone, with {lure.VariantLuck}x Shiny & Golden odds.`,
+				"Store_UnlockNext"
+			)
+			rowButton(frame, 1, `Buy: {Format.Short(cost)}`, Ui.ORANGE, function()
+				shopAction:FireServer("BuyLure")
+			end)
+			local mega = Config.Wild.Lures.MegaLure
+			local megaFrame = row(
+				2,
+				`{mega.DisplayName}  ({mega.Seconds // 60} min)`,
+				`Even rarer animals, more of them at once, and {mega.VariantLuck}x Shiny & Golden odds. In the Store.`,
+				"Store_UnlockNext"
+			)
+			rowButton(megaFrame, 1, "Open Store", Ui.GOLD, function()
+				Menus.Open("Store")
+			end)
 		elseif currentTab == "Chutes" then
 			-- Your personal chute upgrade: bought in order, each one mails faster and pays more
 			local current = Config.Mail.ChuteIndex[profile.ChuteTier] or 1

@@ -18,7 +18,7 @@ local REWARD = 100
 local TutorialService = {}
 
 -- Settings live here too (it's the other tiny "remember this about me" remote)
-local SETTINGS = { Music = true, Sfx = true, Motion = true }
+local SETTINGS = { Music = true, Sfx = true, Motion = true, Chaos = true }
 
 function TutorialService.Start()
 	Remotes.Listen(Remotes.Setting, 5, function(player: Player, name: unknown, on: unknown)

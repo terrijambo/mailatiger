@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local ScriptContext = game:GetService("ScriptContext")
 local Workspace = game:GetService("Workspace")
+local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
 
 local player = Players.LocalPlayer
 local steps, clientErrors = {}, {}
@@ -140,7 +141,7 @@ local function run()
 	local map = Workspace:WaitForChild("GrayboxMap", 10)
 	log(map ~= nil, "map exists")
 	local gui = player:WaitForChild("PlayerGui")
-	for _, name in { "MailATigerHud", "PenMenu", "Shop", "Store", "Settings", "OrdersBoard" } do
+	for _, name in { "MailATigerHud", "Travel", "Shop", "Store", "Settings", "OrdersBoard" } do
 		log(gui:WaitForChild(name, 5) ~= nil, "UI " .. name .. " built")
 	end
 	log(gui:WaitForChild("Tutorial", 8) ~= nil, "tutorial started for a new player")
@@ -267,7 +268,11 @@ local function run()
 	end, 3), "upgraded Sneakers")
 	task.wait(0.5)
 	local humanoid = character:FindFirstChildOfClass("Humanoid")
-	log(player:GetAttribute("WalkSpeed") == 18 and humanoid.WalkSpeed == 18, "Sneakers work in town (speed " .. humanoid.WalkSpeed .. ")")
+	local sneakerSpeed = 16 + Config.Tools.ById.Sneakers.PerLevel
+	log(
+		player:GetAttribute("WalkSpeed") == sneakerSpeed and humanoid.WalkSpeed == sneakerSpeed,
+		"Sneakers work in town (speed " .. humanoid.WalkSpeed .. ")"
+	)
 	for _, tool in { "Gloves", "Net", "TapeGun", "MailBag" } do
 		task.wait(0.2)
 		remotes.ShopAction:FireServer("UpgradeTool", tool)
@@ -323,13 +328,84 @@ local function run()
 		task.wait(0.4)
 	end
 	goTo(map.PenCounter)
+	local penSpot = root.Position
 	holdPrompt(map.PenCounter:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
-		return gui.PenMenu.Enabled
-	end, 3), "Pen prompt opens the Pen menu")
-	task.wait(0.5)
-	dumpUi("pen")
-	gui.PenMenu.Enabled = false
+		return (root.Position - penSpot).Magnitude > 40
+	end, 4), "Pen counter teleports you to your best zone")
+
+	-- 7b. Wild animals: every zone has some roaming, grabbing one you can take goes straight to BOX, and one
+	-- that's too strong VINE BOOMs you back to town
+	log(waitFor(function()
+		local count = 0
+		for _, ball in CollectionService:GetTagged("Critter") do
+			if ball:GetAttribute("Wild") == true then
+				count += 1
+			end
+		end
+		return count >= 20
+	end, 5), "wild animals roam the zones")
+	remotes.ShopAction:FireServer("Travel", "Backyard")
+	task.wait(1)
+	local function wildNamed(animalId)
+		for _, ball in CollectionService:GetTagged("Critter") do
+			if ball:GetAttribute("Wild") == true and ball:GetAttribute("AnimalId") == animalId then
+				local distance = (ball.Position - root.Position).Magnitude
+				if distance < 20 then
+					return ball
+				end
+			end
+		end
+		return nil
+	end
+	remotes.ShopAction:FireServer("Promo", "Wild:Hamster")
+	local wildHamster = nil
+	waitFor(function()
+		wildHamster = wildNamed("Hamster")
+		return wildHamster ~= nil
+	end, 3)
+	if wildHamster then
+		-- (stand right next to it first: Roblox only shows the closest prompt for each key)
+		root.CFrame = wildHamster.CFrame * CFrame.new(0, 1, 1.5)
+		task.wait(0.4)
+		holdPrompt(wildHamster:FindFirstChildOfClass("ProximityPrompt"), wildHamster)
+	end
+	log(waitFor(function()
+		return player:GetAttribute("Stage") == "Box"
+	end, 4), "grabbed a wild Hamster: straight to the BOX screen")
+	-- (give it up: the Pen counter twice)
+	goTo(map.PenCounter)
+	local penPrompt = map.PenCounter:FindFirstChildOfClass("ProximityPrompt")
+	holdPrompt(penPrompt)
+	task.wait(0.3)
+	holdPrompt(penPrompt)
+	waitFor(function()
+		return player:GetAttribute("Stage") == ""
+	end, 3)
+	remotes.ShopAction:FireServer("Travel", "Backyard")
+	task.wait(1)
+	remotes.ShopAction:FireServer("Promo", "Wild:Dragon")
+	local wildDragon = nil
+	waitFor(function()
+		wildDragon = wildNamed("Dragon")
+		return wildDragon ~= nil
+	end, 3)
+	lastMessage = nil
+	if wildDragon then
+		root.CFrame = wildDragon.CFrame * CFrame.new(0, 1, 3)
+		task.wait(0.4)
+		holdPrompt(wildDragon:FindFirstChildOfClass("ProximityPrompt"), wildDragon)
+	end
+	log(waitFor(function()
+		return string.find(lastMessage or "", "RETURN TO SENDER", 1, true) ~= nil
+	end, 4), "a too-strong wild Dragon VINE BOOMs you")
+	log(player:GetAttribute("Stage") == "", "...and no job started")
+	task.wait(3)
+	remotes.ShopAction:FireServer("BuyLure")
+	log(waitFor(function()
+		local untilTime = player:GetAttribute("LureUntil")
+		return typeof(untilTime) == "number" and untilTime > Workspace:GetServerTimeNow()
+	end, 3), "bought an Animal Lure")
 	goTo(map.OrdersBoard)
 	holdPrompt(map.OrdersBoard:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
@@ -398,7 +474,6 @@ local function run()
 		holdPrompt(pen)
 		task.wait(0.3)
 		holdPrompt(pen)
-		gui.PenMenu.Enabled = false
 		return waitFor(function()
 			return player:GetAttribute("Stage") == ""
 		end, 3)

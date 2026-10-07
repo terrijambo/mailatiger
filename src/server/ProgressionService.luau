@@ -27,11 +27,6 @@ local function notify(player: Player, kind: string, data: { [string]: any })
 	Remotes.Notify:FireClient(player, kind, data)
 end
 
-local function arenaForTier(tier: number): string
-	local arena = Config.Arenas.ByTier[tier]
-	return if arena then arena.Id else "Backyard"
-end
-
 -- Is this zone (arena id) open for the player?
 function ProgressionService.ZoneOpen(player: Player, arenaId: string): boolean
 	local profile = DataService.Get(player)
@@ -213,11 +208,11 @@ function ProgressionService.CanTakeAnimal(player: Player, animalId: string): (bo
 	if not animal then
 		return false, nil
 	end
-	local arenaId = arenaForTier(animal.Tier)
-	if not ProgressionService.ZoneOpen(player, arenaId) then
-		local def = Config.Arenas.ById[arenaId]
-		return false,
-			`🔒 {animal.DisplayName}s live in the {def.DisplayName}, which opens at Level {Levels.ZoneLevels[arenaId]}. Keep mailing!`
+	-- Every animal has a level (Config/Wild.luau): you need to be at least that level to take it on
+	local need = Config.Wild.LevelOf[animalId] or 1
+	local profile = DataService.Get(player)
+	if not profile or profile.Level < need then
+		return false, `That {animal.DisplayName} is Level {need}. Keep mailing to level up!`
 	end
 	return true, nil
 end

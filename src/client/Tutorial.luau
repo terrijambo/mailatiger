@@ -1,5 +1,6 @@
 --!strict
--- Gruff's first-time walkthrough: pick an animal -> catch it -> box it -> mail it -> go shopping.
+-- Gruff's first-time walkthrough: teleport to the Backyard (PEN) -> grab a wild animal -> box it -> mail it ->
+-- go shopping.
 -- A panel with Gruff says what to do next, and a glowing arrow (a beam from you, plus a bouncing marker) points
 -- at where to go. It follows what you actually do, so it can't get stuck: if the animal escapes, it sends you
 -- back to catching. "Skip" ends it for good. Finishing it pays a small bonus (the server checks it).
@@ -157,6 +158,32 @@ local function myCritter(): BasePart?
 	return nil
 end
 
+-- The closest wild animal you're strong enough to grab (within `range` studs)
+local function nearestWild(range: number): BasePart?
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then
+		return nil
+	end
+	local myLevel = Profile.Get().Level or 1
+	local best, bestDistance = nil, range
+	for _, ball in CollectionService:GetTagged("Critter") do
+		local level = ball:GetAttribute("Level")
+		if
+			ball:IsA("BasePart")
+			and ball:GetAttribute("Wild") == true
+			and typeof(level) == "number"
+			and level <= myLevel
+		then
+			local distance = (ball.Position - root.Position).Magnitude
+			if distance < bestDistance then
+				best, bestDistance = ball, distance
+			end
+		end
+	end
+	return best
+end
+
 function Tutorial.Start()
 	-- Wait for your save to load, then only run for players who haven't done it
 	while typeof(player:GetAttribute("Profile")) ~= "string" do
@@ -206,6 +233,8 @@ function Tutorial.Start()
 			return if escaped then "Escaped" else "Catch"
 		elseif #Profile.Get().Parcels > 0 then
 			return "Mail"
+		elseif nearestWild(90) then
+			return "Wild" -- in a zone, with animals around: go grab one
 		end
 		return "Pen"
 	end
@@ -241,6 +270,8 @@ function Tutorial.Start()
 			return partNamed("PenCounter")
 		elseif step == "Catch" or step == "Escaped" then
 			return myCritter()
+		elseif step == "Wild" then
+			return nearestWild(90)
 		elseif step == "Mail" then
 			return partNamed("MailChute")
 		elseif step == "Shop" then
@@ -283,6 +314,9 @@ function Tutorial.Start()
 			if step == "Shop" and os.clock() > shopUntil then
 				finish("Done")
 				return
+			end
+			if step == "Pen" or step == "Wild" then
+				refresh() -- (arrived in a zone, or walked away from it)
 			end
 			local character = player.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?

@@ -15,17 +15,21 @@ local player = Players.LocalPlayer
 
 local Settings = {}
 
+local DEFAULTS: { [string]: boolean } = { Chaos = false }
+
 local OPTIONS = {
 	{ Key = "Music", Label = "Music" },
 	{ Key = "Sfx", Label = "Sound effects" },
 	{ Key = "Motion", Label = "Camera shake & zoom" },
+	-- (off unless you turn it on: other players can troll your animal, but every job pays +50%)
+	{ Key = "Chaos", Label = "Chaos Mode (+50% pay)" },
 }
 
 function Settings.Start()
 	local playerGui = player:WaitForChild("PlayerGui")
 	local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Setting") :: RemoteEvent
 	-- A small window: three switches and the code box
-	local gui, window = Ui.window(playerGui, "Settings", "Settings", Ui.GREY, Vector2.new(420, 330))
+	local gui, window = Ui.window(playerGui, "Settings", "Settings", Ui.GREY, Vector2.new(440, 390))
 
 	-- What you just clicked, until the server's saved copy catches up
 	local pending: { [string]: boolean } = {}
@@ -34,7 +38,7 @@ function Settings.Start()
 		if waiting ~= nil then
 			return waiting
 		end
-		return Profile.Setting(key)
+		return Profile.Setting(key, DEFAULTS[key])
 	end
 
 	local buttons: { [string]: TextButton } = {}
@@ -109,7 +113,7 @@ function Settings.Start()
 	Profile.Watch(function()
 		-- The saved copy has caught up with anything we clicked
 		for key, value in pending do
-			if Profile.Setting(key) == value then
+			if Profile.Setting(key, DEFAULTS[key]) == value then
 				pending[key] = nil
 			end
 		end

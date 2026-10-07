@@ -925,7 +925,15 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Picking an animal
 
+local newSession: (Player, string, string, boolean, string?) -> Session?
+local announceJob: (Session) -> ()
+
+-- Studio only (the automated playtest and the Promo Kit): start a job with a chosen animal, the old Pen way.
+-- In the live game, animals are grabbed in the wild (WildService).
 local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown)
+	if not RunService:IsStudio() then
+		return
+	end
 	if typeof(animalId) ~= "string" then
 		return
 	end
@@ -962,9 +970,21 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 		end
 		Economy.Unlock(player, animalId)
 	end
+	local s = newSession(player, animalId, Config.Arenas.ByTier[animal.Tier].Id, chaos == true, nil)
+	if not s then
+		return -- still loading their save
+	end
+	Travel.ToArena(player, s.ArenaId) -- off to the arena for this animal's tier
+	startCatch(s, nil)
+	announceJob(s)
+end
+
+-- A new job (shared by the Studio test hook above and wild grabs): uses up your selected stamp, rolls
+-- Shiny/Golden (or takes the wild animal's own), and registers the session. Returns nil while the save loads.
+newSession = function(player: Player, animalId: string, arenaId: string, chaos: boolean, wildVariant: string?): Session?
 	local profile = DataService.Get(player)
 	if not profile then
-		return -- still loading their save
+		return nil
 	end
 
 	-- Use up the selected stamp (if they still have one)
@@ -983,7 +1003,10 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 	-- Shiny or Golden? (Your LuckyJob-th job ever is always at least Shiny. Events can raise the odds
 	-- with the Workspace attribute VariantLuck.)
 	local luck = Workspace:GetAttribute("VariantLuck")
-	local variant = Config.Variants.Roll(math.random(), if typeof(luck) == "number" then luck else 1)
+	-- (a wild animal was already rolled when it spawned: you can see a Shiny or Golden one before you grab it)
+	local variant = if wildVariant
+		then Config.Variants.ById[wildVariant]
+		else Config.Variants.Roll(math.random(), if typeof(luck) == "number" then luck else 1)
 	local jobsSoFar = profile.Mailed + #profile.Parcels
 	if not variant and jobsSoFar == Config.Variants.LuckyJob - 1 and next(profile.Shinies) == nil then
 		variant = Config.Variants.ById.Shiny
@@ -999,12 +1022,11 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 		player:SetAttribute("PromoVariant", nil)
 	end
 
-	local arenaId = Config.Arenas.ByTier[animal.Tier].Id
 	local s: Session = {
 		Player = player,
 		Crew = {},
 		Roles = {},
-		Chaos = chaos == true,
+		Chaos = chaos,
 		SpookedBy = {},
 		AnimalId = animalId,
 		ArenaId = arenaId,
@@ -1024,8 +1046,15 @@ local function onRequestAnimal(player: Player, animalId: unknown, chaos: unknown
 	}
 	sessions[player] = s
 	Analytics.Onboarding(player, "PickedAnimal")
-	Travel.ToArena(player, arenaId) -- off to the arena for this animal's tier
-	startCatch(s, nil)
+	return s
+end
+
+-- Tells the player about their new job's stamp, Shiny/Golden and Chaos Mode
+announceJob = function(s: Session)
+	local player = s.Player
+	local animal = Config.Animals.ById[s.AnimalId]
+	local stampId = s.StampId
+	local variant = if s.Variant then Config.Variants.ById[s.Variant] else nil
 	if stampId then
 		say(player, "Stamp", `{Config.Stamps.ById[stampId].DisplayName} stamp applied to this job!`)
 	end
@@ -1090,7 +1119,8 @@ end
 local function onPenUsed(player: Player)
 	local s = jobOf(player)
 	if not s then
-		notify(player, "OpenPen", {})
+		-- Animals roam wild in the zones now: the Pen counter sends you to your best zone
+		Travel.ToZone(player, Travel.BestZone(player))
 		return
 	end
 	-- Using the Pen twice within 5 seconds gives up on the current animal (or leaves the crew)
@@ -1194,6 +1224,40 @@ end
 
 -- Set by BossService: BOX screen messages from players who aren't on a normal job
 BoxingService.ExternalInput = nil :: ((Player, unknown, unknown) -> ())?
+
+-- Is this player busy with a job (their own, or helping a crew)?
+function BoxingService.HasJob(player: Player): boolean
+	return jobOf(player) ~= nil
+end
+
+-- A wild animal was grabbed (WildService has already checked the level and the bag). Normal animals go
+-- straight to the BOX screen; giants need a crew, so they stay put (as a job animal) for others to join.
+function BoxingService.StartWild(
+	player: Player,
+	animalId: string,
+	arenaId: string,
+	variant: string?,
+	at: Vector3
+): boolean
+	local animal = Config.Animals.ById[animalId]
+	if not animal or jobOf(player) or not getCharacterParts(player) then
+		return false
+	end
+	local profile = DataService.Get(player)
+	local chaos = profile ~= nil and profile.Settings.Chaos == true
+	local s = newSession(player, animalId, arenaId, chaos, variant)
+	if not s then
+		return false
+	end
+	if animal.Carriers > 1 then
+		startCatch(s, at)
+	else
+		s.BoxModel = buildBox(s)
+		startBox(s)
+	end
+	announceJob(s)
+	return true
+end
 
 function BoxingService.Stun(player: Player, seconds: number)
 	stun(player, seconds)

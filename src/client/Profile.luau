@@ -87,9 +87,14 @@ end
 
 -- How many parcels your bag holds (starting size + Mail Bag upgrades)
 -- Whether a setting (Music, Sfx, Motion) is on. Everything starts on.
-function Profile.Setting(name: string): boolean
+-- A setting's saved value; missing = `default` (on, unless given)
+function Profile.Setting(name: string, default: boolean?): boolean
 	local settings = Profile.Get().Settings
-	return not settings or settings[name] ~= false
+	local value = settings and settings[name]
+	if value == nil then
+		return default ~= false
+	end
+	return value == true
 end
 
 function Profile.BagCapacity(data: Data): number

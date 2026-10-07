@@ -66,6 +66,9 @@ local function startBoost(player: Player)
 	})
 end
 
+-- Set by WildService: starts a MEGA Lure for the player (the "UnlockNext" product)
+MonetizationService.OnMegaLure = nil :: ((Player) -> ())?
+
 local function grant(player: Player, profile: DataService.Profile, key: string): boolean
 	local jobs = Money.CoinPackJobs[key]
 	local diamonds = Money.DiamondPacks[key]
@@ -85,19 +88,12 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 		say(player, `{Format.Short(coins)} coins. Don't let it go to your head.`)
 		return true
 	elseif key == "UnlockNext" then
-		for _, animal in Config.Animals.List do
-			if MonetizationService.CanUnlock(player, animal) then
-				profile.Owned[animal.Id] = true
-				say(player, `Fine. The {animal.DisplayName} is yours. Go box it.`)
-				return true
-			end
+		-- The MEGA Lure (WildService hooks this up)
+		local hook = MonetizationService.OnMegaLure
+		if not hook then
+			return false
 		end
-		-- Nothing left to unlock (they bought it just as they unlocked the last one): they paid, so give
-		-- coins instead of leaving the purchase stuck
-		local coins = Economy.BestBaseValue(player) * Money.CoinPackJobs.CoinsMedium
-		profile.Coins += coins
-		Analytics.Earn(player, coins, profile.Coins, key, true)
-		say(player, `Nothing left to unlock right now, so here's {Format.Short(coins)} coins instead.`)
+		hook(player)
 		return true
 	elseif key == "PriorityStamps" then
 		profile.Stamps.Priority = (profile.Stamps.Priority or 0) + Money.PriorityStampCount

@@ -282,6 +282,12 @@ end
 
 ---------------------------------------------------------------------------------------------------
 
+-- Shared with WildService (wild animals roaming the zones)
+CatchAI.RandomArenaPoint = randomArenaPoint
+CatchAI.ClampToArena = clampToArena
+CatchAI.PushOutOfObstacles = pushOutOfObstacles
+CatchAI.ObstacleAvoidance = obstacleAvoidance
+
 function CatchAI.Init(builtMap: MapBuilder.Map, catchApi: Api)
 	map = builtMap
 	api = catchApi

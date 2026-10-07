@@ -1,6 +1,6 @@
 --!strict
 -- Gruff's orders board: a few orders like "Mail a Skunk with 4+ stamps" that pay bonus coins.
--- They only ask for animals you own, so there's always something you can do, and they refresh every
+-- They only ask for animals your level lets you grab, so there's always something you can do, and they refresh every
 -- Config.Progression.Orders.RefreshMinutes minutes. Orders are saved with your profile.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -45,9 +45,9 @@ function Orders.Refresh(profile: Profile, force: boolean?): boolean
 	end
 
 	local choices = {}
-	for animalId in profile.Owned do
-		local animal = Config.Animals.ById[animalId]
-		if animal and animal.Carriers == 1 then
+	-- Animals your level lets you take on (they roam wild in the zones)
+	for _, animal in Config.Animals.List do
+		if animal.Carriers == 1 and (Config.Wild.LevelOf[animal.Id] or 1) <= profile.Level then
 			table.insert(choices, animal)
 		end
 	end

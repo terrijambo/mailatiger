@@ -24,6 +24,7 @@ local MonetizationService = require(script.Parent.MonetizationService)
 local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
 local Travel = require(script.Parent.Travel)
+local WildService = require(script.Parent.WildService)
 local TrollService = require(script.Parent.TrollService)
 
 local ShopService = {}
@@ -40,7 +41,10 @@ local function promo(player: Player, profile: DataService.Profile, id: string)
 	if not RunService:IsStudio() then
 		return
 	end
-	if id == "Golden" or id == "Shiny" then
+	local wildId = string.match(id, "^Wild:(%w+)$")
+	if wildId then
+		WildService.SpawnNear(player, wildId) -- a wild animal of your choice, right in front of you
+	elseif id == "Golden" or id == "Shiny" then
 		player:SetAttribute("PromoVariant", id)
 		Remotes.Notify:FireClient(player, "Message", { Speaker = "Promo Kit", Text = `Your next animal will be {id}.` })
 	elseif id == "UnlockAll" then
@@ -132,6 +136,15 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		return
 	elseif action == "StudioBuy" then
 		MonetizationService.StudioBuy(player, itemId)
+		return
+	elseif action == "BuyLure" then
+		-- The coin Animal Lure (the MEGA Lure is a Robux product)
+		local cost = Economy.BestBaseValue(player) * Config.Wild.LureCoinJobs
+		if Economy.TrySpend(player, cost, "Lure") then
+			WildService.StartLure(player, "Lure")
+		else
+			reply(player, `An Animal Lure costs {Format.Short(cost)} coins. Keep mailing!`)
+		end
 		return
 	elseif action == "Promo" then
 		promo(player, profile, itemId) -- (Studio only)

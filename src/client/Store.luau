@@ -26,19 +26,6 @@ local TEST_PURPLE = Color3.fromRGB(140, 90, 220)
 
 local Store = {}
 
--- Is there an animal left for "Skip the Wait" to unlock (tier 4 or lower, in a zone you've opened)?
-local function canUnlockNext(): boolean
-	local data = Profile.Get()
-	for _, animal in Config.Animals.List do
-		local arena = Config.Arenas.ByTier[animal.Tier]
-		local zoneLevel = if arena then Config.Levels.ZoneLevels[arena.Id] or 1 else 1
-		if not data.Owned[animal.Id] and animal.Tier <= Money.UnlockNextMaxTier and (data.Level or 1) >= zoneLevel then
-			return true
-		end
-	end
-	return false
-end
-
 local function boostLeft(): number
 	local untilTime = Workspace:GetAttribute("BoostUntil")
 	return if typeof(untilTime) == "number" then math.max(0, untilTime - Workspace:GetServerTimeNow()) else 0
@@ -208,7 +195,7 @@ function Store.Start()
 		header(nextOrder(), "Goodies")
 		for _, product in Money.Products do
 			local skip = product.Key == "ServerBoost" or Money.DiamondPacks[product.Key] ~= nil
-			if not skip and (product.Key ~= "UnlockNext" or canUnlockNext()) then
+			if not skip then
 				row(nextOrder(), product, product.DisplayName, product.Description, false, Ui.BLUE)
 			end
 		end

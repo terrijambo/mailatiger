@@ -119,12 +119,13 @@ function Economy.ToolBonus(player: Player, toolId: string): number
 	return Economy.ToolLevel(player, toolId) * Config.Tools.ById[toolId].PerLevel
 end
 
--- Base pay of the best animal you own. Rewards scale with it so they stay worth having all game.
+-- Base pay of the best animal your level lets you take on (wild animals: Config/Wild.luau). Rewards scale
+-- with it so they stay worth having all game.
 function Economy.BestBaseValue(player: Player): number
 	local profile = DataService.Get(player)
 	local best = 1
 	for _, animal in Config.Animals.List do
-		if profile and profile.Owned[animal.Id] then
+		if profile and (Config.Wild.LevelOf[animal.Id] or 1) <= profile.Level then
 			best = math.max(best, animal.BaseValue)
 		end
 	end
