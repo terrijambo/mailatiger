@@ -176,6 +176,23 @@ for rebirths = 0, 3 do
 end
 check(Machines.ById.Rocket ~= nil, "the Rocket Launcher gives mail-anywhere, so it must exist")
 
+section("Rarity and eggs")
+for _, animal in Config.Animals.List do
+	check(Config.Wild.RarityOf[animal.Id] ~= nil, `{animal.Id} has no rarity`)
+end
+for _, arena in Config.Arenas.List do
+	local odds = Config.Eggs.Odds(arena.Id)
+	local total = 0
+	local line = {}
+	for _, odd in odds do
+		total += odd.Chance
+		table.insert(line, `{odd.AnimalId} {Config.Wild.RarityOf[odd.AnimalId]} {math.round(odd.Chance * 1000) / 10}%`)
+	end
+	check(math.abs(total - 1) < 0.001, `{arena.Id} egg odds add up to {total}`)
+	print(`    {arena.Id} egg ({Config.Eggs.Price(arena.Id)}): {table.concat(line, ", ")}`)
+	check(Config.Eggs.Roll(arena.Id, 99, 0.5) ~= nil, `{arena.Id} egg can roll`)
+end
+
 section("Robux store")
 local keys = {}
 for _, list in { Config.Monetization.Passes, Config.Monetization.Products } do

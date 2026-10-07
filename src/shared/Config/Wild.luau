@@ -11,6 +11,7 @@
 local Animals = require(script.Parent.Animals)
 local Arenas = require(script.Parent.Arenas)
 local Levels = require(script.Parent.Levels)
+local Rarity = require(script.Parent.Rarity)
 
 export type Lure = {
 	Id: string,
@@ -71,6 +72,7 @@ local Wild = {
 	LevelOf = {} :: { [string]: number }, -- animal id -> level
 	ZoneOf = {} :: { [string]: string }, -- animal id -> the zone it lives in
 	ZoneAnimals = {} :: { [string]: { string } }, -- zone id -> its animals, easiest first
+	RarityOf = {} :: { [string]: string }, -- animal id -> rarity id (Config/Rarity.luau)
 }
 
 -- Levels: each zone's animals are spread from the level the zone opens at up to just below the next zone's,
@@ -91,7 +93,21 @@ for index, arena in Arenas.List do
 		Wild.ZoneOf[id] = arena.Id
 	end
 	Wild.ZoneAnimals[arena.Id] = list
+	-- Rarity: Common for the zone's easiest animal up to Legendary for its rarest, starting one step higher
+	-- every two zones (so the Rooftop's rarest reach Ethereal)
+	local offset = (index - 1) // 2
+	local spread = {}
+	for _, id in list do
+		if id ~= "Gruff" then -- (Gruff is the Secret one)
+			table.insert(spread, id)
+		end
+	end
+	for i, id in spread do
+		local step = if #spread > 1 then math.round((i - 1) / (#spread - 1) * 4) else 0
+		Wild.RarityOf[id] = Rarity.List[math.min(step + offset + 1, #Rarity.List - 1)].Id
+	end
 end
+Wild.RarityOf.Gruff = "Secret"
 
 -- The zone after this one (nil for the last)
 function Wild.NextZone(arenaId: string, steps: number?): string?

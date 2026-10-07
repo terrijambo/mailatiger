@@ -628,6 +628,31 @@ local function run()
 			return false
 		end, 4), "collected the parcels, stamped")
 	end
+	-- Eggs: hatch one at the Backyard egg stand; a wild animal pops out next to you
+	local eggStand
+	for _, stand in CollectionService:GetTagged("EggStand") do
+		if stand:GetAttribute("ZoneId") == "Backyard" then
+			eggStand = stand
+		end
+	end
+	log(eggStand ~= nil, "the Backyard has an egg stand")
+	if eggStand then
+		root.CFrame = eggStand.CFrame * CFrame.new(0, -3, -6)
+		task.wait(0.6)
+		local hatched = events.EggHatched or 0
+		holdPrompt(eggStand:FindFirstChildOfClass("ProximityPrompt"), eggStand)
+		log(waitFor(function()
+			return (events.EggHatched or 0) > hatched
+		end, 5), "hatched a Backyard egg")
+		local near = false
+		task.wait(0.5)
+		for _, ball in CollectionService:GetTagged("Critter") do
+			if ball:GetAttribute("Wild") and (ball.Position - root.Position).Magnitude < 20 then
+				near = true
+			end
+		end
+		log(near, "the hatched animal is right next to you")
+	end
 	remotes.ShopAction:FireServer("Promo", "AllMachines") -- (Studio only: the Rocket Launcher gives mail-anywhere)
 	log(waitFor(function()
 		return (profile().Machines or {}).Rocket == true

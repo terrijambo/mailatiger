@@ -305,6 +305,27 @@ local function spawn(
 		radius + 1.5,
 		if variant then variant.Color else nil
 	)
+	-- its rarity, in the rarity's color, just under the name (Config/Rarity.luau)
+	local rarity = Config.Rarity.ById[Wild.RarityOf[animal.Id] or "Common"]
+	if rarity then
+		local tag = Instance.new("BillboardGui")
+		tag.Name = "RarityTag"
+		tag.Size = UDim2.fromOffset(140, 22)
+		tag.StudsOffset = Vector3.new(0, radius + 0.7, 0)
+		tag.MaxDistance = 70
+		tag.LightInfluence = 0
+		local text = Instance.new("TextLabel")
+		text.Size = UDim2.fromScale(1, 1)
+		text.BackgroundTransparency = 1
+		text.Font = Enum.Font.LuckiestGuy
+		text.TextScaled = true
+		text.TextColor3 = rarity.Color
+		text.TextStrokeTransparency = 0
+		text.TextStrokeColor3 = if rarity.Id == "Secret" then Color3.new(1, 0.85, 0.3) else Color3.new(0, 0, 0)
+		text.Text = string.upper(rarity.DisplayName)
+		text.Parent = tag
+		tag.Parent = ball
+	end
 	local prompt = Instance.new("ProximityPrompt")
 	prompt.ActionText = if animal.Carriers > 1 then "Grab (needs a crew)" else "Grab"
 	prompt.ObjectText = `{animal.DisplayName} · Lv {level}`
@@ -514,6 +535,15 @@ end
 
 -- Studio only (the automated playtest and the Promo Kit): a wild animal of your choice right next to you, in
 -- the zone you're standing in (or the Backyard)
+-- An animal hatched from an egg (EggService): it pops out at `at`, in its own zone
+function WildService.Hatch(animalId: string, at: Vector3, _forPlayer: Player?)
+	if not Config.Animals.ById[animalId] then
+		return
+	end
+	local zone = zoneAt(at) or Wild.ZoneOf[animalId] or "Backyard"
+	spawn(zone, at, nil, nil, animalId)
+end
+
 function WildService.SpawnNear(player: Player, animalId: string)
 	local root = rootOf(player)
 	if not RunService:IsStudio() or not root or not Config.Animals.ById[animalId] then

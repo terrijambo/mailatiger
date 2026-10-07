@@ -8,9 +8,11 @@
 --   Ice Rink  snowy pines, glowing ice crystals, an igloo, a frozen pond, snowfall
 --   Rooftop   a city block: streets, skyscrapers with lit windows, a crane, a billboard, a helipad on top
 
+local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Kit = require(script.Parent.Kit)
 local Islands = require(script.Parent.Islands)
 
@@ -1280,6 +1282,93 @@ local function archway(ctx: Ctx, at: Vector3, inward: Vector3, kind: string)
 	end
 end
 
+-- An egg stand (EggService hatches eggs here): a pedestal in the zone's color with a big speckled egg, a
+-- glowing ring, and a sign with the egg's price and odds (Config/Eggs.luau, rarities: Config/Rarity.luau)
+local function eggStand(ctx: Ctx, at: Vector3, facing: Vector3)
+	local f = ctx.Folder
+	local color = ctx.Zone.Color
+	local cf = CFrame.lookAt(at, at + Vector3.new(facing.X, 0, facing.Z))
+	Kit.disc(f, "EggBase", at, 0.5, 0.5, 5.2, Color3.fromRGB(70, 66, 80))
+	local ring = Kit.disc(f, "EggRing", at, 0.56, 0.5, 4.6, color)
+	ring.Material = Enum.Material.Neon
+	Kit.cylinder(f, "EggPedestal", at + Vector3.new(0, 0.5, 0), 2.6, 2.6, color:Lerp(Color3.new(1, 1, 1), 0.25))
+	local stand = part(f, {
+		Name = "EggStand",
+		Size = Vector3.new(4.2, 5.4, 4.2),
+		CFrame = cf * CFrame.new(0, 5.8, 0),
+		Color = Color3.fromRGB(252, 248, 236),
+		Transparency = 1,
+		CanCollide = false,
+	})
+	stand:SetAttribute("ZoneId", ctx.Zone.Id)
+	local egg = part(f, {
+		Name = "Egg",
+		Size = Vector3.new(4.2, 5.4, 4.2),
+		CFrame = cf * CFrame.new(0, 5.8, 0),
+		Color = Color3.fromRGB(252, 248, 236),
+	})
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Sphere
+	mesh.Parent = egg
+	egg.Parent = stand
+	for k = 1, 7 do
+		local a = k * 2.1
+		local y = math.sin(k * 1.7) * 1.6
+		local r = 2.0 * math.sqrt(math.max(0.1, 1 - (y / 2.7) ^ 2))
+		Kit.ball(f, "EggSpot", (cf * CFrame.new(math.cos(a) * r, 5.8 + y, math.sin(a) * r)).Position, 0.8, color)
+	end
+	local prompt = Instance.new("ProximityPrompt")
+	local price = Config.Eggs.Price(ctx.Zone.Id)
+	prompt.ActionText = `Hatch ({Format.Short(price)})`
+	prompt.ObjectText = `{ctx.Zone.Name} Egg`
+	prompt.HoldDuration = 0.6
+	prompt.MaxActivationDistance = 12
+	prompt.RequiresLineOfSight = false
+	prompt.Parent = stand
+	-- the sign: title, price, and the odds of each animal in its rarity color
+	local gui = Instance.new("BillboardGui")
+	gui.Name = "EggSign"
+	gui.Size = UDim2.fromOffset(260, 40 + 22 * 8)
+	gui.StudsOffset = Vector3.new(0, 5.5, 0)
+	gui.MaxDistance = 60
+	gui.LightInfluence = 0
+	local list = Instance.new("Frame")
+	list.Size = UDim2.fromScale(1, 1)
+	list.BackgroundTransparency = 1
+	list.Parent = gui
+	local layout = Instance.new("UIListLayout")
+	layout.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	layout.SortOrder = Enum.SortOrder.LayoutOrder
+	layout.Parent = list
+	local function line(order: number, text: string, textColor: Color3, size: number)
+		local label = Instance.new("TextLabel")
+		label.LayoutOrder = order
+		label.Size = UDim2.new(1, 0, 0, size)
+		label.BackgroundTransparency = 1
+		label.Font = Enum.Font.LuckiestGuy
+		label.TextScaled = true
+		label.TextColor3 = textColor
+		label.TextStrokeTransparency = 0
+		label.Text = text
+		label.Parent = list
+	end
+	line(0, `🥚 {string.upper(ctx.Zone.Name)} EGG`, Color3.new(1, 1, 1), 30)
+	line(1, `{Format.Short(price)} coins`, Color3.fromRGB(255, 220, 80), 22)
+	for index, odd in Config.Eggs.Odds(ctx.Zone.Id) do
+		local animal = Config.Animals.ById[odd.AnimalId]
+		local rarity = Config.Rarity.ById[Config.Wild.RarityOf[odd.AnimalId] or "Common"]
+		local chance = math.round(odd.Chance * 1000) / 10
+		line(
+			index + 1,
+			`{if animal then animal.DisplayName else odd.AnimalId}  {chance}%  {string.upper(rarity.DisplayName)}`,
+			rarity.Color,
+			19
+		)
+	end
+	gui.Parent = stand
+	CollectionService:AddTag(stand, "EggStand")
+end
+
 local function arrival(ctx: Ctx)
 	local look = ARRIVALS[ctx.Zone.Id]
 	if not look then
@@ -1293,10 +1382,12 @@ local function arrival(ctx: Ctx)
 	end
 	inward = inward.Unit
 	local width = World.BridgeWidth
+	local across = Vector3.new(0, 1, 0):Cross(inward)
 	if ctx.Zone.Id == "Rooftop" then
 		-- (the road runs to the tower's door: the roof is the play area)
 		Kit.road(f, start, ctx.Gate, width, look.Road)
 		Kit.roadLights(f, start + inward * 6, ctx.Gate, width, look.Lights, 16)
+		eggStand(ctx, ctx.Gate - inward * 10 + across * (width / 2 + 7), -across)
 		return
 	end
 	-- The landing sits where the road meets the open ground; the road runs up to its edge
@@ -1309,9 +1400,9 @@ local function arrival(ctx: Ctx)
 	if look.Arch then
 		archway(ctx, start + inward * 4, inward, look.Arch)
 	end
+	eggStand(ctx, landingAt + across * (landingRadius + 7), -across)
 	if ctx.Zone.Id == "Barn" then
 		-- a farm lane: split-rail fences down both sides
-		local across = Vector3.new(0, 1, 0):Cross(inward)
 		for _, side in { -1, 1 } do
 			local offset = across * side * (width / 2 + 3.4)
 			Kit.railFence(f, start + inward * 7 + offset, roadEnd - inward * 1 + offset)

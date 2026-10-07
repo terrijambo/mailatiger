@@ -121,6 +121,11 @@ them yourself, and the chute can be **upgraded** (models ready: `Parcel`, `MailC
 - **Tools** (Sneakers, Gloves, Tape Gun, Net, Mail Bag) are bought with Rebirth Points and kept forever.
 - Porcupine replaced by a Raccoon (it looked like the Hedgehog).
 - Numbers: `src/shared/Config/Machines.luau`.
+- **Update (later 2026-10-07):** the machines stand round the plaza (start by the fountain, Gruff and the
+  Post Office east). Hold E to drop your bag into a machine, wait, collect the parcels stamped; any machines,
+  any order; each parcel's own stamps multiply its XP. Player drawn at 60% size; animals bigger by tier and 4
+  per island. Rarities (Common → Ethereal, Gruff = Secret) and an egg stand on every island that hatches one of
+  its animals next to you (`Config/Eggs.luau`, `Config/Rarity.luau`).
 
 ## Phase 4 — World & Arenas
 - [x] Hub town: a cobblestone plaza with the spawn, Animal Pen, Supply Shop, Post Office (Gruff and the chute), Gruff's Orders, and a row of **travel pads**, one per arena

@@ -967,6 +967,16 @@ function Hud.Start()
 				nil,
 				Ui.PURPLE
 			)
+		elseif kind == "EggHatched" then
+			local rarity = Config.Rarity.ById[data.Rarity or "Common"]
+			showToast(
+				`🥚 {string.upper(rarity and rarity.DisplayName or "")} {data.Animal}!`,
+				"It hatched right next to you. Grab it before someone else does!",
+				nil,
+				nil,
+				if rarity then rarity.Color else Ui.GOLD,
+				`Animal_{data.AnimalId}`
+			)
 		end
 	end)
 end
