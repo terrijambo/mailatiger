@@ -184,7 +184,7 @@ local List: { Animal } = {
 		Tier = 5,
 		Price = 400000,
 		BaseValue = 35000,
-		Carriers = 2,
+		Carriers = 1, -- (no animal needs a crew: everything can be done solo)
 	},
 	{
 		Id = "Whale",
@@ -192,7 +192,7 @@ local List: { Animal } = {
 		Tier = 5,
 		Price = 700000,
 		BaseValue = 65000,
-		Carriers = 4,
+		Carriers = 1, -- (no animal needs a crew: everything can be done solo)
 	},
 
 	-- Tier 6: Silly
@@ -234,7 +234,7 @@ local List: { Animal } = {
 		Tier = 6,
 		Price = 10000000,
 		BaseValue = 1000000,
-		Carriers = 4,
+		Carriers = 1, -- (no animal needs a crew: everything can be done solo)
 	},
 }
 
