@@ -113,9 +113,9 @@ function SideButtons.Start()
 		return button
 	end
 
-	add(
+	local quickButton = add(
 		column,
-		{ Label = "PEN", Icon = "Button_Pen", Color = Ui.GREEN, LayoutOrder = 1 },
+		{ Label = "GRUFF", Icon = "Button_Gruff", Color = Ui.RED, LayoutOrder = 1 },
 		Enum.KeyCode.DPadLeft,
 		function()
 			-- Quick teleport: at Gruff's -> your best zone; anywhere else -> back to Gruff
@@ -123,6 +123,45 @@ function SideButtons.Start()
 			shopAction:FireServer("QuickTravel")
 		end
 	)
+	-- It shows where it'll take you: GRUFF (the default), or PEN when you're already at Gruff's (it then
+	-- zips you to your best zone). Same 45-stud range the server uses (Travel.Quick).
+	do
+		local showingPen = false
+		local function setLook(pen: boolean)
+			if pen == showingPen then
+				return
+			end
+			showingPen = pen
+			quickButton.BackgroundColor3 = if pen then Ui.GREEN else Ui.RED
+			local oldIcon = quickButton:FindFirstChild("Icon")
+			if oldIcon then
+				oldIcon:Destroy()
+			end
+			Ui.icon(quickButton, if pen then "Button_Pen" else "Button_Gruff", {
+				Name = "Icon",
+				AnchorPoint = Vector2.new(0.5, 0),
+				Position = UDim2.new(0.5, 0, 0, 5),
+				Size = UDim2.fromOffset(54, 50),
+			})
+			for _, label in quickButton:GetChildren() do
+				if label:IsA("TextLabel") and (label.Text == "PEN" or label.Text == "GRUFF") then
+					label.Text = if pen then "PEN" else "GRUFF"
+				end
+			end
+		end
+		task.spawn(function()
+			while quickButton.Parent do
+				local map = workspace:FindFirstChild("GrayboxMap")
+				local gruff = map and map:FindFirstChild("Gruff")
+				local character = player.Character
+				local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+				if gruff and gruff:IsA("BasePart") and root then
+					setLook((root.Position - gruff.Position).Magnitude < 45)
+				end
+				task.wait(0.3)
+			end
+		end)
+	end
 	local shopButton = add(
 		column,
 		{ Label = "SHOP", Icon = "Button_Shop", Color = Ui.ORANGE, LayoutOrder = 2 },

@@ -470,8 +470,8 @@ function Hud.Start()
 		else
 			local parcels = #Profile.Get().Parcels
 			objective.Text = if parcels > 0
-				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at the Mail Chute! (PEN = back to town)`
-				else "🐾 Grab a wild animal (HOLD E)! PEN = teleport to your best zone"
+				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at the Mail Chute! (GRUFF = back to town)`
+				else "🐾 Grab a wild animal (HOLD E)! At Gruff's, PEN = teleport to your best zone"
 		end
 		-- (the BOX screen has its own instructions; during the walkthrough, Gruff's panel is the only one)
 		banner.Visible = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()

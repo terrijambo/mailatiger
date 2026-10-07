@@ -58,7 +58,7 @@ return {
 		Catch = "There it is! Chase it down, get close, and HOLD E to grab it.",
 		Box = "Now BOX it. Its anger climbs FAST: rub a ♥ to reset it to zero. DON'T touch the ✖ spots, and drag tape along every seam.",
 		Escaped = "You LOST it?! Catch it again (HOLD E). And rub the ♥ spots faster this time.",
-		Mail = "It's taped up and in your bag. Tap PEN to zip back to town, then HOLD E at the MAIL CHUTE by my counter.",
+		Mail = "It's taped up and in your bag. Tap GRUFF to zip back to me, then HOLD E at the MAIL CHUTE by my counter.",
 		Shop = "Coins! Spend them at the SUPPLY SHOP on better tools. Level up and you can grab bigger animals. Now get back to work.",
 		Reward = "Here, a little signing bonus. Your MENU has orders, upgrades and more. Don't spend it all on tape.",
 	},
