@@ -174,7 +174,13 @@ end
 -- Events from the rest of the game
 
 -- One parcel mailed at the chute
-function ProgressionService.OnParcelMailed(player: Player, animalId: string, stars: number, variantId: string?)
+function ProgressionService.OnParcelMailed(
+	player: Player,
+	animalId: string,
+	stars: number,
+	variantId: string?,
+	machines: { [string]: boolean }? -- the machines that stamped it
+)
 	local profile = DataService.Get(player)
 	local animal = Config.Animals.ById[animalId]
 	if not profile or not animal then
@@ -185,7 +191,7 @@ function ProgressionService.OnParcelMailed(player: Player, animalId: string, sta
 		* animal.Tier
 		* (Levels.StarXPMult[stars] or 1)
 		* (if variant then variant.XPMult else 1)
-		* Economy.MachineXPMult(player) -- the Post Office machines (Config/Machines.luau)
+		* Config.Machines.XPMult(machines or {}) -- its machine stamps (Config/Machines.luau)
 	local first = (profile.Species[animalId] or 0) == 0
 	profile.Species[animalId] = (profile.Species[animalId] or 0) + 1
 	if first then

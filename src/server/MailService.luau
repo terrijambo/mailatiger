@@ -4,11 +4,10 @@
 --   * You carry your parcels (they show in your hands) to the Mail Chute and hold E to mail them.
 --     That's when you get paid, orders get filled and the leaderboards update.
 --   * Each parcel pays a tip right away (Config/Machines.luau MailTip); the chute's coins per minute are the
---     main income (MachineService). Your chute upgrades with your level, and the Rocket Launcher machine lets
---     you press M to mail from anywhere.
+--     main income (MachineService). The XP it gives is multiplied by every machine that stamped it on the way.
+--     Your chute upgrades with your level, and the Rocket Launcher lets you press M to mail from anywhere.
 -- Chutes and bag size are in src/shared/Config/Mail.luau.
 
-local CollectionService = game:GetService("CollectionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
@@ -145,6 +144,11 @@ end
 -- Set by EventService: runs for each animal mailed
 MailService.OnMailed = nil :: ((Player, string) -> ())?
 
+-- Redraws the parcels in the player's arms (after something takes or gives parcels)
+function MailService.RefreshCarried(player: Player)
+	refreshCarried(player)
+end
+
 function MailService.AddParcel(player: Player, parcel: Parcel)
 	local profile = DataService.Get(player)
 	if not profile then
@@ -182,38 +186,6 @@ local function flyParcels(player: Player, count: number)
 	end
 end
 
--- After they drop into the chute, parcels ride the Mail Room belt through the machines into the mail truck.
--- Everyone sees them; each player's client makes the machines they own stamp, weigh and wrap them as they
--- pass (client/MailRoom.luau finds them by the "BeltParcel" tag).
-local BELT_SPEED = 11
-local function rideBelt(player: Player, count: number)
-	local room = map.MailRoom
-	for i = 1, math.min(count, 5) do
-		task.delay(0.9 + (i - 1) * 0.55, function()
-			local look = CFrame.lookAt(room.Start, room.Start + room.Direction)
-			local parcel = makeParcel(look * CFrame.new(0, 1.15, 0))
-			parcel:SetAttribute("OwnerId", player.UserId)
-			CollectionService:AddTag(parcel, "BeltParcel")
-			parcel.Parent = Workspace
-			local start = parcel:GetPivot()
-			local travelled = 0
-			while travelled < room.Length do
-				travelled += BELT_SPEED * task.wait()
-				parcel:PivotTo(start + room.Direction * math.min(travelled, room.Length))
-			end
-			-- hop into the back of the truck
-			local from = parcel:GetPivot()
-			local to = CFrame.new(room.Truck + Vector3.new(0, 3, 0))
-			for step = 1, 12 do
-				local t = step / 12
-				parcel:PivotTo(CFrame.new(0, math.sin(t * math.pi) * 2, 0) * from:Lerp(to, t))
-				task.wait()
-			end
-			parcel:Destroy()
-		end)
-	end
-end
-
 -- Mail everything in the player's bag. fromChute = false means they pressed M (Rocket Chute only).
 function MailService.MailAll(player: Player, fromChute: boolean)
 	local profile = DataService.Get(player)
@@ -232,7 +204,8 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	local total, orderBonus, ordersReady, best = 0, 0, 0, 1
 	local bestName, bestVariant, bestPay = "", nil :: string?, -1
 	local lines = {}
-	local progress: { { AnimalId: string, Stars: number, Orders: number, Variant: string? } } = {} -- XP and quests, after paying
+	local progress: { { AnimalId: string, Stars: number, Orders: number, Variant: string?, Machines: { [string]: boolean }? } } =
+		{} -- XP and quests, after paying
 	for _, parcel in profile.Parcels do
 		local pay = math.max(1, math.round(parcel.Coins * Config.Machines.MailTip))
 		if pay > bestPay then
@@ -248,10 +221,13 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		})
 		orderBonus += bonus
 		ordersReady += completed
-		table.insert(
-			progress,
-			{ AnimalId = parcel.AnimalId, Stars = parcel.Stars, Orders = completed, Variant = parcel.Variant }
-		)
+		table.insert(progress, {
+			AnimalId = parcel.AnimalId,
+			Stars = parcel.Stars,
+			Orders = completed,
+			Variant = parcel.Variant,
+			Machines = parcel.Machines,
+		})
 		-- Leaderboard stats (the 5-stamp board counts this week only)
 		profile.Mailed += 1
 		local week = Config.Challenges.Week(os.time())
@@ -297,7 +273,13 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		local variant = if parcel.Variant then Config.Variants.ById[parcel.Variant] else nil
 		local name = (if variant then variant.Emoji .. " " else "")
 			.. (if animal then animal.DisplayName else parcel.AnimalId)
-		table.insert(lines, `{name} {string.rep("★", parcel.Stars)} +{Format.Short(pay)}`)
+		local stamps = ""
+		for _, machine in Config.Machines.List do
+			if parcel.Machines and parcel.Machines[machine.Id] then
+				stamps ..= machine.Emoji
+			end
+		end
+		table.insert(lines, `{name} {string.rep("★", parcel.Stars)} {stamps} +{Format.Short(pay)}`)
 	end
 
 	local count = #profile.Parcels
@@ -306,7 +288,7 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	-- XP, the collection and quests, once the coins have landed
 	task.defer(function()
 		for _, entry in progress do
-			ProgressionService.OnParcelMailed(player, entry.AnimalId, entry.Stars, entry.Variant)
+			ProgressionService.OnParcelMailed(player, entry.AnimalId, entry.Stars, entry.Variant, entry.Machines)
 			ChallengeService.Track(player, "Mail", { Variant = entry.Variant })
 			local hook = MailService.OnMailed
 			if hook then
@@ -322,7 +304,6 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	refreshCarried(player)
 	LeaderboardService.Submit(player)
 	flyParcels(player, count)
-	rideBelt(player, count)
 	notify(player, "MailReceipt", {
 		Count = count,
 		Coins = total,

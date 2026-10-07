@@ -42,7 +42,8 @@ function Travel.ToGruff(player: Player): boolean
 		return false
 	end
 	local gruff = map.Gruff.Position
-	local stand = Vector3.new(gruff.X, gruff.Y + 2, gruff.Z + 14) -- in front of his counter, facing him
+	local toPlaza = Vector3.new(-gruff.X, 0, -gruff.Z).Unit -- (he faces the middle of the plaza)
+	local stand = gruff + toPlaza * 14 + Vector3.new(0, 2, 0) -- in front of his counter, facing him
 	teleport(player, CFrame.lookAt(stand, Vector3.new(gruff.X, stand.Y, gruff.Z)))
 	return true
 end

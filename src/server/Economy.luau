@@ -138,12 +138,6 @@ function Economy.RebirthCost(rebirths: number): number
 	return Config.Machines.RebirthCost(rebirths)
 end
 
--- XP multiplier from the Post Office machines you own
-function Economy.MachineXPMult(player: Player): number
-	local profile = DataService.Get(player)
-	return if profile then Config.Machines.XPMult(profile.Machines) else 1
-end
-
 -- Coins per minute your chute pays: your chute level, x1.5 per rebirth, and the usual boosts
 function Economy.ChuteRate(player: Player): number
 	local profile = DataService.Get(player)

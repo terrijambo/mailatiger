@@ -297,9 +297,14 @@ local function run()
 	end, 3), "code LAUNCH paid out")
 	task.wait(1.1)
 	local again = profile().Coins
+	lastMessage = nil
 	remotes.RedeemCode:FireServer("LAUNCH")
 	task.wait(1)
-	log(profile().Coins == again, "code LAUNCH can't be used twice")
+	-- (the chute pays coins every few seconds now, so check Gruff's answer, and that no code-sized payout came)
+	log(
+		string.find(lastMessage or "", "already", 1, true) ~= nil and profile().Coins - again < 1000,
+		"code LAUNCH can't be used twice"
+	)
 
 	-- Robux Store (Studio TEST buttons) and diamonds
 	remotes.ShopAction:FireServer("StudioBuy", "ServerBoost")
@@ -589,17 +594,51 @@ local function run()
 		task.wait(0.5)
 		log(Workspace:FindFirstChild(chuteModel) ~= nil, "your chute shows the " .. chuteModel .. " model for your level")
 	end
+	-- Processing: drop a parcel in the Stamp Machine, wait, collect it stamped
+	local stampStation
+	for _, station in map.Machines:GetChildren() do
+		if station:GetAttribute("MachineId") == "Stamp" then
+			stampStation = station
+		end
+	end
+	log(stampStation ~= nil, "the Stamp Machine stands in the plaza")
+	if stampStation and (profile().Machines or {}).Stamp then
+		local bagBefore = #profile().Parcels
+		remotes.ShopAction:FireServer("Promo", "Parcel")
+		log(waitFor(function()
+			return #profile().Parcels > bagBefore
+		end, 3), "got a test parcel")
+		root.CFrame = stampStation.CFrame * CFrame.new(0, -2, -7)
+		task.wait(0.5)
+		holdPrompt(stampStation:FindFirstChild("UsePrompt"), stampStation)
+		log(waitFor(function()
+			return (profile().Processing or {}).Stamp ~= nil
+		end, 4), "dropped the bag into the Stamp Machine")
+		task.wait(Config.Machines.ById.Stamp.Seconds + 1.5)
+		holdPrompt(stampStation:FindFirstChild("UsePrompt"), stampStation)
+		log(waitFor(function()
+			if (profile().Processing or {}).Stamp ~= nil then
+				return false
+			end
+			for _, parcel in profile().Parcels do
+				if parcel.Machines and parcel.Machines.Stamp then
+					return true
+				end
+			end
+			return false
+		end, 4), "collected the parcels, stamped")
+	end
 	remotes.ShopAction:FireServer("Promo", "AllMachines") -- (Studio only: the Rocket Launcher gives mail-anywhere)
 	log(waitFor(function()
 		return (profile().Machines or {}).Rocket == true
 	end, 3), "got every machine (test)")
 	local board = map:FindFirstChild("Leaderboard_FiveStamps")
 	log(board ~= nil and board:FindFirstChild("Board") ~= nil, "leaderboards are drawn")
-	local messages = events.Message or 0
+	local messages, receipts = events.Message or 0, events.MailReceipt or 0
 	remotes.MailAnywhere:FireServer()
 	log(waitFor(function()
-		return (events.Message or 0) > messages
-	end, 3), "Rocket mail-anywhere answers (empty bag)")
+		return (events.Message or 0) > messages or (events.MailReceipt or 0) > receipts
+	end, 3), "Rocket mail-anywhere answers (mails the bag, or says it's empty)")
 
 	-- 9. The tiger: grab it, then make it furious. VINE BOOM, launch, RETURN TO SENDER, Gruff's cap flies.
 	local function catchMine(tries)

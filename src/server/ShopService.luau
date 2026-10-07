@@ -23,6 +23,7 @@ local EventService = require(script.Parent.EventService)
 local MachineService = require(script.Parent.MachineService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local MonetizationService = require(script.Parent.MonetizationService)
+local MailService = require(script.Parent.MailService)
 local Orders = require(script.Parent.Orders)
 local Remotes = require(script.Parent.Remotes)
 local Travel = require(script.Parent.Travel)
@@ -64,6 +65,16 @@ local function promo(player: Player, profile: DataService.Profile, id: string)
 			"Message",
 			{ Speaker = "Promo Kit", Text = "Every animal and zone unlocked, +1M coins." }
 		)
+	elseif id == "Parcel" then
+		-- (Studio testing: a ready-taped Hamster in your bag)
+		MailService.AddParcel(player, {
+			AnimalId = "Hamster",
+			Stars = 3,
+			Coins = 10,
+			Seconds = 20,
+			Escapes = 0,
+			UnderPar = false,
+		})
 	elseif id == "Points" then
 		profile.RebirthPoints += 50 -- (Studio testing: tool upgrades)
 		Economy.Sync(player)

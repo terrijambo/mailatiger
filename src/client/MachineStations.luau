@@ -1,14 +1,12 @@
 --!strict
--- The Mail Room (next to the Post Office), as YOU see it. The server builds the belt, the truck and one
--- invisible station per machine (MapBuilder); this draws each machine over its station:
---   * one you own: bright, in its own colors, and it does its thing as parcels pass (the Stamp Machine
---     stamps, the Postage Scale's needle swings, the Fragile Handler's rollers spin...), with an "x1.5 XP"
---     pop over your own parcels
---   * one you don't: a grey hologram with a sign saying the level it opens at, or its price (hold E to buy)
--- Machines and their numbers: Config/Machines.luau.
+-- The Post Office machines round the plaza, as YOU see them. The server puts an invisible station at each spot
+-- (MapBuilder) and does the work (MachineService); this draws each machine over its station:
+--   * one you own: bright, in its own colors, and it works away while it has your parcels (the Stamp Machine
+--     stamps, the Postage Scale's needle swings, the Fragile Handler's rollers spin...)
+--   * one you don't: a glassy hologram with a sign saying the level it opens at, or its price
+-- Its prompt says what holding E will do for you: buy it, drop your parcels in, or collect them, and the sign
+-- over it counts down while it works. Machines and their numbers: Config/Machines.luau.
 
-local CollectionService = game:GetService("CollectionService")
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -18,14 +16,13 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Profile = require(script.Parent.Profile)
 
-local player = Players.LocalPlayer
 local Machines = Config.Machines
 type Machine = typeof(Machines.List[1])
 
-local MailRoom = {}
+local MachineStations = {}
 
 local GHOST = Color3.fromRGB(196, 214, 236)
-local SCALE = 1.35 -- (machines are drawn at this size)
+local SCALE = 2.1 -- (machines are drawn at this size)
 local METAL = Color3.fromRGB(86, 92, 108)
 
 type Look = {
@@ -75,7 +72,7 @@ local function build(machine: Machine, station: BasePart, owned: boolean): Look
 	local model = Instance.new("Model")
 	model.Name = `Machine_{machine.Id}`
 	local look: Look = { Model = model, Moving = {}, Rest = {} }
-	local base = station.CFrame * CFrame.new(0, -station.Size.Y / 2, 0)
+	local base = station.CFrame * CFrame.new(0, -station.Size.Y / 2 + 0.6, 0) -- (on top of its stone base)
 	local color = machine.Color
 	local dark = color:Lerp(Color3.new(0, 0, 0), 0.35)
 	local light = color:Lerp(Color3.new(1, 1, 1), 0.45)
@@ -89,6 +86,9 @@ local function build(machine: Machine, station: BasePart, owned: boolean): Look
 	piece(look, base, "Housing", Vector3.new(5.6, 1.8, 3.4), CFrame.new(0, 5.3, 0), color)
 	piece(look, base, "Trim", Vector3.new(5.8, 0.3, 3.6), CFrame.new(0, 4.4, 0), dark)
 	piece(look, base, "Light", Vector3.new(4.6, 0.25, 0.2), CFrame.new(0, 5.3, -1.75), light, neon)
+	-- a short belt through the arch, with an in-tray on the plaza side
+	piece(look, base, "Belt", Vector3.new(2.6, 0.25, 5), CFrame.new(0, 1.1, 0), Color3.fromRGB(34, 34, 40))
+	piece(look, base, "BeltFrame", Vector3.new(3.2, 0.9, 5.2), CFrame.new(0, 0.5, 0), METAL)
 
 	local id = machine.Id
 	if id == "Stamp" then
@@ -317,9 +317,9 @@ end
 local function sign(station: BasePart, machine: Machine): (BillboardGui, TextLabel)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "MachineSign"
-	gui.Size = UDim2.fromScale(5.5, 1.7)
-	gui.StudsOffset = Vector3.new(0, 7.4, 0)
-	gui.MaxDistance = 70
+	gui.Size = UDim2.fromScale(9, 2.8)
+	gui.StudsOffset = Vector3.new(0, 15, 0)
+	gui.MaxDistance = 110
 	gui.LightInfluence = 0
 	local title = Instance.new("TextLabel")
 	title.Size = UDim2.fromScale(1, 0.5)
@@ -328,7 +328,7 @@ local function sign(station: BasePart, machine: Machine): (BillboardGui, TextLab
 	title.TextScaled = true
 	title.TextColor3 = Color3.new(1, 1, 1)
 	title.TextStrokeTransparency = 0
-	title.Text = `{machine.Emoji} x{string.format("%g", machine.XPMult)} XP`
+	title.Text = `{machine.Emoji} {string.upper(machine.DisplayName)}`
 	title.Parent = gui
 	local status = Instance.new("TextLabel")
 	status.Size = UDim2.fromScale(1, 0.42)
@@ -380,13 +380,14 @@ local function pop(at: Vector3, text: string, color: Color3)
 	end)
 end
 
-function MailRoom.Start()
+function MachineStations.Start()
 	local map = Workspace:WaitForChild("GrayboxMap")
-	local room = map:WaitForChild("MailRoom", 30)
+	local room = map:WaitForChild("Machines", 30)
 	if not room then
 		return
 	end
 	task.wait(1) -- (let the stations replicate)
+	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 
 	type Station = {
 		Machine: Machine,
@@ -395,29 +396,63 @@ function MailRoom.Start()
 		Status: TextLabel,
 		Look: Look?,
 		Owned: boolean?,
-		Busy: number, -- os.clock() until the current effect ends
+		Busy: number, -- when its working motion last started
+		Working: boolean,
+		Boxes: { BasePart }, -- your parcels sitting on its belt
 	}
 	local stations: { Station } = {}
+	local byId: { [string]: Station } = {}
 	for _, part in room:GetChildren() do
 		local id = part:GetAttribute("MachineId")
 		local machine = if typeof(id) == "string" then Machines.ById[id] else nil
 		if part:IsA("BasePart") and machine then
 			local _, status = sign(part, machine)
-			table.insert(stations, {
+			local station: Station = {
 				Machine = machine,
 				Part = part,
-				Prompt = part:FindFirstChild("BuyPrompt") :: ProximityPrompt?,
+				Prompt = part:FindFirstChild("UsePrompt") :: ProximityPrompt?,
 				Status = status,
 				Busy = 0,
-			})
+				Working = false,
+				Boxes = {},
+			}
+			table.insert(stations, station)
+			byId[machine.Id] = station
 		end
 	end
 
-	-- Redraw machines when what you own (or your level, or coins) changes
+	-- Little parcels on a machine's belt while it has yours
+	local function showBoxes(station: Station, count: number)
+		local want = math.min(count, 4)
+		while #station.Boxes > want do
+			local box = table.remove(station.Boxes)
+			if box then
+				box:Destroy()
+			end
+		end
+		local base = station.Part.CFrame * CFrame.new(0, -station.Part.Size.Y / 2 + 0.6, 0)
+		while #station.Boxes < want do
+			local i = #station.Boxes
+			local box = Instance.new("Part")
+			box.Name = "WaitingParcel"
+			box.Anchored = true
+			box.CanCollide = false
+			box.CanQuery = false
+			box.Size = Vector3.one * 1.6
+			box.Color = Color3.fromRGB(198, 156, 109)
+			box.CFrame = base * CFrame.new(0, 2.3 * SCALE / 2.1 + 0.8, (i - 1.5) * 1.8)
+			box.Parent = Workspace
+			table.insert(station.Boxes, box)
+		end
+	end
+
+	-- Words, signs and looks for every machine (from your saved progress, and the clock while one works)
 	local function refresh()
 		local data = Profile.Get()
 		local owned = data.Machines or {}
+		local processing = data.Processing or {}
 		local level = data.Level or 1
+		local now = Workspace:GetServerTimeNow()
 		for _, station in stations do
 			local machine = station.Machine
 			local has = owned[machine.Id] == true
@@ -429,37 +464,81 @@ function MailRoom.Start()
 				station.Owned = has
 			end
 			local prompt = station.Prompt
-			if has then
-				station.Status.Text = "INSTALLED"
-				station.Status.TextColor3 = Color3.fromRGB(120, 255, 140)
-				if prompt then
-					prompt.Enabled = false
+			local batch = processing[machine.Id]
+			local status, color, action
+			station.Working = false
+			if batch then
+				local left = math.ceil(batch.ReadyAt - now)
+				local count = #batch.Parcels
+				showBoxes(station, count)
+				if left > 0 then
+					station.Working = true
+					status, color = `⏳ WORKING... {left}s`, Color3.fromRGB(255, 220, 80)
+					action = `Working ({left}s)`
+				else
+					status, color =
+						`✅ READY: {count} PARCEL{if count == 1 then "" else "S"}`, Color3.fromRGB(120, 255, 140)
+					action = `Collect {count} parcel{if count == 1 then "" else "s"}`
 				end
+			elseif has then
+				showBoxes(station, 0)
+				local waiting = 0
+				for _, parcel in data.Parcels do
+					if not (parcel.Machines and parcel.Machines[machine.Id]) then
+						waiting += 1
+					end
+				end
+				status, color = `x{string.format("%g", machine.XPMult)} XP PER PARCEL`, Color3.fromRGB(255, 255, 255)
+				action = if waiting > 0
+					then `Drop in {waiting} parcel{if waiting == 1 then "" else "s"}`
+					else "Nothing to stamp"
 			elseif level < machine.Level then
-				station.Status.Text = `🔒 LEVEL {machine.Level}`
-				station.Status.TextColor3 = Color3.fromRGB(200, 210, 230)
-				if prompt then
-					prompt.Enabled = true
-					prompt.ActionText = `Opens at Level {machine.Level}`
-				end
+				showBoxes(station, 0)
+				status, color = `🔒 LEVEL {machine.Level}`, Color3.fromRGB(200, 210, 230)
+				action = `Opens at Level {machine.Level}`
 			else
+				showBoxes(station, 0)
 				local price = Machines.Price(machine)
-				station.Status.Text = `BUY: {Format.Short(price)}`
-				station.Status.TextColor3 = if data.Coins >= price
-					then Color3.fromRGB(255, 220, 80)
-					else Color3.fromRGB(255, 140, 120)
-				if prompt then
-					prompt.Enabled = true
-					prompt.ActionText = `Buy ({Format.Short(price)})`
-				end
+				status = `BUY: {Format.Short(price)}  (x{string.format("%g", machine.XPMult)} XP)`
+				color = if data.Coins >= price then Color3.fromRGB(255, 220, 80) else Color3.fromRGB(255, 140, 120)
+				action = `Buy ({Format.Short(price)})`
+			end
+			station.Status.Text = status
+			station.Status.TextColor3 = color
+			if prompt then
+				prompt.ActionText = action
 			end
 		end
 	end
 	Profile.Watch(refresh)
 	refresh()
+	task.spawn(function()
+		while true do
+			task.wait(0.5)
+			refresh() -- (the countdowns)
+		end
+	end)
 
-	-- Effects: each owned machine reacts when a parcel passes under it
-	local seen: { [Instance]: { [number]: boolean } } = {}
+	notify.OnClientEvent:Connect(function(kind: string, data: any)
+		local station = if type(data) == "table" and data.Id then byId[data.Id] else nil
+		if not station then
+			return
+		end
+		local top = station.Part.Position + Vector3.new(0, 9, 0)
+		if kind == "MachineReady" then
+			pop(top, "READY!", Color3.fromRGB(120, 255, 140))
+		elseif kind == "MachineCollected" and (data.Count or 0) > 0 then
+			pop(
+				top,
+				`x{string.format("%g", data.XPMult or 1)} XP STAMPED!`,
+				station.Machine.Color:Lerp(Color3.new(1, 1, 1), 0.3)
+			)
+		elseif kind == "MachineStarted" then
+			station.Busy = os.clock()
+		end
+	end)
+
+	-- Motion: owned machines idle (drones bob, the rocket's flame flickers) and work while they have parcels
 	RunService.RenderStepped:Connect(function()
 		local now = os.clock()
 		for _, station in stations do
@@ -467,9 +546,12 @@ function MailRoom.Start()
 			if not (look and station.Owned) then
 				continue
 			end
-			-- idle motion
+			if station.Working and now - station.Busy > 0.8 then
+				station.Busy = now
+			end
 			local machine = station.Machine
 			local t = now - station.Busy
+			-- idle motion
 			if machine.Id == "Drone" then
 				for k = 1, 2 do
 					local drone = look.Moving[`Drone{k}`]
@@ -544,39 +626,7 @@ function MailRoom.Start()
 				end
 			end
 		end
-		-- parcels passing under machines
-		for _, parcel in CollectionService:GetTagged("BeltParcel") do
-			if not parcel:IsA("Model") then
-				continue
-			end
-			local at = parcel:GetPivot().Position
-			local passed = seen[parcel]
-			if not passed then
-				passed = {}
-				seen[parcel] = passed
-				parcel.Destroying:Connect(function()
-					seen[parcel] = nil
-				end)
-			end
-			for index, station in stations do
-				if station.Owned and not passed[index] then
-					local offset = at - station.Part.Position
-					if Vector3.new(offset.X, 0, offset.Z).Magnitude < 1.2 then
-						passed[index] = true
-						station.Busy = now
-						if parcel:GetAttribute("OwnerId") == player.UserId then
-							local machine = station.Machine
-							pop(
-								at + Vector3.new(0, 2.5, 0),
-								`x{string.format("%g", machine.XPMult)} XP`,
-								machine.Color:Lerp(Color3.new(1, 1, 1), 0.3)
-							)
-						end
-					end
-				end
-			end
-		end
 	end)
 end
 
-return MailRoom
+return MachineStations

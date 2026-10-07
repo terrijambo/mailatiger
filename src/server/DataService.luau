@@ -36,6 +36,7 @@ export type Parcel = {
 	UnderPar: boolean,
 	Stamp: string?, -- stamp or CHAOS label, shown on the receipt
 	Variant: string?, -- "Shiny" or "Golden" (Config/Variants.luau)
+	Machines: { [string]: boolean }?, -- the Post Office machines that have stamped it (each multiplies its XP)
 }
 
 export type ChallengeProgress = { Id: string, Progress: number, Done: boolean, Claimed: boolean? } -- (Claimed as in Order)
@@ -53,6 +54,7 @@ export type Profile = {
 	Parcels: { Parcel }, -- your bag
 	ChuteTier: string, -- (old: chutes used to be bought; now they come with your chute level)
 	Machines: { [string]: boolean }, -- Post Office machines you own (Config/Machines.luau; reset by rebirth)
+	Processing: { [string]: { Parcels: { Parcel }, ReadyAt: number } }, -- parcels inside a machine (os.time ready)
 	RebirthPoints: number, -- from rebirthing; buy tool upgrades with them (kept through rebirths)
 	EconomyVersion: number, -- 1 = saved after machines came in (older saves get their chute refunded once)
 	Owned: { [string]: boolean }, -- animals
@@ -122,6 +124,7 @@ local function newProfile(): Profile
 		Parcels = {},
 		ChuteTier = "Basic",
 		Machines = {},
+		Processing = {},
 		RebirthPoints = 0,
 		EconomyVersion = 1,
 		Owned = { Hamster = true },

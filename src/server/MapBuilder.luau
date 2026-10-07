@@ -64,14 +64,9 @@ export type Map = {
 	OrdersPrompt: ProximityPrompt,
 	OrdersBoard: BasePart,
 	Leaderboards: { [string]: BasePart }, -- board id -> the part whose +X (Right) face shows the board
-	-- The Mail Room: a conveyor from the chute through the Post Office machines to the mail truck
-	MailRoom: {
-		Start: Vector3, -- where parcels come out of the chute onto the belt (ground level)
-		Direction: Vector3, -- along the belt
-		Length: number,
-		Truck: Vector3, -- where parcels land at the end
-		Stations: { [string]: BasePart }, -- machine id -> its spot over the belt (the client draws the machine)
-	},
+	-- The Post Office machines, in a ring round the plaza: machine id -> its station (an invisible box over
+	-- the spot; each client draws the machine, client/Machines.luau)
+	Machines: { [string]: BasePart },
 }
 
 -- Bright, flat colors (the look of popular simulators: smooth plastic, no gritty textures)
@@ -681,217 +676,130 @@ function MapBuilder.Build(): Map
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Anchored = true
 	spawn.Size = Vector3.new(6, 1, 6)
-	spawn.Position = Vector3.new(0, 0.5, 44)
+	spawn.Position = Vector3.new(24, 0.5, 0)
 	spawn.Neutral = true
 	spawn.Duration = 0
 	spawn.Color = COLORS.PostBlue
 	spawn.Parent = map
-	dress(map, "SpawnPad", spot(0, 0, 44), 7, { spawn })
+	dress(map, "SpawnPad", spot(24, 0, 0, Vector3.xAxis), 7, { spawn })
 
-	-- Post Office on the north side: the building, Postmaster Gruff in front of it, his counter, the chute
-	-- and his orders board. (All facing south, +Z, toward the fountain.)
-	local N = -22 -- (how far north of where it all used to be)
-	local building =
-		block(map, "PostOfficeBuilding", Vector3.new(-10, 0, -44 + N), Vector3.new(10, 12, -30 + N), COLORS.PostRed)
-	local roof =
-		block(map, "PostOfficeRoof", Vector3.new(-11, 12, -45 + N), Vector3.new(11, 13, -29 + N), COLORS.PostBlue)
-	local office = dress(map, "PostOffice", spot(0, 0, -37 + N), 18, { building, roof }, { Solid = true })
+	-- Town, from your sketch: you start by the fountain in the middle; Postmaster Gruff, his counter, the chute,
+	-- his orders board and the Post Office are to the EAST (facing west, toward you); the Post Office
+	-- machines stand in a ring round the plaza (machine 1 north, then round through west and south), with
+	-- gaps where the roads leave for the bridges; the Supply Shop is northeast.
+	local west = -Vector3.xAxis
+	local building = block(map, "PostOfficeBuilding", Vector3.new(55, 0, -10), Vector3.new(69, 12, 10), COLORS.PostRed)
+	local roof = block(map, "PostOfficeRoof", Vector3.new(54, 12, -11), Vector3.new(70, 13, 11), COLORS.PostBlue)
+	local office = dress(map, "PostOffice", spot(62, 0, 0, west), 18, { building, roof }, { Solid = true })
 	if office then
-		ModelFit.Align(office, Vector3.zAxis, -30 + N) -- its front door sits right behind Gruff
+		ModelFit.Align(office, west, -55) -- its front door sits right behind Gruff
 	end
-	block(map, "PostOfficeFloor", Vector3.new(-12, 0, -30 + N), Vector3.new(20, 0.3, -19 + N), COLORS.Stone)
-	local gruff, gruffHat = buildGruff(map, spot(-2, 0.3, -27 + N))
-	local postCounter = block(map, "Counter", Vector3.new(-7, 0.3, -24 + N), Vector3.new(3, 3.8, -22 + N), COLORS.Wood)
-	dress(map, "PostCounter", spot(-2, 0.3, -23 + N), 10.5, { postCounter })
-	local chute = block(map, "MailChute", Vector3.new(5, 0.3, -25 + N), Vector3.new(9, 5, -21 + N), COLORS.Chute)
+	block(map, "PostOfficeFloor", Vector3.new(40, 0, -15), Vector3.new(55, 0.3, 15), COLORS.Stone)
+	local gruff, gruffHat = buildGruff(map, spot(51, 0.3, 0, west))
+	local postCounter = facingBox(map, "Counter", Vector3.new(46.5, 0.3, 0), west, Vector3.new(10, 3.5, 2), COLORS.Wood)
+	dress(map, "PostCounter", spot(46.5, 0.3, 0, west), 10.5, { postCounter })
+	local chute = facingBox(map, "MailChute", Vector3.new(47, 0.3, 10), west, Vector3.new(4, 4.7, 4), COLORS.Chute)
 	MapBuilder.Label(chute, "MAIL CHUTE", 3.5, COLORS.Yellow)
 	-- Hold E here to mail your bag. (Each player's client shortens the hold and swaps in their chute's model.)
 	local chutePrompt = prompt(chute, "Mail Parcels", "Mail Chute", Config.Mail.ChuteById.Basic.HoldTime)
 	chutePrompt.MaxActivationDistance = 12
 
-	-- Gruff's orders board (right of the Post Office)
-	local board = block(map, "OrdersBoard", Vector3.new(12, 0, -28 + N), Vector3.new(18, 7, -27 + N), COLORS.Wood)
+	-- Gruff's orders board (north of his counter)
+	local board = facingBox(map, "OrdersBoard", Vector3.new(47, 0, -11), west, Vector3.new(6, 7, 1), COLORS.Wood)
 	MapBuilder.Label(board, "GRUFF'S ORDERS", 5, COLORS.Yellow)
 	local ordersPrompt = prompt(board, "Read Orders", "Gruff's Orders", 0.2)
-	dress(map, "OrdersBoard", spot(15, 0, -27.5 + N), 6.5, { board })
+	dress(map, "OrdersBoard", spot(47, 0, -11, west), 6.5, { board })
 	-- A letter bobbing over the board so it catches your eye (it spins on each client: Animate.luau)
-	local letter = ModelFit.Spawn("PropModels", "Envelope", CFrame.new(15, 8.5, -27.5 + N), 2, map)
+	local letter = ModelFit.Spawn("PropModels", "Envelope", CFrame.new(47, 8.5, -11), 2, map)
 	if letter then
 		letter.Name = "OrdersLetter"
 		letter:SetAttribute("Spin", true)
 	end
 
-	-- The Mail Room: a conveyor belt runs from the chute's east side, angled away from the plaza (it misses
-	-- the orders board and the roads), through a row of stations, one per Post Office machine
-	-- (Config/Machines.luau), to a mail truck. Each player's client draws the machines: bright if you own one,
-	-- a grey hologram with its level or price if not (client/MailRoom.luau). Mailed parcels ride it.
-	local mailRoom = Instance.new("Folder")
-	mailRoom.Name = "MailRoom"
-	mailRoom.Parent = map
-	local beltStart = Vector3.new(9.5, 0, -23 + N) -- (the middle of the chute's east face)
-	local beltDir = Vector3.new(0.94, 0, -0.34).Unit
-	local beltLength = 64
-	local beltMid = beltStart + beltDir * (beltLength / 2)
-	local beltCFrame = CFrame.lookAt(beltMid, beltMid + beltDir)
-	part(mailRoom, {
-		Name = "BeltFrame",
-		Size = Vector3.new(3.4, 0.9, beltLength),
-		CFrame = beltCFrame * CFrame.new(0, 0.55, 0),
-		Color = Color3.fromRGB(70, 74, 86),
-	})
-	part(mailRoom, {
-		Name = "Belt",
-		Size = Vector3.new(2.6, 0.12, beltLength - 0.4),
-		CFrame = beltCFrame * CFrame.new(0, 1.06, 0),
-		Color = Color3.fromRGB(34, 34, 40),
-		CanCollide = false,
-	})
-	for _, side in { -1, 1 } do
-		part(mailRoom, {
-			Name = "BeltRail",
-			Size = Vector3.new(0.3, 0.35, beltLength),
-			CFrame = beltCFrame * CFrame.new(side * 1.55, 1.25, 0),
-			Color = COLORS.Yellow,
-		})
-	end
+	-- The Post Office machines (Config/Machines.luau), round the plaza
+	local MACHINE_SPOTS = { 330, 270, 225, 200, 165, 130, 30 } -- compass angles: 1 north, 2 west, 3 south...
+	local machineFolder = Instance.new("Folder")
+	machineFolder.Name = "Machines"
+	machineFolder.Parent = map
 	local stations: { [string]: BasePart } = {}
-	local across = Vector3.new(0, 1, 0):Cross(beltDir) -- (points toward the plaza)
+	local machineKeep: { { number } } = {}
 	for index, machine in Config.Machines.List do
-		local at = beltStart + beltDir * (9 + (index - 1) * 8)
-		local station = part(mailRoom, {
+		local angle = MACHINE_SPOTS[index] or (index * 50)
+		local at = World.At(angle, if angle == 270 then 33 else 38)
+		local inward = -Vector3.new(at.X, 0, at.Z).Unit
+		local station = part(machineFolder, {
 			Name = "MachineStation",
-			Size = Vector3.new(7, 8, 6),
-			CFrame = CFrame.lookAt(at + Vector3.new(0, 4, 0), at + Vector3.new(0, 4, 0) + beltDir),
+			Size = Vector3.new(10, 10, 10),
+			CFrame = CFrame.lookAt(at + Vector3.new(0, 5, 0), at + Vector3.new(0, 5, 0) + inward),
 			Transparency = 1,
 			CanCollide = false,
 		})
 		station:SetAttribute("MachineId", machine.Id)
 		station:SetAttribute("Index", index)
-		local buy = prompt(station, "Install", machine.DisplayName, 0.6)
-		buy.Name = "BuyPrompt"
-		buy.MaxActivationDistance = 11
+		local use = prompt(station, "Install", machine.DisplayName, 0.5)
+		use.Name = "UsePrompt"
+		use.MaxActivationDistance = 12
 		stations[machine.Id] = station
-		-- a little name plate on the plaza side
-		local plate = part(mailRoom, {
-			Name = "MachinePlate",
-			Size = Vector3.new(4.4, 0.9, 0.3),
-			CFrame = CFrame.lookAt(
-				at + across * 4.4 + Vector3.new(0, 0.9, 0),
-				at + across * 6 + Vector3.new(0, 0.9, 0)
-			),
+		-- a round stone base for it to stand on, ringed in its color
+		part(machineFolder, {
+			Name = "MachineBase",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.6, 15, 15),
+			CFrame = CFrame.new(at + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color = COLORS.Stone,
+		})
+		part(machineFolder, {
+			Name = "MachineBaseRing",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.62, 13.6, 13.6),
+			CFrame = CFrame.new(at + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.pi / 2),
 			Color = machine.Color,
 		})
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = Enum.NormalId.Front
-		gui.LightInfluence = 0
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.fromScale(1, 1)
-		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.LuckiestGuy
-		label.TextScaled = true
-		label.TextColor3 = Color3.new(1, 1, 1)
-		label.TextStrokeTransparency = 0
-		label.Text = string.upper(machine.DisplayName)
-		label.Parent = gui
-		gui.Parent = plate
-		part(mailRoom, {
-			Name = "MachinePlatePost",
-			Size = Vector3.new(0.3, 0.6, 0.3),
-			CFrame = CFrame.new(at + across * 4.4 + Vector3.new(0, 0.3, 0)),
-			Color = Color3.fromRGB(70, 74, 86),
+		part(machineFolder, {
+			Name = "MachineBaseTop",
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.64, 12.4, 12.4),
+			CFrame = CFrame.new(at + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.pi / 2),
+			Color = COLORS.Stone,
 		})
-	end
-	-- The mail truck at the end (its open back faces the belt)
-	local truckAt = beltStart + beltDir * (beltLength + 4.5)
-	local truckCFrame = CFrame.lookAt(truckAt, truckAt + beltDir)
-	local truckBlue = Color3.fromRGB(60, 100, 200)
-	local truckBody = part(mailRoom, {
-		Name = "TruckBody",
-		Size = Vector3.new(5.6, 5.4, 8),
-		CFrame = truckCFrame * CFrame.new(0, 3.6, 0),
-		Color = Color3.new(1, 1, 1),
-	})
-	for _, face in { Enum.NormalId.Left, Enum.NormalId.Right } do
-		local gui = Instance.new("SurfaceGui")
-		gui.Face = face
-		gui.LightInfluence = 0
-		local label = Instance.new("TextLabel")
-		label.Size = UDim2.fromScale(1, 0.5)
-		label.Position = UDim2.fromScale(0, 0.25)
-		label.BackgroundTransparency = 1
-		label.Font = Enum.Font.LuckiestGuy
-		label.TextScaled = true
-		label.TextColor3 = truckBlue
-		label.Text = "MAIL A TIGER"
-		label.Parent = gui
-		gui.Parent = truckBody
-	end
-	part(mailRoom, {
-		Name = "TruckStripe",
-		Size = Vector3.new(5.7, 0.6, 8.1),
-		CFrame = truckCFrame * CFrame.new(0, 1.6, 0),
-		Color = COLORS.PostRed,
-	})
-	part(mailRoom, {
-		Name = "TruckCab",
-		Size = Vector3.new(5.4, 3.6, 3.4),
-		CFrame = truckCFrame * CFrame.new(0, 2.6, -5.6),
-		Color = truckBlue,
-	})
-	part(mailRoom, {
-		Name = "TruckWindshield",
-		Size = Vector3.new(4.6, 1.5, 0.2),
-		CFrame = truckCFrame * CFrame.new(0, 3.5, -7.25),
-		Color = Color3.fromRGB(150, 200, 240),
-	})
-	part(mailRoom, {
-		Name = "TruckInside",
-		Size = Vector3.new(4.8, 4.6, 0.2),
-		CFrame = truckCFrame * CFrame.new(0, 3.7, 4.0),
-		Color = Color3.fromRGB(60, 50, 44),
-	})
-	for _, x in { -2.7, 2.7 } do
-		for _, z in { -5.4, 2.6 } do
-			part(mailRoom, {
-				Name = "TruckWheel",
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(0.9, 2.2, 2.2),
-				CFrame = truckCFrame * CFrame.new(x, 1.1, z),
-				Color = Color3.fromRGB(34, 34, 40),
-			})
-		end
+		table.insert(machineKeep, { at.X, at.Z, 10 })
 	end
 
-	-- Animal Pen counter (southwest of the fountain): sends you to your best zone
-	local penAt = Vector3.new(-36, 0, 30)
+	-- Animal Pen counter (beside the start): sends you to your best zone
+	local penAt = World.At(112, 30)
 	local penFacing = (Vector3.zero - penAt).Unit
 	local counter = facingBox(map, "PenCounter", penAt, penFacing, Vector3.new(8, 3, 2), COLORS.Wood)
 	MapBuilder.Label(counter, "ANIMAL PEN", 4, COLORS.Yellow)
 	local penPrompt = prompt(counter, "Go to the wild", "Animal Pen", 0.3)
 	dress(map, "PenCounter", spot(penAt.X, 0, penAt.Z, penFacing), 8.5, { counter })
 
-	-- Supply Shop (east side, facing the fountain), with a table of the tools it sells beside it
-	local shopAt = Vector3.new(44, 0, -6)
-	local shopCounter = facingBox(map, "ShopCounter", shopAt, -Vector3.xAxis, Vector3.new(8, 3, 2), COLORS.PostBlue)
+	-- Supply Shop (northeast, facing the fountain), with a table of the tools it sells beside it
+	local shopAt = World.At(62, 44)
+	local shopFacing = (Vector3.zero - shopAt).Unit
+	local shopCounter = facingBox(map, "ShopCounter", shopAt, shopFacing, Vector3.new(8, 3, 2), COLORS.PostBlue)
 	MapBuilder.Label(shopCounter, "SUPPLY SHOP", 4, COLORS.Yellow)
-	local shopPrompt = prompt(shopCounter, "Shop", "Boxes, Tools, Stamps", 0.2)
-	dress(map, "ShopStall", spot(shopAt.X, 0, shopAt.Z, -Vector3.xAxis), 9.5, { shopCounter }, { Solid = true })
-	local displayTable = block(map, "DisplayTable", Vector3.new(43, 0, 4), Vector3.new(45.6, 2.6, 12), COLORS.Wood)
+	local shopPrompt = prompt(shopCounter, "Shop", "Machines, Boxes, Tools", 0.2)
+	dress(map, "ShopStall", spot(shopAt.X, 0, shopAt.Z, shopFacing), 9.5, { shopCounter }, { Solid = true })
+	local tableAt = World.At(48, 42)
+	local tableFacing = (Vector3.zero - tableAt).Unit
+	local displayTable = facingBox(map, "DisplayTable", tableAt, tableFacing, Vector3.new(8, 2.6, 2.6), COLORS.Wood)
+	local tableRight = displayTable.CFrame.RightVector
 	for index, name in SHOP_DISPLAY do
-		local z = 4 + (index - 0.5) * (8 / #SHOP_DISPLAY)
-		local item = ModelFit.Spawn("PropModels", name, spot(44.3, 2.6, z, -Vector3.xAxis), 1.25, displayTable)
+		local along = -4 + (index - 0.5) * (8 / #SHOP_DISPLAY)
+		local itemAt = tableAt + tableRight * along + Vector3.new(0, 2.6, 0)
+		local item = ModelFit.Spawn("PropModels", name, CFrame.lookAt(itemAt, itemAt + tableFacing), 1.25, displayTable)
 		if item then
 			item:SetAttribute("Spin", true)
 		end
 	end
 
 	-- Scenery right around the counters (only if imported)
-	for _, at in { { -16, -40 }, { 24, -40 }, { 40, -16 }, { 40, 16 } } do
+	for _, at in { { 40, -19 }, { 40, 19 } } do
 		dress(map, "Lamppost", spot(at[1], 0, at[2]), 9, nil, { ByHeight = true, Solid = true })
 	end
-	dress(map, "Mailbox", spot(7, 0, 44, -Vector3.zAxis), 3.5, nil, { ByHeight = true, Solid = true })
-	dress(map, "Planter", spot(-26, 0, -42), 5, nil, { Solid = true })
-	dress(map, "Planter", spot(32, 0, -42), 5, nil, { Solid = true })
+	dress(map, "Mailbox", spot(36, 0, 6, west), 3.5, nil, { ByHeight = true, Solid = true })
+	dress(map, "Planter", spot(42, 0, -20), 5, nil, { Solid = true })
+	dress(map, "Planter", spot(42, 0, 20), 5, nil, { Solid = true })
 
 	-- Zones
 	local arenaFolder = Instance.new("Folder")
@@ -1042,30 +950,24 @@ function MapBuilder.Build(): Map
 		Zones = zones,
 		-- Spots in town to keep clear of trees and props: { x, z, radius }
 		Keep = {
-			{ 0, -60, 24 }, -- the Post Office, Gruff and his counter
-			{ 15, -50, 6 }, -- orders board
-			{ penAt.X, penAt.Z, 8 },
-			{ 44, 0, 14 }, -- the Supply Shop and its table
+			{ 60, 0, 20 }, -- the Post Office
+			{ 46, 0, 17 }, -- Gruff, his counter, the chute and the orders board
+			{ penAt.X, penAt.Z, 7 },
+			{ shopAt.X, shopAt.Z, 9 }, -- the Supply Shop
+			{ tableAt.X, tableAt.Z, 6 }, -- and its table
 			{ -57, 0, 22 }, -- leaderboards
-			{ 0, 44, 8 }, -- spawn
-			-- the Mail Room belt, its machines and the truck
-			{ 19, -48, 7 },
-			{ 28, -52, 8 },
-			{ 38, -55, 8 },
-			{ 47, -59, 8 },
-			{ 57, -62, 8 },
-			{ 66, -65, 8 },
-			{ 75, -69, 9 },
+			{ 24, 0, 7 }, -- spawn
+			table.unpack(machineKeep),
 		},
 	})
 
-	local townSpot = Vector3.new(0, 3, 40)
+	local townSpot = Vector3.new(24, 3, 0)
 	return {
 		Leaderboards = leaderboards,
 		PenPrompt = penPrompt,
 		PenCounter = counter,
 		Arenas = arenas,
-		TownSpawn = CFrame.lookAt(townSpot, townSpot - Vector3.zAxis),
+		TownSpawn = CFrame.lookAt(townSpot, townSpot + Vector3.xAxis), -- (facing Gruff)
 		TravelPads = {},
 		LiftPads = liftPads,
 		ReturnPads = {},
@@ -1077,13 +979,7 @@ function MapBuilder.Build(): Map
 		ShopCounter = shopCounter,
 		OrdersPrompt = ordersPrompt,
 		OrdersBoard = board,
-		MailRoom = {
-			Start = beltStart,
-			Direction = beltDir,
-			Length = beltLength,
-			Truck = truckAt,
-			Stations = stations,
-		},
+		Machines = stations,
 	}
 end
 

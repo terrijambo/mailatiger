@@ -1,7 +1,9 @@
 --!strict
 -- The Post Office machines and the chute's income (the main loop):
---   1. Every parcel you mail rides the conveyor past the machines you own. Each one multiplies the XP that
---      parcel gives (they stack: Stamp Machine x1.5 and Postage Scale x1.5 = x2.25).
+--   1. Take your parcels to the machines in the plaza (any of them, in any order): hold E to drop your bag in,
+--      wait while it works, then hold E to collect. Each machine stamps the parcels it handled, and every
+--      stamp multiplies the XP that parcel gives when you mail it (they stack: Stamp Machine x1.5 and Postage
+--      Scale x1.5 = x2.25).
 --   2. XP levels up your CHUTE. Your chute level is your level: it opens zones, and it sets how many coins
 --      the chute pays you every minute (ChuteRate below). Mailing a parcel also pays a small tip at once.
 --   3. Machines unlock at a chute level, then you buy them with coins.
@@ -13,6 +15,7 @@
 --   Level   : the chute level it unlocks at
 --   XPMult  : multiplies the XP of every parcel you mail
 --   PriceMinutes : its price, in minutes of chute income at that level (so prices keep up with the game)
+--   Seconds : how long it takes to work through a bag
 --   Emoji, Color : how it shows in the shop and in the Post Office
 
 export type Machine = {
@@ -24,6 +27,7 @@ export type Machine = {
 	Level: number,
 	XPMult: number,
 	PriceMinutes: number,
+	Seconds: number,
 }
 
 local List: { Machine } = {
@@ -36,6 +40,7 @@ local List: { Machine } = {
 		Level = 2,
 		XPMult = 1.5,
 		PriceMinutes = 6,
+		Seconds = 4,
 	},
 	{
 		Id = "Scale",
@@ -46,6 +51,7 @@ local List: { Machine } = {
 		Level = 5,
 		XPMult = 1.5,
 		PriceMinutes = 8,
+		Seconds = 5,
 	},
 	{
 		Id = "Fragile",
@@ -56,6 +62,7 @@ local List: { Machine } = {
 		Level = 9,
 		XPMult = 2,
 		PriceMinutes = 10,
+		Seconds = 6,
 	},
 	{
 		Id = "Sorter",
@@ -66,6 +73,7 @@ local List: { Machine } = {
 		Level = 13,
 		XPMult = 2,
 		PriceMinutes = 12,
+		Seconds = 7,
 	},
 	{
 		Id = "Express",
@@ -76,6 +84,7 @@ local List: { Machine } = {
 		Level = 19,
 		XPMult = 2.5,
 		PriceMinutes = 14,
+		Seconds = 8,
 	},
 	{
 		Id = "Drone",
@@ -86,6 +95,7 @@ local List: { Machine } = {
 		Level = 26,
 		XPMult = 3,
 		PriceMinutes = 16,
+		Seconds = 10,
 	},
 	{
 		Id = "Rocket",
@@ -96,6 +106,7 @@ local List: { Machine } = {
 		Level = 35,
 		XPMult = 4,
 		PriceMinutes = 30,
+		Seconds = 12,
 	},
 }
 
