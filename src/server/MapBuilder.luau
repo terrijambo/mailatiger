@@ -310,7 +310,12 @@ local function buildArena(parent: Instance, spec: ArenaSpec): Arena
 		-- Land at the edge of the open ground, facing in
 		local landing = L(fr, 0, hw + 6, y + 3)
 		gate = CFrame.lookAt(landing, landing - fr.F)
-		lbox(folder, "GatePath", fr, -5, hw, 5, hw + 12, y - 0.5, y + 0.02, COLORS.Stone)
+		-- The ground is drawn by Scenery (an oval clearing in the island's style), so the old pen floor is only
+		-- kept where its material matters: the Ice Rink's slippery rink
+		if spec.FloorMaterial ~= Enum.Material.Ice then
+			floor.Transparency = 1
+			floor.CanCollide = false
+		end
 	else
 		-- No fence: land on the roof itself
 		local landing = L(fr, 0, hw - 4, y + 3)

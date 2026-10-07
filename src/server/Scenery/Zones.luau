@@ -70,8 +70,11 @@ local function scatter(ctx: Ctx, count: number, pad: number, make: (Vector3) -> 
 			return
 		end
 		local a = ctx.Random:NextNumber(0, math.pi * 2)
+		-- out toward the cliffs, leaving the middle of the island open for chasing animals (and each other)
 		local p = ctx.Island.Center
-			+ Vector3.new(math.cos(a), 0, math.sin(a)) * ctx.Random:NextNumber(0, ctx.Island.Radius * 1.1)
+			+ Vector3.new(math.cos(a), 0, math.sin(a))
+				* ctx.Island.Radius
+				* math.sqrt(ctx.Random:NextNumber(0.36, 1.17))
 		if ctx.Free(p, pad) then
 			placed += 1
 			make(p)
@@ -634,7 +637,7 @@ local function jungle(ctx: Ctx)
 		Color3.fromRGB(28, 104, 50),
 		Color3.fromRGB(56, 150, 66),
 	}
-	scatter(ctx, 44, 5, function(p)
+	scatter(ctx, 30, 5, function(p)
 		local h = random:NextNumber(18, 32)
 		Kit.tree(f, p, h, leaves[random:NextInteger(1, #leaves)])
 		for _ = 1, 3 do
@@ -1028,6 +1031,66 @@ local THEMES: { [string]: (Ctx) -> () } = {
 	Rooftop = city,
 }
 
+-- The open ground in the middle of the island: a soft oval in the island's style (a lawn, a farmyard, a
+-- mossy clearing), with a slightly bigger, darker edge under it. On the Ice Rink, a snowbank around the rink
+-- (which stays the slippery rectangle) and low boards with a gap in each side.
+local CLEARINGS: { [string]: { Color3 } } = {
+	Backyard = { Color3.fromRGB(116, 196, 84), Color3.fromRGB(92, 168, 70) },
+	Barn = { Color3.fromRGB(198, 156, 104), Color3.fromRGB(150, 160, 86) },
+	Jungle = { Color3.fromRGB(86, 146, 70), Color3.fromRGB(64, 116, 60) },
+	IceRink = { Color3.fromRGB(228, 238, 248), Color3.fromRGB(206, 222, 238) },
+}
+
+local function clearing(ctx: Ctx)
+	local colors = CLEARINGS[ctx.Zone.Id]
+	if not colors then
+		return
+	end
+	local up = Vector3.new(0, 1, 0)
+	local function oval(name: string, extra: number, top: number, color: Color3)
+		part(ctx.Folder, {
+			Name = name,
+			Shape = Enum.PartType.Cylinder,
+			Size = Vector3.new(0.1, (ctx.HW + extra) * 2, (ctx.HU + extra) * 2),
+			CFrame = CFrame.fromMatrix(ctx.Center + Vector3.new(0, top - 0.05, 0), up, ctx.F),
+			Color = color,
+			CanCollide = false,
+		})
+	end
+	oval("ClearingEdge", 16, 0.05, colors[2])
+	oval("Clearing", 11, 0.08, colors[1])
+	if ctx.Zone.Id == "IceRink" then
+		-- low boards round the rink, open in the middle of each side
+		local white = Color3.fromRGB(246, 248, 252)
+		type Side = { Normal: Vector3, Out: number, Along: Vector3, Half: number }
+		local sides: { Side } = {
+			{ Normal = ctx.R, Out = ctx.HU, Along = ctx.F, Half = ctx.HW },
+			{ Normal = ctx.F, Out = ctx.HW, Along = ctx.R, Half = ctx.HU },
+		}
+		for _, side in sides do
+			local normal, out, along, half = side.Normal, side.Out, side.Along, side.Half
+			for _, sign in { -1, 1 } do
+				for _, piece in { -1, 1 } do
+					local length = half - 5
+					local mid = ctx.Center + normal * sign * (out + 0.5) + along * piece * (5 + length / 2)
+					part(ctx.Folder, {
+						Name = "RinkBoard",
+						Size = Vector3.new(1, 1.4, length),
+						CFrame = CFrame.lookAt(mid + Vector3.new(0, 0.7, 0), mid + Vector3.new(0, 0.7, 0) + along),
+						Color = white,
+					})
+					part(ctx.Folder, {
+						Name = "RinkBoardTrim",
+						Size = Vector3.new(1.1, 0.25, length),
+						CFrame = CFrame.lookAt(mid + Vector3.new(0, 1.45, 0), mid + Vector3.new(0, 1.45, 0) + along),
+						Color = Color3.fromRGB(60, 110, 200),
+					})
+				end
+			end
+		end
+	end
+end
+
 function Zones.Build(island: Islands.Island, zone: Zone, bridgeEnd: Vector3)
 	local folder = Instance.new("Folder")
 	folder.Name = "Theme"
@@ -1074,6 +1137,7 @@ function Zones.Build(island: Islands.Island, zone: Zone, bridgeEnd: Vector3)
 			else Kit.ROADS.Dirt
 		Kit.road(folder, bridgeEnd, gate, World.BridgeWidth, style)
 	end
+	clearing(ctx)
 	local theme = THEMES[zone.Id]
 	if theme then
 		theme(ctx)
