@@ -78,7 +78,7 @@ function TravelMenu.Start()
 			end
 		end
 		local level = Profile.Get().Level or 1
-		row(1, "Gruff_Portrait", "Postmaster Gruff", "Town: the Mail Chute and the shops", Ui.RED, false, "Gruff")
+		row(1, "Button_Gruff", "Postmaster Gruff", "Town: the Mail Chute and the shops", Ui.RED, false, "Gruff")
 		for index, def in Config.Arenas.List do
 			local need = Config.Levels.ZoneLevels[def.Id] or 1
 			local locked = level < need

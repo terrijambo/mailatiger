@@ -230,13 +230,24 @@ function SideButtons.Start()
 	popup:GetPropertyChangedSignal("Visible"):Connect(layout)
 
 	-- Red "!" on MENU and ORDERS while a finished order or challenge is waiting for CLAIM
-	local menuDot = Ui.alertDot(menuButton)
+	-- (MENU swaps to its "!" icon instead of getting a dot; ORDERS gets the dot)
+	local menuIcon = menuButton:FindFirstChild("Icon") :: GuiObject?
+	local menuNotifyIcon = Ui.icon(menuButton, "Button_MenuNotify", {
+		Name = "IconNotify",
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 5),
+		Size = UDim2.fromOffset(54, 50),
+		Visible = false,
+	})
 	local ordersDot = Ui.alertDot(ordersButton)
 	Profile.Watch(function()
 		local data = Profile.Get()
 		local learning = Profile.Learning()
 		local waiting = Profile.Claimable(data) > 0 and not learning
-		menuDot.Visible = waiting
+		menuNotifyIcon.Visible = waiting
+		if menuIcon then
+			menuIcon.Visible = not waiting
+		end
 		ordersDot.Visible = waiting
 		-- Simple start: PEN first, SHOP once you've mailed something (Gruff sends you there), STORE and MENU
 		-- once the walkthrough is done

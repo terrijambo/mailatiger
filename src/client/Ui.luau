@@ -421,6 +421,7 @@ function Ui.sideButton(parent: Instance, spec: SideButtonSpec): TextButton
 	Ui.gloss(button)
 	Ui.press(button)
 	Ui.icon(button, spec.Icon, {
+		Name = "Icon",
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 5),
 		Size = UDim2.fromOffset(54, 50),

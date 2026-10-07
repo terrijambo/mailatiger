@@ -28,6 +28,8 @@ local icons: { [string]: Icon } = {
 	Button_Invite = icon("👋"),
 	Button_Travel = icon("🗺️"),
 	Button_Menu = icon("📬"), -- (Roblox can't draw "☰"; a mailbox fits the game anyway)
+	Button_MenuNotify = icon("📬"), -- (MENU when something is waiting to be claimed: the icon has a red "!")
+	Button_Gruff = icon("🦭"), -- (Gruff in MENU > TRAVEL)
 
 	-- HUD
 	Hud_Coins = icon("💰"),

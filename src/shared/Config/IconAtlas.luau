@@ -93,10 +93,14 @@ local cells: { [string]: Cell } = {
 	Zone_IceRink = { Sheet = 7, X = 774, Y = 6 },
 	Zone_Jungle = { Sheet = 7, X = 6, Y = 262 },
 	Zone_Rooftop = { Sheet = 7, X = 262, Y = 262 },
+	Button_Gruff = { Sheet = 8, X = 6, Y = 6 },
+	Button_Menu = { Sheet = 8, X = 262, Y = 6 },
+	Button_MenuNotify = { Sheet = 8, X = 518, Y = 6 },
+	Button_Travel = { Sheet = 8, X = 774, Y = 6 },
 }
 
 return {
 	Size = 244, -- each icon's size in the sheet (pixels)
-	SheetCount = 7,
+	SheetCount = 8,
 	Cells = cells,
 }
