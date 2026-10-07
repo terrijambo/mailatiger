@@ -384,10 +384,10 @@ local function run()
 	end, 3)
 	remotes.ShopAction:FireServer("Travel", "Backyard")
 	task.wait(1)
-	remotes.ShopAction:FireServer("Promo", "Wild:Dragon")
+	remotes.ShopAction:FireServer("Promo", "Wild:Unicorn")
 	local wildDragon = nil
 	waitFor(function()
-		wildDragon = wildNamed("Dragon")
+		wildDragon = wildNamed("Unicorn")
 		return wildDragon ~= nil
 	end, 3)
 	lastMessage = nil
@@ -398,7 +398,7 @@ local function run()
 	end
 	log(waitFor(function()
 		return string.find(lastMessage or "", "RETURN TO SENDER", 1, true) ~= nil
-	end, 4), "a too-strong wild Dragon VINE BOOMs you")
+	end, 4), "a too-strong wild Unicorn (10+ levels above) VINE BOOMs you")
 	log(player:GetAttribute("Stage") == "", "...and no job started")
 	task.wait(3)
 	remotes.ShopAction:FireServer("BuyLure")

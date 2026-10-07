@@ -436,11 +436,15 @@ function BoxingScreen.Start()
 		seamColor = if 0.3 * c.R + 0.59 * c.G + 0.11 * c.B < 0.45 then Color3.fromRGB(235, 235, 240) else DARK
 		-- Shiny or Golden: say so, and tint the 3D animal
 		local variant = if data.Variant then Config.Variants.ById[data.Variant] else nil
+		local gap = if typeof(data.Gap) == "number" then data.Gap else 0
 		animalTitle.Text =
 			`Calm your {if variant then variant.Emoji .. " " .. variant.DisplayName .. " " else ""}{if animal
 				then animal.DisplayName
-				else "animal"}`
-		animalTitle.TextColor3 = if variant then variant.Color else Ui.WHITE
+				else "animal"}{if gap > 0 then `  ⚠ HARD +{gap}` else ""}`
+		animalTitle.TextColor3 = if variant
+			then variant.Color
+			elseif gap > 0 then Color3.fromRGB(255, 160, 60)
+			else Ui.WHITE
 		viewport.ImageColor3 = if data.Variant == "Golden"
 			then Color3.fromRGB(255, 215, 90)
 			elseif data.Variant == "Shiny" then Color3.fromRGB(200, 245, 255)
@@ -498,7 +502,7 @@ function BoxingScreen.Start()
 			elseif
 				role == "Tape"
 			then "YOU TAPE: drag from dot to dot along each seam while your crewmate keeps it calm"
-			else "Rub the ♥ spots · Don't touch the ✖ spots · Drag tape from dot to dot along each seam"
+			else "Rub a ♥ to reset its anger to 0 (it recharges) · Don't touch the ✖ spots · Drag tape along each seam"
 		if bossName then
 			-- The boss: one box for the whole team
 			animalTitle.Text = `⚔️ BOX THE {bossName}! ⚔️`
@@ -598,7 +602,9 @@ function BoxingScreen.Start()
 			for index, spot in spots do
 				local center = BoxMath.SpotPosition(spot, start, t)
 				if (p - center).Magnitude <= spot.Radius then
-					if spot.Kind == "Sweet" and rubbing and now - lastPetSend >= PET_SEND_INTERVAL then
+					local frame: Frame? = spotFrames[index]
+					local ready = if frame then frame.Visible else true
+					if spot.Kind == "Sweet" and ready and rubbing and now - lastPetSend >= PET_SEND_INTERVAL then
 						lastPetSend = now
 						input:FireServer("Pet", index)
 						floatText("♥", screen, PINK)
@@ -885,6 +891,25 @@ function BoxingScreen.Start()
 			taped[data.Seam] = true
 			drawSeams()
 			tapeFlash(data.Seam)
+		elseif kind == "HeartUsed" then
+			local index = data.Index
+			if typeof(index) == "number" and spots[index] then
+				spots[index] = data.Spot
+				local frame = spotFrames[index]
+				if frame then
+					local center = frame.AbsolutePosition + frame.AbsoluteSize / 2
+					floatText("CALM!", center, PINK)
+					frame.Visible = false
+					task.delay(data.ReadyIn or 3, function()
+						if spotFrames[index] == frame and frame.Parent then
+							frame.Visible = true
+							local pop = frame:FindFirstChildOfClass("UIScale") or Ui.make("UIScale", {}, frame)
+							pop.Scale = 0.2
+							TweenService:Create(pop, TweenInfo.new(0.3, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+						end
+					end)
+				end
+			end
 		elseif kind == "Peel" then
 			taped[data.Seam] = false
 			drawSeams()

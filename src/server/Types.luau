@@ -18,6 +18,8 @@ export type BoxState = {
 	NextPound: number, -- for animals with the Pound twist
 	TapeAngerMult: number, -- Tape Gun
 	AngerMult: number, -- box and stamp
+	HeartReady: { [number]: number }, -- os.clock() each ♥ (by spot index) can be used again
+	HeartCooldown: number,
 }
 
 -- One boxing job, from catching to mailing. Player is the job's owner. Giant animals also have a Crew of
@@ -37,6 +39,7 @@ export type Session = {
 	MaxAnger: number,
 	Bonus: number,
 	Variant: string?, -- "Shiny" or "Golden" (rolled when the job starts)
+	Difficulty: number, -- 0..1: how far above your level this animal is (wild grabs), see Boxing.Box.Hard
 
 	-- Locked in when the job starts, from the player's gear
 	BoxId: string, -- equipped box

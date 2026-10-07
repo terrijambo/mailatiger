@@ -342,53 +342,63 @@ local function canDo(s: Session, player: Player, action: string): boolean
 end
 
 -- Picks spots on the animal picture that don't overlap each other
-local function makeSpots(s: Session): { BoxMath.Spot }
-	local cfg = Boxing.Box
-	local tier = Config.Animals.ById[s.AnimalId].Tier
-	local twists = twistsFor(s.AnimalId)
-	local drift = cfg.SpotMovePerTier * (tier - 1)
-	local speed = cfg.SpotMoveSpeed * (if twists.Wiggle then Tuning.Wiggle.SpotSpeedMult else 1)
-	local sweetRadius = math.max(cfg.MinSweetRadius, cfg.SweetRadius + cfg.SweetRadiusPerTier * (tier - 1))
-	local angryRadius = cfg.AngryRadius * (if twists.Poke then Tuning.Poke.AngryRadiusMult else 1)
-
-	local spots: { BoxMath.Spot } = {}
-	local function add(kind: string, radius: number)
-		local margin = radius + drift + 0.02
-		local x, y = 0.5, 0.3
-		for _ = 1, 30 do
-			-- Only on the part of the animal sticking out of the box (see BoxMath.VISIBLE_HEIGHT)
-			x = margin + math.random() * (1 - 2 * margin)
-			y = margin + math.random() * math.max(0, BoxMath.VISIBLE_HEIGHT - 2 * margin)
-			local clear = true
-			for _, other in spots do
-				if
-					(Vector2.new(x, y) - Vector2.new(other.X, other.Y)).Magnitude
-					< radius + other.Radius + 2 * drift + 0.04
-				then
-					clear = false
-					break
-				end
-			end
-			if clear then
+-- Finds a clear place for a new spot (not on top of the others) on the visible part of the animal
+local function placeSpot(
+	others: { BoxMath.Spot },
+	kind: string,
+	radius: number,
+	drift: number,
+	speed: number
+): BoxMath.Spot
+	local margin = radius + drift + 0.02
+	local x, y = 0.5, 0.3
+	for _ = 1, 30 do
+		-- Only on the part of the animal sticking out of the box (see BoxMath.VISIBLE_HEIGHT)
+		x = margin + math.random() * (1 - 2 * margin)
+		y = margin + math.random() * math.max(0, BoxMath.VISIBLE_HEIGHT - 2 * margin)
+		local clear = true
+		for _, other in others do
+			if
+				(Vector2.new(x, y) - Vector2.new(other.X, other.Y)).Magnitude
+				< radius + other.Radius + 2 * drift + 0.04
+			then
+				clear = false
 				break
 			end
 		end
-		table.insert(spots, {
-			Kind = kind,
-			X = x,
-			Y = y,
-			Radius = radius,
-			Drift = drift,
-			Speed = speed,
-			Phase = math.random() * math.pi * 2,
-		})
+		if clear then
+			break
+		end
 	end
+	return {
+		Kind = kind,
+		X = x,
+		Y = y,
+		Radius = radius,
+		Drift = drift,
+		Speed = speed,
+		Phase = math.random() * math.pi * 2,
+	}
+end
 
+local function makeSpots(s: Session): { BoxMath.Spot }
+	local cfg = Boxing.Box
+	local hard = cfg.Hard
+	local d = s.Difficulty
+	local tier = Config.Animals.ById[s.AnimalId].Tier
+	local twists = twistsFor(s.AnimalId)
+	local drift = cfg.SpotMovePerTier * (tier - 1) + hard.ExtraDrift * d
+	local speed = cfg.SpotMoveSpeed * (if twists.Wiggle then Tuning.Wiggle.SpotSpeedMult else 1)
+	local sweetRadius = math.max(cfg.MinSweetRadius, cfg.SweetRadius + cfg.SweetRadiusPerTier * (tier - 1))
+		* (1 + (hard.SweetRadiusMult - 1) * d)
+	local angryRadius = cfg.AngryRadius * (if twists.Poke then Tuning.Poke.AngryRadiusMult else 1)
+
+	local spots: { BoxMath.Spot } = {}
 	for _ = 1, cfg.SweetSpots do
-		add("Sweet", sweetRadius)
+		table.insert(spots, placeSpot(spots, "Sweet", sweetRadius, drift, speed))
 	end
-	for _ = 1, cfg.AngrySpotsByTier[tier] or 3 do
-		add("Angry", angryRadius)
+	for _ = 1, (cfg.AngrySpotsByTier[tier] or 3) + math.round(hard.ExtraAngrySpots * d) do
+		table.insert(spots, placeSpot(spots, "Angry", angryRadius, drift, speed))
 	end
 	return spots
 end
@@ -423,6 +433,8 @@ local function startBox(s: Session)
 	if animal.Carriers > 1 then
 		angerMult *= Social.Coop.AngerMult -- giants: more hands, angrier animal
 	end
+	local hard = cfg.Hard
+	angerMult *= 1 + (hard.AngerRateMult - 1) * s.Difficulty -- an animal above your level is a handful
 	s.Box = {
 		Start = Workspace:GetServerTimeNow(),
 		Anger = math.max( -- PRIORITY starts high; the Calm Hands diamond upgrade takes some off
@@ -439,9 +451,15 @@ local function startBox(s: Session)
 		NextPound = os.clock() + Tuning.Pound.Interval,
 		TapeAngerMult = s.TapeAngerMult,
 		AngerMult = angerMult,
+		HeartReady = {},
+		HeartCooldown = cfg.HeartCooldown + hard.HeartCooldownExtra * s.Difficulty,
 	}
 	assignRoles(s)
-	setStage(s, "Box", "Rub the ♥ spots to keep it calm while you drag tape across every seam! Avoid the ✖ spots.")
+	setStage(
+		s,
+		"Box",
+		"Rub a ♥ to reset its anger to 0 (then it recharges) while you tape every seam! Avoid the ✖ spots."
+	)
 	local state = s.Box :: Types.BoxState
 	for _, member in membersOf(s) do
 		Analytics.Onboarding(member, "Caught")
@@ -453,6 +471,11 @@ local function startBox(s: Session)
 			BoxId = s.BoxId,
 			Role = s.Roles[member] or "Both",
 			Variant = s.Variant,
+			Difficulty = s.Difficulty,
+			Gap = math.max(
+				0,
+				(Config.Wild.LevelOf[s.AnimalId] or 1) - (DataService.Get(s.Player) or { Level = 1 } :: any).Level
+			),
 		})
 	end
 	syncBox(s)
@@ -774,9 +797,21 @@ local function onPet(s: Session, player: Player, spotIndex: unknown)
 		return
 	end
 	local now = os.clock()
-	local elapsed = math.min(now - (state.LastPet[player] or now), 0.25)
-	state.LastPet[player] = now
-	state.Anger = math.max(0, state.Anger - Boxing.Box.PetCalmPerSecond * elapsed)
+	if now < (state.HeartReady[spotIndex] or 0) then
+		return -- still recharging
+	end
+	-- Calm! Anger back to 0, and the heart hops somewhere new and recharges
+	state.Anger = 0
+	state.HeartReady[spotIndex] = now + state.HeartCooldown
+	local others = {}
+	for index, other in state.Spots do
+		if index ~= spotIndex then
+			table.insert(others, other)
+		end
+	end
+	local moved = placeSpot(others, "Sweet", spot.Radius, spot.Drift, spot.Speed)
+	state.Spots[spotIndex] = moved
+	notifyAll(s, "HeartUsed", { Index = spotIndex, Spot = moved, ReadyIn = state.HeartCooldown })
 	syncBox(s)
 end
 
@@ -925,7 +960,7 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Picking an animal
 
-local newSession: (Player, string, string, boolean, string?) -> Session?
+local newSession: (Player, string, string, boolean, string?, number?) -> Session?
 local announceJob: (Session) -> ()
 
 -- Studio only (the automated playtest and the Promo Kit): start a job with a chosen animal, the old Pen way.
@@ -981,7 +1016,14 @@ end
 
 -- A new job (shared by the Studio test hook above and wild grabs): uses up your selected stamp, rolls
 -- Shiny/Golden (or takes the wild animal's own), and registers the session. Returns nil while the save loads.
-newSession = function(player: Player, animalId: string, arenaId: string, chaos: boolean, wildVariant: string?): Session?
+newSession = function(
+	player: Player,
+	animalId: string,
+	arenaId: string,
+	chaos: boolean,
+	wildVariant: string?,
+	difficulty: number?
+): Session?
 	local profile = DataService.Get(player)
 	if not profile then
 		return nil
@@ -1037,6 +1079,7 @@ newSession = function(player: Player, animalId: string, arenaId: string, chaos: 
 		MaxAnger = 0,
 		Bonus = 0,
 		Variant = if variant then variant.Id else nil,
+		Difficulty = math.clamp(difficulty or 0, 0, 1),
 		BoxId = profile.EquippedBox,
 		StampId = stampId,
 		GrabHoldMult = 1 - Economy.ToolBonus(player, "Gloves"),
@@ -1237,7 +1280,8 @@ function BoxingService.StartWild(
 	animalId: string,
 	arenaId: string,
 	variant: string?,
-	at: Vector3
+	at: Vector3,
+	difficulty: number
 ): boolean
 	local animal = Config.Animals.ById[animalId]
 	if not animal or jobOf(player) or not getCharacterParts(player) then
@@ -1245,7 +1289,7 @@ function BoxingService.StartWild(
 	end
 	local profile = DataService.Get(player)
 	local chaos = profile ~= nil and profile.Settings.Chaos == true
-	local s = newSession(player, animalId, arenaId, chaos, variant)
+	local s = newSession(player, animalId, arenaId, chaos, variant, difficulty)
 	if not s then
 		return false
 	end

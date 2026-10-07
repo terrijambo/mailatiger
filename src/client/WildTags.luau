@@ -1,14 +1,19 @@
 --!strict
--- Name tags over wild animals ("Tiger  Lv 15"): red with a 🔒 when the animal is above your level (grabbing
--- it VINE BOOMs you out of the zone), normal when you can take it.
+-- Name tags over wild animals ("Tiger  Lv 15"): normal when it's your level or below, orange with ⚠ when it's
+-- above you but within reach (a harder BOX), red with a 🔒 when it's too far above (grabbing it VINE BOOMs you
+-- out of the zone).
 
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Config = require(ReplicatedStorage.Shared.Config)
 
 local Profile = require(script.Parent.Profile)
 
 local WildTags = {}
 
 local TOO_STRONG = Color3.fromRGB(255, 85, 85)
+local HARDER = Color3.fromRGB(255, 165, 60)
 
 local function refresh(ball: Instance, myLevel: number)
 	local level = ball:GetAttribute("Level")
@@ -25,13 +30,15 @@ local function refresh(ball: Instance, myLevel: number)
 		label:SetAttribute("BaseText", label.Text)
 		label:SetAttribute("BaseColor", label.TextColor3)
 	end
-	local tooStrong = level > myLevel
+	local tooStrong = level > myLevel + Config.Wild.MaxLevelGap
+	local harder = not tooStrong and level > myLevel
 	local saved = label:GetAttribute("BaseText")
 	local baseText = if typeof(saved) == "string" then saved else label.Text
 	local baseColor = label:GetAttribute("BaseColor")
-	label.Text = if tooStrong then `🔒 {baseText}` else baseText
+	label.Text = if tooStrong then `🔒 {baseText}` elseif harder then `⚠ {baseText}` else baseText
 	label.TextColor3 = if tooStrong
 		then TOO_STRONG
+		elseif harder then HARDER
 		elseif typeof(baseColor) == "Color3" then baseColor
 		else label.TextColor3
 end

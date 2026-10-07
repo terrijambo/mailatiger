@@ -77,11 +77,13 @@ return {
 	Box = {
 		SeamsByTier = { 2, 2, 3, 3, 4, 5 }, -- tape strips needed to close the box
 		StartAnger = 20, -- (boxes and stamps can change this)
-		BaseAngerRate = 4, -- anger per second at tier 1...
-		AngerRatePerTier = 2.5, -- ...plus this per tier above 1
+		BaseAngerRate = 10, -- anger per second at tier 1... (fast! a ♥ resets it to 0)
+		AngerRatePerTier = 4, -- ...plus this per tier above 1
 		AngerGrowth = 0.04, -- and it grows 4% per second the longer it takes
 		TapeAnger = 12, -- every seam you tape annoys it this much
-		PetCalmPerSecond = 30, -- the most calming you can do per second by rubbing sweet spots
+		PetCalmPerSecond = 30, -- (the boss fight's petting; normal jobs use hearts, below)
+		-- Rubbing a ♥ resets anger to 0. That heart then hops to a new spot and recharges for this long
+		HeartCooldown = 3.5,
 		AngrySpotAnger = 15, -- rubbing an angry spot adds this much (at most twice a second)
 		DangerAnger = 75, -- letting anger get above this costs a stamp
 		MinSeamInterval = 0.35, -- seconds between tape strips (nobody tapes faster than that)
@@ -95,6 +97,16 @@ return {
 		AngryRadius = 0.1,
 		SpotMovePerTier = 0.04, -- how far spots drift around, per tier above 1
 		SpotMoveSpeed = 0.35, -- drifts per second
+
+		-- Harder animals: you can grab an animal up to Wild.MaxLevelGap levels above you. Difficulty goes from
+		-- 0 (your level or below) to 1 (MaxLevelGap above), and at 1 the BOX stage is:
+		Hard = {
+			AngerRateMult = 1.7, -- anger climbs this much faster
+			HeartCooldownExtra = 2.5, -- hearts take this much longer to recharge (seconds)
+			SweetRadiusMult = 0.7, -- hearts are this much smaller
+			ExtraAngrySpots = 2, -- more ✖ spots
+			ExtraDrift = 0.05, -- spots wander further
+		},
 
 		-- Getting launched when anger hits 100
 		LaunchSpeed = 110, -- straight up (studs/sec)

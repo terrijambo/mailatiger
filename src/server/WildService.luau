@@ -2,8 +2,8 @@
 -- Wild animals roaming every zone (numbers in Config/Wild.luau).
 --   * Each zone keeps Wild.PerZone animals strolling around: mostly its own, sometimes a rarer visitor from
 --     the zone above. Shiny/Golden is rolled when one appears, so you can spot a special one and go for it.
---   * HOLD E on one to grab it. Your level too low? VINE BOOM: you're launched out of the zone and land in
---     town. Otherwise it's your job: normal animals go straight to the BOX screen (BoxingService.StartWild),
+--   * HOLD E on one to grab it. Up to Wild.MaxLevelGap levels above you is allowed, but the BOX gets harder
+--     the further above you it is. Any higher: VINE BOOM, you're launched out of the zone and land in town. Otherwise it's your job: normal animals go straight to the BOX screen (BoxingService.StartWild),
 --     giants stay put for a crew.
 --   * Lures (WildService.StartLure): for a few minutes, rarer animals you're able to take keep turning up
 --     next to you, with better Shiny/Golden odds.
@@ -214,13 +214,15 @@ local function onGrab(entry: Entry, player: Player)
 		return
 	end
 	local level = Wild.LevelOf[entry.AnimalId] or 1
-	if profile.Level < level then
+	if level > profile.Level + Wild.MaxLevelGap then
 		boom(player, entry, level, profile.Level)
 		return
 	end
+	-- Above your level (but within reach): a harder BOX, the hardest at the full gap
+	local difficulty = math.clamp((level - profile.Level) / Wild.MaxLevelGap, 0, 1)
 	local at = entry.Ball.Position
 	remove(entry)
-	if BoxingService.StartWild(player, entry.AnimalId, entry.ArenaId, entry.Variant, at) then
+	if BoxingService.StartWild(player, entry.AnimalId, entry.ArenaId, entry.Variant, at, difficulty) then
 		Analytics.Custom(player, "WildGrab")
 	end
 end

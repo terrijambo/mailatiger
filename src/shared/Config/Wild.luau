@@ -32,6 +32,9 @@ local Wild = {
 	WanderSpeed = { Min = 2.5, Max = 5 }, -- studs/second
 	PauseSeconds = { Min = 1, Max = 4 }, -- standing still between strolls
 	GrabHold = 0.5, -- seconds to HOLD E
+	-- You can take on animals up to this many levels above you (the BOX gets harder the further above; at the
+	-- full gap it's the hardest it gets, see Boxing.Box.Hard). Any higher: VINE BOOM.
+	MaxLevelGap = 10,
 	GrabDistance = 10,
 	LuredLifetime = 60, -- a lured animal nobody grabs wanders off after this long
 
