@@ -1,7 +1,8 @@
 --!strict
 -- The big square buttons on the left side of the screen, like PETS / EGGS / SHOP in popular simulators.
 -- Always there: PEN (pick an animal), SHOP (boxes, tools, stamps, chutes, trolls), STORE (Robux) and MENU.
--- MENU pops out the rest next to it: ORDERS, BAG, UPGRADES, GRUFF (teleport to Postmaster Gruff),
+-- PEN is a quick teleport between Gruff and your best zone.
+-- MENU pops out the rest next to it: ORDERS, BAG, UPGRADES, TRAVEL (teleport to Gruff, a zone or the boss),
 -- SETTINGS and INVITE. Picking one (or pressing MENU again, or opening any window) folds it away.
 -- Big screens: one column down the middle of the left edge. Phones (Ui.compact): a 2x2 grid under the stats
 -- in the top-left, so the thumbstick (bottom-left) stays clear.
@@ -117,7 +118,9 @@ function SideButtons.Start()
 		{ Label = "PEN", Icon = "Button_Pen", Color = Ui.GREEN, LayoutOrder = 1 },
 		Enum.KeyCode.DPadLeft,
 		function()
-			Menus.Toggle("Pen")
+			-- Quick teleport: at Gruff's -> your best zone; anywhere else -> back to Gruff
+			Menus.CloseAll()
+			shopAction:FireServer("QuickTravel")
 		end
 	)
 	local shopButton = add(
@@ -164,9 +167,8 @@ function SideButtons.Start()
 	add(popup, { Label = "UPGRADES", Icon = "Button_Upgrades", Color = Ui.BLUE, LayoutOrder = 3 }, nil, function()
 		Menus.Toggle("Upgrades")
 	end)
-	add(popup, { Label = "GRUFF", Icon = "Gruff_Portrait", Color = Ui.RED, LayoutOrder = 4 }, nil, function()
-		Menus.CloseAll()
-		shopAction:FireServer("GoToGruff")
+	add(popup, { Label = "TRAVEL", Icon = "Button_Travel", Color = Ui.RED, LayoutOrder = 4 }, nil, function()
+		Menus.Toggle("Travel")
 	end)
 	add(popup, { Label = "SETTINGS", Icon = "Button_Settings", Color = Ui.GREY, LayoutOrder = 5 }, nil, function()
 		Menus.Toggle("Settings")

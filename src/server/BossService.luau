@@ -31,7 +31,6 @@ local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local Remotes = require(script.Parent.Remotes)
-local Travel = require(script.Parent.Travel)
 
 local Boss = Config.Events.Boss
 local SEAMS = 5
@@ -40,7 +39,6 @@ local BossService = {}
 
 local arena: Folder
 local platformTop = 0
-local pad: BasePart? = nil
 type Fight = {
 	Until: number,
 	Name: string,
@@ -271,26 +269,10 @@ local function buildArena(map: MapBuilder.Map)
 	end
 	platformTop = 0
 	map.Leaderboards.BossHunters = BossArena.Build(arena, c, size)
-	-- The pad home
-	local home = block(
-		"BackToTown",
-		CFrame.new(c + Vector3.new(0, 0.2, size / 2 - 8)),
-		Vector3.new(10, 0.4, 6),
-		Color3.fromRGB(70, 160, 255),
-		Enum.Material.Neon
-	)
-	MapBuilder.Label(home, "BACK TO TOWN", 3)
-	home.Touched:Connect(function(hit)
-		local model = hit:FindFirstAncestorOfClass("Model")
-		local player = model and Players:GetPlayerFromCharacter(model)
-		if player and not (fight and fight.Phase == "Box" and table.find(fight.Boxers, player)) then
-			Travel.ToTown(player)
-		end
-	end)
 	local _ = map
 end
 
--- Into the arena (the red BOSS pad, or GO on the boss banner). Not mid-job: finish that first.
+-- Into the arena (GO on the boss banner, or MENU > TRAVEL). Not mid-job: finish that first.
 local function enterArena(player: Player)
 	if inArena(player) then
 		return
@@ -315,33 +297,9 @@ function BossService.TeleportIn(player: Player)
 	enterArena(player)
 end
 
--- The BOSS pad in the plaza (only there while a boss is coming or on)
+-- Open while a boss is coming or on: GO on the boss banner and MENU > TRAVEL can take you there
 local function setPad(open: boolean)
 	Workspace:SetAttribute("BossPadOpen", open)
-	if open and not pad then
-		local part = Instance.new("Part")
-		part.Name = "BossPad"
-		part.Anchored = true
-		part.Size = Vector3.new(10, 0.4, 10)
-		part.CFrame = CFrame.new(0, 0.25, 2)
-		part.Color = Color3.fromRGB(255, 70, 70)
-		part.Material = Enum.Material.Neon
-		part.CanCollide = false
-		part.Parent = arena
-		MapBuilder.Label(part, "⚔️ BOSS ARENA", 17, Color3.fromRGB(255, 120, 120))
-		BossArena.Arch(part)
-		part.Touched:Connect(function(hit)
-			local model = hit:FindFirstAncestorOfClass("Model")
-			local player = model and Players:GetPlayerFromCharacter(model)
-			if player then
-				enterArena(player)
-			end
-		end)
-		pad = part
-	elseif not open and pad then
-		pad:Destroy()
-		pad = nil
-	end
 end
 
 function BossService.SetWarning(coming: boolean, at: number)

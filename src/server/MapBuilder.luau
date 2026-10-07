@@ -248,7 +248,7 @@ type ArenaSpec = {
 }
 
 -- Floor, fence with a gate on the +Z side, a sign, and a pad back to town.
-local function buildArena(parent: Instance, spec: ArenaSpec, returnPads: { BasePart }): Arena
+local function buildArena(parent: Instance, spec: ArenaSpec, _returnPads: { BasePart }): Arena
 	local folder = Instance.new("Folder")
 	folder.Name = spec.Id
 	folder.Parent = parent
@@ -338,21 +338,6 @@ local function buildArena(parent: Instance, spec: ArenaSpec, returnPads: { BaseP
 			Vector3.new(center.X + 0.5, y + 7, spec.MaxZ),
 			COLORS.Stone
 		)
-	end
-
-	-- Pad back to town, just to the right of where you arrive
-	do
-		local padSpot = gate.Position + Vector3.new(9, -3, 0)
-		local pad = part(folder, {
-			Name = "ReturnPad",
-			Size = Vector3.new(6, 1, 6),
-			Position = padSpot + Vector3.new(0, 0.5, 0),
-			Color = COLORS.PostBlue,
-			Material = Enum.Material.Neon,
-		})
-		MapBuilder.Label(pad, "BACK TO TOWN", 3, COLORS.Yellow)
-		tint(dress(folder, "TravelPad", spot(padSpot.X, padSpot.Y, padSpot.Z), 7, { pad }), "Center", COLORS.PostBlue)
-		table.insert(returnPads, pad)
 	end
 
 	return {
@@ -849,22 +834,8 @@ function MapBuilder.Build(): Map
 		liftPads.Rooftop = pad
 	end
 
-	-- Travel pads in town: one per arena, in a row across the plaza (walking there works too)
+	-- (Getting around is MENU > TRAVEL and the PEN quick-teleport; no travel pads in the plaza any more)
 	local travelPads: { [string]: BasePart } = {}
-	for index, def in Config.Arenas.List do
-		local x = -40 + (index - 1) * 20
-		local pad = part(map, {
-			Name = `TravelPad_{def.Id}`,
-			Size = Vector3.new(6, 1, 6),
-			Position = Vector3.new(x, 0.5, 18),
-			Color = def.Color,
-			Material = Enum.Material.Neon,
-		})
-		local tiers = table.concat(def.Tiers, "&")
-		MapBuilder.Label(pad, `{string.upper(def.DisplayName)} · T{tiers}`, 2.5, COLORS.Yellow, 15)
-		tint(dress(map, "TravelPad", spot(x, 0, 18), 7, { pad }), "Center", def.Color)
-		travelPads[def.Id] = pad
-	end
 
 	-- Leaderboards on the west edge of the plaza, facing into town (LeaderboardService draws on them)
 	local LEADERBOARD_X = -79.1 -- where the boards' faces are

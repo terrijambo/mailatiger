@@ -147,6 +147,19 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	elseif action == "GoToBoss" then
 		BossService.TeleportIn(player)
 		return
+	elseif action == "Travel" then
+		-- MENU > TRAVEL
+		if itemId == "Gruff" then
+			Travel.ToGruff(player)
+		elseif itemId == "Boss" then
+			BossService.TeleportIn(player)
+		else
+			Travel.ToZone(player, itemId)
+		end
+		return
+	elseif action == "QuickTravel" then
+		Travel.Quick(player) -- the PEN button
+		return
 	elseif action == "GoToGruff" then
 		Travel.ToGruff(player)
 		return

@@ -1,6 +1,6 @@
 --!strict
--- Getting around: travel pads in town take you to an arena, return pads take you back to town.
--- Picking an animal at the Pen also sends you straight to its arena (BoxingService calls Travel.ToArena).
+-- Getting around: MENU > TRAVEL (Gruff, any zone you've unlocked, the boss arena), and the PEN button, a quick
+-- teleport between Gruff and your best zone. The Rooftop's elevator pad takes you up to the roof.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -63,6 +63,44 @@ local function lockedMessage(player: Player, arenaId: string)
 		Speaker = "Postmaster Gruff",
 		Text = `🔒 The {def.DisplayName} opens at Level {ProgressionService.ZoneLevel(arenaId)}. Mail more animals to level up!`,
 	})
+end
+
+-- MENU > TRAVEL: to a zone you've unlocked (not while boxing)
+function Travel.ToZone(player: Player, arenaId: string)
+	if player:GetAttribute("Stage") == "Box" or not Config.Arenas.ById[arenaId] then
+		return
+	end
+	if not ProgressionService.ZoneOpen(player, arenaId) then
+		lockedMessage(player, arenaId)
+		return
+	end
+	Travel.ToArena(player, arenaId)
+end
+
+-- Your best zone: the highest one you've unlocked
+function Travel.BestZone(player: Player): string
+	local best = Config.Arenas.List[1].Id
+	for _, def in Config.Arenas.List do
+		if ProgressionService.ZoneOpen(player, def.Id) then
+			best = def.Id
+		end
+	end
+	return best
+end
+
+-- The PEN button: at Gruff's -> your best zone; anywhere else -> back to Gruff
+function Travel.Quick(player: Player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root or player:GetAttribute("Stage") == "Box" then
+		return
+	end
+	local nearGruff = (root.Position - map.Gruff.Position).Magnitude < 45
+	if nearGruff then
+		Travel.ToZone(player, Travel.BestZone(player))
+	else
+		Travel.ToGruff(player)
+	end
 end
 
 -- Travel pads only take you to zones you've unlocked
