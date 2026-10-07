@@ -39,7 +39,7 @@ local Twists: { [string]: TwistSet } = {
 	Skunk = { Spray = true },
 	Monkey = { Fly = true, Wiggle = true },
 	Kangaroo = { Hop = true, Pound = true },
-	Porcupine = { Poke = true },
+	Raccoon = { Hide = true, Slippery = true }, -- (a sneaky little bandit)
 	Penguin = { Slippery = true },
 	Octopus = { Hide = true, Wiggle = true, Squeeze = true },
 	Crocodile = { Charge = true, Snap = true },

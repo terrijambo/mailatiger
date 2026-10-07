@@ -251,17 +251,40 @@ def kangaroo():
     ]
 
 
-def porcupine():
-    center, radii = (0, 0.15, 0.75), (0.9, 1.15, 0.75)
+def raccoon():
+    grey = (130, 128, 132)
+    dark = (50, 48, 54)
+    # a big bushy tail curling up behind, in rings
+    tail_rings = []
+    tail_dark = []
+    for k in range(6):
+        t = k / 5
+        p = (0, 1.05 + t * 0.75, 0.75 + t * 0.85 - t * t * 0.3)
+        r = 0.34 - t * 0.06
+        (tail_dark if k % 2 else tail_rings).append(ball(r, p, scale=(1, 1.15, 1), subdivisions=2))
     return [
-        ("Body", (110, 95, 80), [
-            ball(1.0, center, scale=radii),
-            ball(0.45, (0, -1.05, 0.6), scale=(0.9, 1.1, 0.8)),
-            *both(lambda s: ball(0.15, (s * 0.4, -0.4, 0.12), scale=(1, 1.4, 0.6), subdivisions=1)),
+        ("Fur", grey, [
+            ball(0.85, (0, 0.2, 0.85), scale=(0.85, 1.15, 0.8)),
+            ball(0.55, (0, -0.75, 1.25), scale=(1.05, 0.95, 0.9)),
+            *both(lambda s: ball(0.22, (s * 0.4, -0.6, 1.75), scale=(1, 0.5, 1), subdivisions=1)),
+            *tail_rings,
         ]),
-        ("Quills", (235, 228, 210), quills(center, radii, 0.85, 0.07, rows=4, per_row=10, min_z=0.35)),
-        ("Nose", EYE, [ball(0.1, (0, -1.5, 0.6), subdivisions=1)]),
-        ("Eyes", EYE, eyes(0.22, -1.3, 0.78, r=0.07)),
+        ("Dark", dark, [
+            *tail_dark,
+            *legs(0.42, -0.35, 0.65, 0.55, 0.12, 0.17),
+        ]),
+        ("Paws", dark, [ball(0.19, (s * 0.42, y, 0.1), scale=(1, 1.3, 0.55), subdivisions=1) for s in (-1, 1) for y in (-0.38, 0.62)]),
+        ("Mask", dark, [
+            ball(0.42, (0, -1.05, 1.32), scale=(1.25, 0.45, 0.42)),
+            *both(lambda s: ball(0.13, (s * 0.4, -0.58, 1.78), scale=(1, 0.4, 1), subdivisions=1)),
+        ]),
+        ("White", WHITE, [
+            *both(lambda s: ball(0.2, (s * 0.24, -1.12, 1.53), scale=(1.2, 0.4, 0.55), subdivisions=1)),
+            ball(0.24, (0, -1.18, 1.1), scale=(1.3, 0.8, 0.55), subdivisions=1),
+        ]),
+        ("Nose", EYE, [ball(0.1, (0, -1.38, 1.18), subdivisions=1)]),
+        ("Eyes", (250, 250, 250), eyes(0.2, -1.22, 1.33, r=0.085)),
+        ("Pupils", EYE, eyes(0.2, -1.29, 1.33, r=0.05)),
     ]
 
 
@@ -561,7 +584,7 @@ run({
     "Skunk": skunk,
     "Monkey": monkey,
     "Kangaroo": kangaroo,
-    "Porcupine": porcupine,
+    "Raccoon": raccoon,
     "Penguin": penguin,
     "Octopus": octopus,
     "Crocodile": crocodile,

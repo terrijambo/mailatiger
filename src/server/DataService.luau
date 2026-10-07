@@ -161,8 +161,27 @@ local function newProfile(): Profile
 	}
 end
 
+-- Animals that were replaced by another: anything in an old save that names the old one now names the new one
+local RENAMED_ANIMALS = {
+	Porcupine = "Raccoon", -- (it looked just like the Hedgehog)
+}
+
+local function renameAnimals(value: any, depth: number): any
+	if type(value) == "string" then
+		return RENAMED_ANIMALS[value] or value
+	elseif type(value) == "table" and depth < 8 then
+		local renamed = {}
+		for key, inner in value do
+			renamed[renameAnimals(key, depth + 1)] = renameAnimals(inner, depth + 1)
+		end
+		return renamed
+	end
+	return value
+end
+
 -- Older saves may be missing fields added in later updates: start from a fresh profile and copy saved values over.
 local function reconcile(saved: any): Profile
+	saved = renameAnimals(saved, 0)
 	local profile = newProfile()
 	if type(saved) == "table" then
 		for key, value in saved do

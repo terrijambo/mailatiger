@@ -16,7 +16,7 @@ local serde = require("@lune/serde")
 local EXPECTED = {
 	AnimalModels = {
 		"Hamster", "Bunny", "Goldfish", "Hedgehog", "Chicken", "Pig", "Goat", "Parrot", "Skunk", "Monkey",
-		"Penguin", "Porcupine", "Kangaroo", "Octopus", "Bear", "Crocodile", "Gorilla", "Tiger", "Giraffe",
+		"Penguin", "Raccoon", "Kangaroo", "Octopus", "Bear", "Crocodile", "Gorilla", "Tiger", "Giraffe",
 		"Elephant", "Whale", "Dragon", "Unicorn", "Alien", "Yeti", "Gruff",
 	},
 	BoxModels = { "Cardboard", "Wood", "Steel", "Vault" },
