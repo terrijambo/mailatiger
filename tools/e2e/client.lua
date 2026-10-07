@@ -434,6 +434,41 @@ local function run()
 	end, 3), "...and you get back up")
 	task.wait(1.3)
 
+	-- 7b3. Ice: you can walk across it (with a glide), and you keep sliding a little after letting go
+	-- (on a slab of ice made just for this test, high in the sky, so no zone lock gets in the way)
+	local iceFloor = Instance.new("Part")
+	iceFloor.Anchored = true
+	iceFloor.Size = Vector3.new(120, 2, 40)
+	iceFloor.Material = Enum.Material.Ice
+	iceFloor.Position = Vector3.new(0, 400, 600)
+	iceFloor.Parent = Workspace
+	local iceMe = player.Character
+	local iceRoot = iceMe and iceMe:FindFirstChild("HumanoidRootPart")
+	local iceHumanoid = iceMe and iceMe:FindFirstChildOfClass("Humanoid")
+	local walked, coasted, onIce = 0, 0, false
+	if iceRoot and iceHumanoid then
+		iceRoot.CFrame = CFrame.new(iceFloor.Position + Vector3.new(-40, iceFloor.Size.Y / 2 + 3, 0))
+		task.wait(1.2)
+		onIce = iceHumanoid.FloorMaterial == Enum.Material.Ice
+		local push = true
+		game:GetService("RunService"):BindToRenderStep("E2EIcePush", Enum.RenderPriority.Input.Value + 1, function()
+			if push then
+				iceHumanoid:Move(Vector3.new(1, 0, 0), false)
+			end
+		end)
+		local start = iceRoot.Position
+		task.wait(1.6)
+		walked = (iceRoot.Position - start).Magnitude
+		push = false
+		local released = iceRoot.Position
+		task.wait(0.4)
+		coasted = (iceRoot.Position - released).Magnitude
+		game:GetService("RunService"):UnbindFromRenderStep("E2EIcePush")
+	end
+	iceFloor:Destroy()
+	log(onIce and walked > 12, `you can walk across the ice ({math.floor(walked)} studs in 1.6 s)`)
+	log(coasted > 0.5, `...and glide on a bit after letting go ({math.floor(coasted * 10) / 10} studs)`)
+
 	-- 7c. The DIVE: diving into a wild animal grabs it on the spot
 	remotes.ShopAction:FireServer("Travel", "Backyard")
 	task.wait(1)

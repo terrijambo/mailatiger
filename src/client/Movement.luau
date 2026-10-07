@@ -3,8 +3,9 @@
 --   * Base speed comes from the server ("WalkSpeed" attribute, raised by Sneakers). "Frozen" = can't move.
 --   * Hold C to sneak (slow, doesn't wake sleeping animals).
 --   * Mud (Jungle) slows you down.
---   * Ice (Ice Rink) makes you slide: a LinearVelocity carries your momentum and only slowly turns toward
---     where you're steering.
+--   * Ice (Ice Rink) makes you slide: you keep your momentum and only slowly turn toward where you're
+--     steering. (Runs just before physics each frame: it reads your stick/keys from MoveDirection, then walks
+--     the Humanoid along the sliding velocity instead. No forces, so nothing fights the Humanoid.)
 
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
@@ -20,40 +21,12 @@ local Movement = {}
 local SNEAK_SPEED = 7
 
 local sneaking = false
-local slide: LinearVelocity? = nil
+local sliding = false
 local slideVelocity = Vector3.zero
 
 local function onSneak(_name: string, state: Enum.UserInputState, _input: InputObject)
 	sneaking = state == Enum.UserInputState.Begin
 	return Enum.ContextActionResult.Pass
-end
-
-local function stopSliding()
-	local current = slide
-	if current then
-		local attachment = current.Attachment0
-		if attachment then
-			attachment:Destroy()
-		end
-		current:Destroy()
-		slide = nil
-	end
-end
-
-local function startSliding(root: BasePart)
-	local attachment = Instance.new("Attachment")
-	attachment.Name = "IceSlide"
-	attachment.Parent = root
-	local velocity = Instance.new("LinearVelocity")
-	velocity.Attachment0 = attachment
-	velocity.RelativeTo = Enum.ActuatorRelativeTo.World
-	velocity.VelocityConstraintMode = Enum.VelocityConstraintMode.Plane -- only pushes sideways, gravity still works
-	velocity.PrimaryTangentAxis = Vector3.xAxis
-	velocity.SecondaryTangentAxis = Vector3.zAxis
-	velocity.MaxForce = 4000
-	velocity.Parent = root
-	slide = velocity
-	slideVelocity = Vector3.new(root.AssemblyLinearVelocity.X, 0, root.AssemblyLinearVelocity.Z)
 end
 
 local function update(dt: number)
@@ -82,36 +55,43 @@ local function update(dt: number)
 		speed = 0
 	end
 
-	local onIce = humanoid.FloorMaterial == Enum.Material.Ice and not frozen
-	if onIce then
-		if not slide then
-			startSliding(root)
+	local floor = humanoid.FloorMaterial
+	if floor == Enum.Material.Ice and not frozen then
+		if not sliding then
+			sliding = true
+			local v = root.AssemblyLinearVelocity
+			slideVelocity = Vector3.new(v.X, 0, v.Z)
 		end
+	elseif sliding and floor ~= Enum.Material.Air then
+		sliding = false -- keep sliding while airborne over the ice, stop once you land on something else
+	end
+
+	if sliding and humanoid:GetState() ~= Enum.HumanoidStateType.Physics then
 		-- Momentum: ease toward where you're steering instead of turning instantly
-		local target = humanoid.MoveDirection * speed
+		local input = Vector3.new(humanoid.MoveDirection.X, 0, humanoid.MoveDirection.Z)
+		local target = input * speed
 		local grip = math.min(1, Config.Arenas.IceGrip * dt)
 		slideVelocity += (target - slideVelocity) * grip
-		local current = slide
-		if current then
-			current.PlaneVelocity = Vector2.new(slideVelocity.X, slideVelocity.Z)
-		end
-		humanoid.WalkSpeed = 0 -- the slide does the moving
-	else
-		if slide and humanoid.FloorMaterial ~= Enum.Material.Air then
-			stopSliding() -- keep sliding while airborne over the ice, stop once you land on something else
-		end
-		if not slide then
+		local glide = slideVelocity.Magnitude
+		if glide > 0.3 then
+			humanoid.WalkSpeed = glide
+			humanoid:Move(slideVelocity / glide, false)
+		else
+			slideVelocity = Vector3.zero
 			humanoid.WalkSpeed = speed
 		end
+	else
+		humanoid.WalkSpeed = speed
 	end
 end
 
 function Movement.Start()
 	ContextActionService:BindAction("Sneak", onSneak, true, Enum.KeyCode.C, Enum.KeyCode.ButtonL2)
 	ContextActionService:SetTitle("Sneak", "Sneak")
-	RunService.Heartbeat:Connect(update)
+	-- (before physics, after the controls have set MoveDirection for this frame)
+	RunService.PreSimulation:Connect(update)
 	player.CharacterAdded:Connect(function()
-		slide = nil
+		sliding = false
 		slideVelocity = Vector3.zero
 	end)
 end

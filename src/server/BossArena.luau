@@ -222,9 +222,16 @@ function BossArena.Theme(parent: Instance, center: Vector3, size: number, animal
 	themeFolder = folder
 	local half = size / 2
 	local random = Random.new(42)
+	-- (the arena floor is a round slab whose top is a little above the island: Scenery/Volcano.luau)
+	center += Vector3.new(0, 0.18, 0)
+	-- A random spot on the round floor, at least `margin` in from its edge
+	local function spot(margin: number): (number, number)
+		local a, r = random:NextNumber(0, math.pi * 2), math.sqrt(random:NextNumber()) * (half - margin)
+		return math.cos(a) * r, math.sin(a) * r
+	end
 	local function patch(color: Color3, material: Enum.Material?, count: number, height: number)
 		for _ = 1, count do
-			local x, z = random:NextNumber(-half + 6, half - 6), random:NextNumber(-half + 6, half - 6)
+			local x, z = spot(10)
 			local w = random:NextNumber(6, 14)
 			block(
 				folder,
@@ -242,7 +249,7 @@ function BossArena.Theme(parent: Instance, center: Vector3, size: number, animal
 		-- Jungle ruins: cracked stone tiles, broken pillars in the corners, vines on the rim
 		patch(Color3.fromRGB(150, 150, 140), Enum.Material.Slate, 14, 0.06)
 		for _, corner in corners do
-			local at = center + corner * (half - 5)
+			local at = center + corner * 0.66 * (half - 5)
 			block(
 				folder,
 				"RuinPillar",
@@ -266,7 +273,7 @@ function BossArena.Theme(parent: Instance, center: Vector3, size: number, animal
 			local drift = block(
 				folder,
 				"SnowDrift",
-				CFrame.new(center + corner * (half - 6) + Vector3.new(0, -2, 0)),
+				CFrame.new(center + corner * 0.66 * (half - 6) + Vector3.new(0, -2, 0)),
 				Vector3.new(14, 14, 14),
 				Color3.fromRGB(248, 250, 255)
 			)
@@ -276,7 +283,7 @@ function BossArena.Theme(parent: Instance, center: Vector3, size: number, animal
 		-- Volcano: black rock and glowing lava cracks
 		patch(Color3.fromRGB(55, 50, 55), Enum.Material.Basalt, 16, 0.06)
 		for _ = 1, 12 do
-			local x, z = random:NextNumber(-half + 8, half - 8), random:NextNumber(-half + 8, half - 8)
+			local x, z = spot(12)
 			local crack = block(
 				folder,
 				"LavaCrack",
@@ -291,7 +298,7 @@ function BossArena.Theme(parent: Instance, center: Vector3, size: number, animal
 			block(
 				folder,
 				"VolcanoRock",
-				CFrame.new(center + corner * (half - 5) + Vector3.new(0, 3, 0))
+				CFrame.new(center + corner * 0.66 * (half - 5) + Vector3.new(0, 3, 0))
 					* CFrame.Angles(0.2, random:NextNumber(0, 6.28), 0.15),
 				Vector3.new(7, 6, 6),
 				Color3.fromRGB(45, 40, 45),

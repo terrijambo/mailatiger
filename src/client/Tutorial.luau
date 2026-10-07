@@ -13,7 +13,6 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
-local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Profile = require(script.Parent.Profile)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Ui = require(script.Parent.Ui)
@@ -45,35 +44,11 @@ local function buildPanel(): (ScreenGui, TextLabel, TextButton)
 	Ui.autoScale(panel)
 	Ui.make("UISizeConstraint", { MaxSize = Vector2.new(420, 160) }, panel)
 
-	-- Gruff's face: his Blender model if imported, otherwise a name badge
-	local portrait = Ui.make("ViewportFrame", {
+	-- Gruff's face: his portrait icon (Button_Gruff, the same one as in MENU > TRAVEL)
+	Ui.icon(panel, "Button_Gruff", {
 		Position = UDim2.fromOffset(8, 8),
 		Size = UDim2.fromOffset(88, 88),
-		BackgroundColor3 = Color3.fromRGB(60, 90, 170),
-		Ambient = Color3.fromRGB(170, 170, 170),
-		LightDirection = Vector3.new(-0.4, -1, 0.6),
-	}, panel)
-	Ui.round(portrait, 44)
-	local gruff = ModelFit.Spawn("AnimalModels", "Gruff", CFrame.identity, 4, nil, { ByHeight = true })
-	if gruff then
-		local camera = Instance.new("Camera")
-		camera.FieldOfView = 30
-		camera.Parent = portrait
-		portrait.CurrentCamera = camera
-		-- Frame his head and shoulders (the top 55% of him), from the front (models face -Z)
-		local _, size = gruff:GetBoundingBox()
-		local focus = Vector3.new(0, size.Y * 0.72, 0)
-		camera.CFrame = CFrame.lookAt(focus + Vector3.new(0, 0, -size.Y * 1.25), focus)
-		gruff.Parent = portrait
-	else
-		Ui.label(portrait, {
-			Size = UDim2.fromScale(1, 1),
-			TextXAlignment = Enum.TextXAlignment.Center,
-			TextScaled = true,
-			TextColor3 = Ui.WHITE,
-			Text = "G",
-		})
-	end
+	})
 	Ui.label(panel, {
 		Position = UDim2.fromOffset(8, 100),
 		Size = UDim2.fromOffset(88, 24),
