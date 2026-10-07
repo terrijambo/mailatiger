@@ -148,10 +148,18 @@ function EventBanner.Start()
 			skipped = false
 			player:SetAttribute("SkipBoss", nil)
 		end
-		local buttons = bossSoon and not skipped and not inArena()
+		-- Coming up, but more than GoSeconds away (or any small event coming up): just a small timer
+		local small = typeof(nextId) == "string"
+			and typeof(nextAt) == "number"
+			and typeof(bossPhase) ~= "string"
+			and typeof(running) ~= "string"
+			and (nextId ~= "Boss" or nextAt - now > Events.Boss.GoSeconds)
+		local buttons = bossSoon and not skipped and not inArena() and attr("BossPadOpen") == true
 		bossButtons.Visible = buttons
-		card.Size = UDim2.fromOffset(330, if buttons then 136 else 92)
+		line.Visible = not small
+		card.Size = if small then UDim2.fromOffset(290, 40) else UDim2.fromOffset(330, if buttons then 136 else 92)
 		barBack.Position = UDim2.new(0, 12, 1, if buttons then -56 else -18)
+		title.TextSize = if small then 20 else 24
 
 		if typeof(bossPhase) == "string" and not skipped then
 			-- THE BIG ONE
@@ -215,7 +223,7 @@ function EventBanner.Start()
 				title.Text = `⚔️ {attr("BossName") or "BOSS"} in {clock(nextAt - now)}`
 				line.Text = if inArena()
 					then "You're in the arena. Get ready!"
-					else "A giant boss is coming! Press GO FIGHT, or step on the red BOSS pad."
+					else "A giant boss is landing! Press GO FIGHT to join the whole server."
 				if skipped then
 					card.Visible = false
 					return

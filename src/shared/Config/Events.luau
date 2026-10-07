@@ -127,7 +127,8 @@ return {
 		},
 		ArenaCenter = Vector3.new(400, 0, -150), -- a floating island over the ocean, east of town
 		ArenaSize = 110,
-		WarnSeconds = 300, -- the BOSS pad opens and the warning shows this long before
+		WarnSeconds = 300, -- a small countdown shows this long before...
+		GoSeconds = 30, -- ...and the real notification (GO FIGHT, teleporting in) only this long before
 		Seconds = 420, -- the whole fight (pin + box), restarting the pin after a launch
 		Size = 26, -- studs across
 		Speed = 9, -- studs/second when nobody holds it

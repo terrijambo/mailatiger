@@ -292,7 +292,10 @@ end
 -- GO on the boss banner: straight to the arena while a boss is coming or on
 function BossService.TeleportIn(player: Player)
 	if Workspace:GetAttribute("BossPadOpen") ~= true then
-		Remotes.Notify:FireClient(player, "Message", { Speaker = "Postmaster Gruff", Text = "No boss right now." })
+		Remotes.Notify:FireClient(player, "Message", {
+			Speaker = "Postmaster Gruff",
+			Text = `The arena opens {Boss.GoSeconds} seconds before the boss lands. Hold your horses.`,
+		})
 		return
 	end
 	enterArena(player)
@@ -308,8 +311,8 @@ function BossService.SetWarning(coming: boolean, at: number)
 		local next = Boss.Bosses[(bossIndex % #Boss.Bosses) + 1]
 		Workspace:SetAttribute("BossName", next.DisplayName)
 	end
-	setPad(coming or fight ~= nil)
-	local _ = at
+	-- The arena opens (GO FIGHT, MENU > TRAVEL) only in the last GoSeconds before it lands, or while it's on
+	setPad(fight ~= nil or (coming and at - os.time() <= Boss.GoSeconds))
 end
 
 ---------------------------------------------------------------------------------------------------
