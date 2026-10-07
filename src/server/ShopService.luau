@@ -6,7 +6,6 @@
 --   BuyUpgrade (diamond upgrade id)   StudioBuy (Robux item key, Studio testing only)
 --   Claim ("O2" / "D1" / "W1" / "All")   Promo (Promo Kit shot setup, Studio only)
 
-local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -18,6 +17,7 @@ local BossService = require(script.Parent.BossService)
 local ChallengeService = require(script.Parent.ChallengeService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
+local Look = require(script.Parent.Look)
 local EventService = require(script.Parent.EventService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local MonetizationService = require(script.Parent.MonetizationService)
@@ -36,7 +36,6 @@ local function reply(player: Player, text: string)
 end
 
 -- Promo Kit (client/PromoKit.luau): set up shots for promo videos. Studio only, so it can't be used live.
-local defaultClock: number? = nil
 local function promo(player: Player, profile: DataService.Profile, id: string)
 	if not RunService:IsStudio() then
 		return
@@ -61,9 +60,12 @@ local function promo(player: Player, profile: DataService.Profile, id: string)
 			"Message",
 			{ Speaker = "Promo Kit", Text = "Every animal and zone unlocked, +1M coins." }
 		)
-	elseif id == "Sunset" or id == "Day" or id == "Night" then
-		defaultClock = defaultClock or Lighting.ClockTime
-		Lighting.ClockTime = if id == "Sunset" then 17.7 elseif id == "Night" then 0 else defaultClock :: number
+	elseif id == "Sunset" then
+		Look.SetClock(17.7)
+	elseif id == "Night" then
+		Look.SetClock(0)
+	elseif id == "Day" then
+		Look.SetClock(nil) -- (back to the normal day/night cycle)
 	end
 end
 

@@ -5,6 +5,7 @@
 -- winter zone around the Ice Rink, and a city of skyscrapers around the Rooftop).
 -- Gameplay pieces (arenas, counters, pads) are built in MapBuilder, which calls Scenery.Build with the layout.
 
+local CollectionService = game:GetService("CollectionService")
 local Lighting = game:GetService("Lighting")
 local Workspace = game:GetService("Workspace")
 
@@ -35,7 +36,7 @@ local C = {
 	Grass = Color3.fromRGB(122, 204, 92),
 	GrassTop = Color3.fromRGB(112, 214, 86),
 	Brick = Color3.fromRGB(214, 124, 88), -- terrace sides
-	Stone = Color3.fromRGB(238, 238, 244),
+	Stone = Color3.fromRGB(222, 222, 230), -- (plaza tiles: a touch darker so town isn't glaring)
 	Path = Color3.fromRGB(78, 80, 92), -- roads
 	Sidewalk = Color3.fromRGB(186, 188, 196),
 	Line = Color3.fromRGB(250, 250, 250),
@@ -355,9 +356,12 @@ local function lamppost(parent: Instance, at: Vector3)
 	})
 	knob.CanCollide = false
 	local light = Instance.new("PointLight")
-	light.Range = 20
-	light.Brightness = 1.3
+	light.Range = 22
+	light.Brightness = 0.5
 	light.Color = Color3.fromRGB(255, 220, 150)
+	light:SetAttribute("DayBrightness", 0.5) -- (the day/night cycle in Look.luau turns it up at night)
+	light:SetAttribute("NightBrightness", 2.6)
+	CollectionService:AddTag(light, "NightLight")
 	light.Parent = glow
 end
 
@@ -947,8 +951,11 @@ local function buildHub(parent: Instance, layout: Layout)
 	local glow = Instance.new("PointLight")
 	glow.Color = Color3.fromRGB(120, 210, 255)
 	glow.Range = 16
-	glow.Brightness = 1.2
+	glow.Brightness = 0.4
 	glow.Shadows = false
+	glow:SetAttribute("DayBrightness", 0.4)
+	glow:SetAttribute("NightBrightness", 2.5)
+	CollectionService:AddTag(glow, "NightLight")
 	glow.Parent = poolWater
 
 	-- Lawn beds on the plaza: raised grass with a low hedge around it and a couple of small trees
