@@ -86,6 +86,9 @@ function Store.Start()
 			return button
 		end
 		button.Activated:Connect(function()
+			if not button.Active then
+				return -- (the boost button while the boost is full)
+			end
 			if item.Id == 0 then
 				shopAction:FireServer("StudioBuy", item.Key) -- Studio only: free, for testing
 			elseif isPass then
@@ -132,6 +135,7 @@ function Store.Start()
 	end
 
 	local boostStatus: TextLabel? = nil
+	local boostButton: TextButton? = nil
 
 	local function redraw()
 		for _, child in list:GetChildren() do
@@ -175,7 +179,7 @@ function Store.Start()
 			TextColor3 = Ui.BROWN,
 			Text = "",
 		})
-		buyButton(featured, boost, false, Ui.ORANGE, UDim2.fromOffset(180, 60))
+		boostButton = buyButton(featured, boost, false, Ui.ORANGE, UDim2.fromOffset(180, 60))
 
 		-- Diamonds
 		header(nextOrder(), `💎 Diamonds  (you have {Format.Short(data.Diamonds or 0)})`)
@@ -264,6 +268,18 @@ function Store.Start()
 				label.Text = if left > 0
 					then string.format("🚀 Boost running: %d:%02d left", left // 60, left % 60)
 					else "No boost running right now. Be the hero."
+				-- Nearly at the 1-hour cap: buying now would add almost nothing, so the button waits
+				local button = boostButton
+				if button and button.Parent then
+					local full = left > Money.BoostMaxSeconds - Money.BoostSeconds
+					button.Active = not full
+					button.AutoButtonColor = not full
+					button.BackgroundTransparency = if full then 0.5 else 0
+					if full then
+						label.Text =
+							string.format("🚀 Boost is full: %d:%02d left (max 1 hour)", left // 60, left % 60)
+					end
+				end
 			end
 			task.wait(0.5)
 		end

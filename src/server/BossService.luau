@@ -347,6 +347,7 @@ local function endBox(players: { Player })
 			player:SetAttribute("Tip", "")
 			player:SetAttribute("Anger", nil)
 			player:SetAttribute("Frozen", false)
+			BoxingService.RefreshMovement(player) -- (puts jumping back, if a stun switched it off meanwhile)
 			Remotes.Notify:FireClient(player, "BoxDone", {})
 		end
 	end

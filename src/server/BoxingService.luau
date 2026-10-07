@@ -128,7 +128,8 @@ local function refreshMovement(player: Player)
 		return
 	end
 	local s = jobOf(player)
-	local busy = s ~= nil and s.Stage ~= "Catch"
+	-- (boxing the hourly boss counts too: BossService sets your Stage to "Box" without a job of its own)
+	local busy = (s ~= nil and s.Stage ~= "Catch") or (s == nil and player:GetAttribute("Stage") == "Box")
 	local stunned = os.clock() < (stunnedUntil[player] or 0)
 	local speed = Economy.WalkSpeed(player)
 	player:SetAttribute("WalkSpeed", speed) -- the client's Movement module builds on this (sneak, mud, ice)
@@ -1196,6 +1197,11 @@ BoxingService.ExternalInput = nil :: ((Player, unknown, unknown) -> ())?
 
 function BoxingService.Stun(player: Player, seconds: number)
 	stun(player, seconds)
+end
+
+-- Re-applies walk speed, jumping and Frozen from the player's current state (after the boss's BOX IT ends)
+function BoxingService.RefreshMovement(player: Player)
+	refreshMovement(player)
 end
 
 function BoxingService.Start(builtMap: MapBuilder.Map)
