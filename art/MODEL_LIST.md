@@ -135,3 +135,24 @@ are built in Roblox.
 
 **Total: 75 models**: 25 animals (including the hamster), 4 boxes (including cardboard), 2 characters,
 13 town, 19 arena props, 5 gameplay props, 3 chute upgrades and 4 tools.
+
+## Scenery (15) → `ReplicatedStorage > MapModels`, hooked into the game
+Built by `scenery.py`. Each replaces a block-built piece in `src/server/Scenery/` (the blocks stay as the fallback).
+
+| Model | Look | Replaces |
+|---|---|---|
+| OakTree | Thick trunk with roots and branches, lumpy two-tone canopy | Most round trees (recolored per island) |
+| BirchTree | Slim white trunk with dark marks, tall yellow-green canopy | About 1 in 5 town/backyard trees |
+| PineTree | Five jagged needle tiers | Pines |
+| SnowPine | The pine with snow on every tier | Ice Rink pines |
+| PalmTree | Curved ringed trunk, eight drooping fronds, coconuts | Beach palms |
+| Tractor | Red tractor, big yellow-hubbed wheels, glass cab, grille and lights | Barn tractor |
+| Windmill | Tapered tower, red cap, four lattice sails with cloth | Barn windmill |
+| Silo | Banded silo, red dome, ladder | Barn silo |
+| Scarecrow | Patched shirt, straw hat, a crow on one arm | Barn scarecrow |
+| Lighthouse | Red/white striped tower, railing, glowing lamp room (beam added by the game) | Beach lighthouse |
+| Rowboat | Blue rowboat with seats and oars | Pier boat |
+| Shipwreck | Broken leaning hull with ribs, snapped mast, torn sail | Beach shipwreck |
+| TikiHut | Layered thatch with a fringe, bamboo counter, smoothies | Beach smoothie hut (the sign stays) |
+| Igloo | Smooth snow dome with block seams, arched tunnel | Ice Rink igloo |
+| Cottage | Timber-framed cottage, shingled roof, shutters, flower boxes, chimney | Town and Backyard cottages (recolored) |

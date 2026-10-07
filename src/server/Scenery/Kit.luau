@@ -6,6 +6,7 @@
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local SignText = require(ReplicatedStorage.Shared.SignText)
 
 local Kit = {}
@@ -176,6 +177,34 @@ end
 -- Signs
 
 -- Big chunky text on one face of a part
+-- A Blender model from ReplicatedStorage > MapModels (art/blender_scripts/scenery.py), standing at `at` and
+-- facing `facing`, `size` studs wide (or tall, with byHeight). Returns nil if it isn't imported yet, so the
+-- caller builds its plain-part version instead. `tint` recolors parts by name: { Leaves = Color3 }.
+function Kit.model(
+	parent: Instance,
+	name: string,
+	at: Vector3,
+	facing: Vector3?,
+	size: number,
+	byHeight: boolean?,
+	tint: { [string]: Color3 }?
+): Model?
+	local look = facing or Vector3.new(math.sin(at.X * 1.7 + at.Z), 0, math.cos(at.X * 1.7 + at.Z))
+	local floor = CFrame.lookAt(at, at + Vector3.new(look.X, 0, look.Z))
+	local model = ModelFit.Spawn("MapModels", name, floor, size, parent, { ByHeight = byHeight })
+	if model and tint then
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") then
+				local color = tint[p.Name]
+				if color then
+					p.Color = color
+				end
+			end
+		end
+	end
+	return model
+end
+
 function Kit.signText(
 	target: BasePart,
 	face: Enum.NormalId,
@@ -249,6 +278,12 @@ end
 function Kit.tree(parent: Instance, at: Vector3, height: number, leaves: Color3?)
 	local h = height
 	local green = leaves or LEAF_COLORS[(math.floor(math.abs(at.X * 7 + at.Z * 3)) % #LEAF_COLORS) + 1]
+	-- The Blender trees: mostly oaks, now and then a birch (only where no special leaf color is asked for)
+	local birch = leaves == nil and math.floor(math.abs(at.X * 3 + at.Z * 5)) % 5 == 0
+	local tint = if leaves then { Leaves = leaves, LeavesLight = leaves:Lerp(Color3.new(1, 1, 0.6), 0.18) } else nil
+	if Kit.model(parent, if birch then "BirchTree" else "OakTree", at, nil, h * 1.15, true, tint) then
+		return
+	end
 	box(parent, "Trunk", at + Vector3.new(0, h * 0.3, 0), Vector3.new(h * 0.13, h * 0.6, h * 0.13), C.Bark)
 	local blobs = {
 		{ 0, 0.72, 0, 0.62 },
@@ -295,6 +330,9 @@ end
 
 function Kit.pine(parent: Instance, at: Vector3, height: number, snowy: boolean)
 	local h = height
+	if Kit.model(parent, if snowy then "SnowPine" else "PineTree", at, nil, h, true) then
+		return
+	end
 	box(
 		parent,
 		"Trunk",
@@ -338,6 +376,9 @@ end
 -- A palm tree: a gently curved trunk and a crown of drooping fronds
 function Kit.palm(parent: Instance, at: Vector3, height: number, lean: number)
 	local h = height
+	if Kit.model(parent, "PalmTree", at, nil, h * 1.05, true) then
+		return
+	end
 	local top = at
 	for i = 0, 3 do
 		local segment = h / 4
@@ -519,6 +560,16 @@ end
 -- A little cottage: walls, a gable roof, a door, windows and a chimney. Faces `facing`.
 function Kit.cottage(parent: Instance, at: Vector3, facing: Vector3, wall: Color3, roof: Color3, scale: number?)
 	local k = scale or 1
+	if
+		Kit.model(parent, "Cottage", at, facing, 15 * k, false, {
+			Walls = wall,
+			Roof = roof,
+			Shingles = roof:Lerp(Color3.new(0, 0, 0), 0.18),
+			Shutters = roof:Lerp(Color3.new(0, 0, 0), 0.1),
+		})
+	then
+		return
+	end
 	local cf = CFrame.lookAt(at, at + Vector3.new(facing.X, 0, facing.Z))
 	local w, d, h = 14 * k, 11 * k, 8 * k
 	part(
@@ -588,6 +639,142 @@ function Kit.cottage(parent: Instance, at: Vector3, facing: Vector3, wall: Color
 		CFrame = cf * CFrame.new(w / 3, h + 4 * k, d / 5),
 		Color = Color3.fromRGB(176, 92, 74),
 	})
+end
+
+---------------------------------------------------------------------------------------------------
+-- Roads
+
+export type RoadStyle = {
+	Pattern: "Pavers" | "Stepping" | "Asphalt",
+	Bed: Color3, -- what's under and between the stones (mortar, dirt, snow, tarmac)
+	Stones: { Color3 }, -- stone colors to vary between
+	Curb: Color3?, -- raised edge stones (nil = no curbs)
+}
+
+Kit.ROADS = {
+	Town = {
+		Pattern = "Pavers",
+		Bed = Color3.fromRGB(150, 126, 98),
+		Stones = { Color3.fromRGB(196, 170, 134), Color3.fromRGB(182, 156, 120), Color3.fromRGB(208, 184, 150) },
+		Curb = Color3.fromRGB(134, 128, 122),
+	},
+	Dirt = {
+		Pattern = "Stepping",
+		Bed = Color3.fromRGB(176, 140, 96),
+		Stones = { Color3.fromRGB(170, 166, 158), Color3.fromRGB(150, 146, 140) },
+	},
+	Snow = {
+		Pattern = "Stepping",
+		Bed = Color3.fromRGB(214, 228, 240),
+		Stones = { Color3.fromRGB(150, 176, 200), Color3.fromRGB(170, 194, 214) },
+	},
+	Jungle = {
+		Pattern = "Pavers",
+		Bed = Color3.fromRGB(90, 110, 70),
+		Stones = { Color3.fromRGB(150, 150, 136), Color3.fromRGB(130, 136, 120), Color3.fromRGB(164, 160, 144) },
+		Curb = Color3.fromRGB(96, 100, 88),
+	},
+	Volcano = {
+		Pattern = "Pavers",
+		Bed = Color3.fromRGB(150, 60, 30),
+		Stones = { Color3.fromRGB(70, 64, 68), Color3.fromRGB(84, 78, 80), Color3.fromRGB(62, 56, 60) },
+		Curb = Color3.fromRGB(46, 42, 46),
+	},
+	City = {
+		Pattern = "Asphalt",
+		Bed = Color3.fromRGB(70, 72, 80),
+		Stones = { Color3.fromRGB(240, 240, 240) },
+		Curb = Color3.fromRGB(176, 178, 186),
+	},
+} :: { [string]: RoadStyle }
+
+-- A road from a to b (on the ground), `width` studs wide: a bed, then laid stones (rows of pavers in a
+-- staggered pattern, or stepping stones, or tarmac with a dashed line), and curbstones down both sides.
+function Kit.road(parent: Instance, a: Vector3, b: Vector3, width: number, style: RoadStyle, seed: number?)
+	local flatA, flatB = Vector3.new(a.X, 0, a.Z), Vector3.new(b.X, 0, b.Z)
+	local length = (flatB - flatA).Magnitude
+	if length < 1 then
+		return
+	end
+	local random = Random.new(seed or math.floor(a.X * 13 + a.Z * 7))
+	local along = (flatB - flatA).Unit
+	local mid = (flatA + flatB) / 2
+	local cf = CFrame.lookAt(mid, mid + along) -- -Z runs from a to b, X runs across
+	local function at(x: number, y: number, z: number): CFrame
+		return cf * CFrame.new(x, y, z)
+	end
+	part(parent, {
+		Name = "RoadBed",
+		Size = Vector3.new(width, 0.3, length),
+		CFrame = at(0, 0.15, 0),
+		Color = style.Bed,
+	})
+	local inner = if style.Curb then width - 2 else width
+	if style.Pattern == "Pavers" then
+		local rowLength = 2.6
+		local stoneWidth = 3.2
+		local rows = math.max(1, math.floor(length / rowLength))
+		local across = math.max(1, math.floor(inner / stoneWidth))
+		local w = inner / across
+		for row = 0, rows - 1 do
+			local z = -length / 2 + (row + 0.5) * length / rows
+			local offset = if row % 2 == 0 then 0 else w / 2
+			for k = 0, across do
+				local x0 = -inner / 2 + k * w - offset
+				local x1 = math.min(inner / 2, x0 + w)
+				x0 = math.max(-inner / 2, x0)
+				if x1 - x0 > 0.6 then
+					part(parent, {
+						Name = "Paver",
+						Size = Vector3.new(x1 - x0 - 0.22, 0.14, length / rows - 0.22),
+						CFrame = at((x0 + x1) / 2, 0.34 + random:NextNumber(-0.02, 0.02), z),
+						Color = style.Stones[random:NextInteger(1, #style.Stones)],
+					})
+				end
+			end
+		end
+	elseif style.Pattern == "Stepping" then
+		local z = -length / 2 + 1.5
+		while z < length / 2 - 1 do
+			local r = random:NextNumber(1.1, 1.7)
+			part(parent, {
+				Name = "SteppingStone",
+				Shape = Enum.PartType.Cylinder,
+				Size = Vector3.new(0.3, r * 2, r * 2 * random:NextNumber(0.8, 1)),
+				CFrame = at(random:NextNumber(-width * 0.18, width * 0.18), 0.36, z)
+					* CFrame.Angles(0, random:NextNumber(0, math.pi), math.pi / 2),
+				Color = style.Stones[random:NextInteger(1, #style.Stones)],
+			})
+			z += random:NextNumber(2.6, 3.4)
+		end
+	else
+		-- Tarmac: a dashed white center line
+		local z = -length / 2 + 2
+		while z < length / 2 - 2 do
+			part(parent, {
+				Name = "RoadLine",
+				Size = Vector3.new(0.4, 0.05, 2.4),
+				CFrame = at(0, 0.32, z + 1.2),
+				Color = style.Stones[1],
+			})
+			z += 5
+		end
+	end
+	local curb = style.Curb
+	if curb then
+		local pieces = math.max(1, math.floor(length / 3.6))
+		local pieceLength = length / pieces
+		for _, side in { -1, 1 } do
+			for k = 0, pieces - 1 do
+				part(parent, {
+					Name = "Curb",
+					Size = Vector3.new(1, 0.55, pieceLength - 0.12),
+					CFrame = at(side * (width / 2 - 0.5), 0.3, -length / 2 + (k + 0.5) * pieceLength),
+					Color = curb:Lerp(Color3.new(1, 1, 1), if k % 2 == 0 then 0 else 0.08),
+				})
+			end
+		end
+	end
 end
 
 -- A wooden lantern post (bridges, piers): a post with a glowing lantern that brightens at night

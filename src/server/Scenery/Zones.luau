@@ -206,42 +206,46 @@ local function barnZone(ctx: Ctx)
 	local f, r, random = ctx.Folder, ctx.R, ctx.Random
 	-- A silo beside the barn (the barn itself is behind the play area: MapBuilder)
 	local silo = ctx.At(-34, -ctx.HW - 14)
-	Kit.cylinder(f, "Silo", silo, 30, 6.5, Color3.fromRGB(196, 64, 54))
-	for y = 4, 28, 6 do
-		Kit.cylinder(f, "SiloBand", silo + Vector3.new(0, y, 0), 0.6, 6.7, Color3.fromRGB(230, 230, 236))
+	if not Kit.model(f, "Silo", silo, (ctx.Center - silo).Unit, 30, true) then
+		Kit.cylinder(f, "Silo", silo, 30, 6.5, Color3.fromRGB(196, 64, 54))
+		for y = 4, 28, 6 do
+			Kit.cylinder(f, "SiloBand", silo + Vector3.new(0, y, 0), 0.6, 6.7, Color3.fromRGB(230, 230, 236))
+		end
+		Kit.ball(f, "SiloDome", silo + Vector3.new(0, 30, 0), 13, Color3.fromRGB(200, 205, 214))
 	end
-	Kit.ball(f, "SiloDome", silo + Vector3.new(0, 30, 0), 13, Color3.fromRGB(200, 205, 214))
 	-- A windmill: a tapered tower, a cap, and four sails
 	local mill = ctx.At(ctx.HU + 20, -ctx.HW - 10)
 	if ctx.Free(mill, 4) then
 		local face = (ctx.Center - mill).Unit
 		local cf = CFrame.lookAt(mill, mill + face)
-		for i = 0, 3 do
+		if not Kit.model(f, "Windmill", mill, face, 30, true) then
+			for i = 0, 3 do
+				part(f, {
+					Name = "MillTower",
+					Size = Vector3.new(7 - i, 6, 7 - i),
+					CFrame = cf * CFrame.new(0, 3 + i * 6, 0),
+					Color = if i % 2 == 0 then Color3.fromRGB(240, 236, 226) else Color3.fromRGB(226, 220, 208),
+				})
+			end
 			part(f, {
-				Name = "MillTower",
-				Size = Vector3.new(7 - i, 6, 7 - i),
-				CFrame = cf * CFrame.new(0, 3 + i * 6, 0),
-				Color = if i % 2 == 0 then Color3.fromRGB(240, 236, 226) else Color3.fromRGB(226, 220, 208),
+				ClassName = "WedgePart",
+				Name = "MillCap",
+				Size = Vector3.new(5, 3, 5),
+				CFrame = cf * CFrame.new(0, 25.5, 0),
+				Color = Color3.fromRGB(150, 70, 50),
 			})
-		end
-		part(f, {
-			ClassName = "WedgePart",
-			Name = "MillCap",
-			Size = Vector3.new(5, 3, 5),
-			CFrame = cf * CFrame.new(0, 25.5, 0),
-			Color = Color3.fromRGB(150, 70, 50),
-		})
-		local hub = cf * CFrame.new(0, 22, -3)
-		Kit.ball(f, "MillHub", hub.Position, 1.6, C.DarkWood)
-		for i = 0, 3 do
-			local sail = hub * CFrame.Angles(0, 0, i * math.pi / 2 + 0.4) * CFrame.new(0, 5.5, -0.4)
-			part(f, { Name = "MillArm", Size = Vector3.new(0.6, 11, 0.4), CFrame = sail, Color = C.DarkWood })
-			part(f, {
-				Name = "MillSail",
-				Size = Vector3.new(2.4, 8, 0.15),
-				CFrame = sail * CFrame.new(1.5, 1, 0),
-				Color = Color3.fromRGB(250, 245, 230),
-			})
+			local hub = cf * CFrame.new(0, 22, -3)
+			Kit.ball(f, "MillHub", hub.Position, 1.6, C.DarkWood)
+			for i = 0, 3 do
+				local sail = hub * CFrame.Angles(0, 0, i * math.pi / 2 + 0.4) * CFrame.new(0, 5.5, -0.4)
+				part(f, { Name = "MillArm", Size = Vector3.new(0.6, 11, 0.4), CFrame = sail, Color = C.DarkWood })
+				part(f, {
+					Name = "MillSail",
+					Size = Vector3.new(2.4, 8, 0.15),
+					CFrame = sail * CFrame.new(1.5, 1, 0),
+					Color = Color3.fromRGB(250, 245, 230),
+				})
+			end
 		end
 	end
 	-- Fields: rows of wheat and corn, and a pumpkin patch
@@ -272,24 +276,26 @@ local function barnZone(ctx: Ctx)
 			if index == 1 then
 				-- A scarecrow in the wheat
 				local s = p + Vector3.new(0, 0, 0)
-				box(f, "ScarecrowPost", s + Vector3.new(0, 3.5, 0), Vector3.new(0.4, 7, 0.4), C.DarkWood)
-				part(f, {
-					Name = "ScarecrowArms",
-					Size = Vector3.new(6, 0.4, 0.4),
-					CFrame = CFrame.lookAt(s + Vector3.new(0, 5.5, 0), s + Vector3.new(0, 5.5, 0) + ctx.F)
-						* CFrame.Angles(0, math.pi / 2, 0),
-					Color = C.DarkWood,
-				})
-				box(
-					f,
-					"ScarecrowShirt",
-					s + Vector3.new(0, 4.8, 0),
-					Vector3.new(1.8, 2.2, 1.2),
-					Color3.fromRGB(80, 120, 200)
-				)
-				Kit.ball(f, "ScarecrowHead", s + Vector3.new(0, 6.6, 0), 1.6, Color3.fromRGB(230, 200, 130))
-				Kit.cylinder(f, "ScarecrowHat", s + Vector3.new(0, 7.2, 0), 0.3, 1.6, Color3.fromRGB(150, 110, 60))
-				Kit.cylinder(f, "ScarecrowHatTop", s + Vector3.new(0, 7.5, 0), 1, 0.8, Color3.fromRGB(150, 110, 60))
+				if not Kit.model(f, "Scarecrow", s, -ctx.F, 8.5, true) then
+					box(f, "ScarecrowPost", s + Vector3.new(0, 3.5, 0), Vector3.new(0.4, 7, 0.4), C.DarkWood)
+					part(f, {
+						Name = "ScarecrowArms",
+						Size = Vector3.new(6, 0.4, 0.4),
+						CFrame = CFrame.lookAt(s + Vector3.new(0, 5.5, 0), s + Vector3.new(0, 5.5, 0) + ctx.F)
+							* CFrame.Angles(0, math.pi / 2, 0),
+						Color = C.DarkWood,
+					})
+					box(
+						f,
+						"ScarecrowShirt",
+						s + Vector3.new(0, 4.8, 0),
+						Vector3.new(1.8, 2.2, 1.2),
+						Color3.fromRGB(80, 120, 200)
+					)
+					Kit.ball(f, "ScarecrowHead", s + Vector3.new(0, 6.6, 0), 1.6, Color3.fromRGB(230, 200, 130))
+					Kit.cylinder(f, "ScarecrowHat", s + Vector3.new(0, 7.2, 0), 0.3, 1.6, Color3.fromRGB(150, 110, 60))
+					Kit.cylinder(f, "ScarecrowHatTop", s + Vector3.new(0, 7.5, 0), 1, 0.8, Color3.fromRGB(150, 110, 60))
+				end
 			end
 		end
 	end
@@ -343,35 +349,37 @@ local function barnZone(ctx: Ctx)
 	local tractor = ctx.At(ctx.HU + 14, -ctx.HW - 4)
 	if ctx.Free(tractor, 4) then
 		local cf = CFrame.lookAt(tractor, tractor + r)
-		part(f, {
-			Name = "TractorBody",
-			Size = Vector3.new(3.4, 2.4, 6),
-			CFrame = cf * CFrame.new(0, 2.4, 0),
-			Color = Color3.fromRGB(210, 50, 45),
-		})
-		part(f, {
-			Name = "TractorCab",
-			Size = Vector3.new(3.2, 3, 2.6),
-			CFrame = cf * CFrame.new(0, 4.6, 1.4),
-			Color = Color3.fromRGB(230, 230, 236),
-			Material = Enum.Material.Glass,
-			Transparency = 0.3,
-		})
-		part(f, {
-			Name = "TractorRoof",
-			Size = Vector3.new(3.6, 0.3, 3),
-			CFrame = cf * CFrame.new(0, 6.2, 1.4),
-			Color = Color3.fromRGB(210, 50, 45),
-		})
-		box(f, "TractorPipe", (cf * CFrame.new(0.8, 4.4, -2)).Position, Vector3.new(0.4, 2, 0.4), C.Dark)
-		for _, w in { { -2, 1.6, 1.6 }, { 2, 1.6, 1.6 }, { -1.9, -2, 1 }, { 1.9, -2, 1 } } do
+		if not Kit.model(f, "Tractor", tractor, r, 9, false) then
 			part(f, {
-				Name = "TractorWheel",
-				Shape = Enum.PartType.Cylinder,
-				Size = Vector3.new(1, w[3] * 2, w[3] * 2),
-				CFrame = cf * CFrame.new(w[1], w[3], w[2]),
-				Color = Color3.fromRGB(40, 40, 44),
+				Name = "TractorBody",
+				Size = Vector3.new(3.4, 2.4, 6),
+				CFrame = cf * CFrame.new(0, 2.4, 0),
+				Color = Color3.fromRGB(210, 50, 45),
 			})
+			part(f, {
+				Name = "TractorCab",
+				Size = Vector3.new(3.2, 3, 2.6),
+				CFrame = cf * CFrame.new(0, 4.6, 1.4),
+				Color = Color3.fromRGB(230, 230, 236),
+				Material = Enum.Material.Glass,
+				Transparency = 0.3,
+			})
+			part(f, {
+				Name = "TractorRoof",
+				Size = Vector3.new(3.6, 0.3, 3),
+				CFrame = cf * CFrame.new(0, 6.2, 1.4),
+				Color = Color3.fromRGB(210, 50, 45),
+			})
+			box(f, "TractorPipe", (cf * CFrame.new(0.8, 4.4, -2)).Position, Vector3.new(0.4, 2, 0.4), C.Dark)
+			for _, w in { { -2, 1.6, 1.6 }, { 2, 1.6, 1.6 }, { -1.9, -2, 1 }, { 1.9, -2, 1 } } do
+				part(f, {
+					Name = "TractorWheel",
+					Shape = Enum.PartType.Cylinder,
+					Size = Vector3.new(1, w[3] * 2, w[3] * 2),
+					CFrame = cf * CFrame.new(w[1], w[3], w[2]),
+					Color = Color3.fromRGB(40, 40, 44),
+				})
+			end
 		end
 	end
 	-- Hay, crates and trees
@@ -663,29 +671,31 @@ local function iceRink(ctx: Ctx)
 	if ctx.Free(igloo, 4) then
 		local face = (ctx.Center - igloo).Unit
 		local cf = CFrame.lookAt(igloo, igloo + face)
-		Kit.ball(f, "Igloo", igloo, 14, Color3.fromRGB(236, 246, 255))
-		for ring = 1, 3 do
-			Kit.cylinder(
-				f,
-				"IglooRing",
-				igloo + Vector3.new(0, ring * 1.9 - 0.2, 0),
-				0.15,
-				math.sqrt(49 - (ring * 1.9) ^ 2) + 0.05,
-				Color3.fromRGB(200, 222, 240)
-			)
+		if not Kit.model(f, "Igloo", igloo, face, 17, false) then
+			Kit.ball(f, "Igloo", igloo, 14, Color3.fromRGB(236, 246, 255))
+			for ring = 1, 3 do
+				Kit.cylinder(
+					f,
+					"IglooRing",
+					igloo + Vector3.new(0, ring * 1.9 - 0.2, 0),
+					0.15,
+					math.sqrt(49 - (ring * 1.9) ^ 2) + 0.05,
+					Color3.fromRGB(200, 222, 240)
+				)
+			end
+			part(f, {
+				Name = "IglooDoor",
+				Size = Vector3.new(4, 4, 4),
+				CFrame = cf * CFrame.new(0, 2, -6.5),
+				Color = Color3.fromRGB(236, 246, 255),
+			})
+			part(f, {
+				Name = "IglooHole",
+				Size = Vector3.new(2.6, 3, 0.3),
+				CFrame = cf * CFrame.new(0, 1.5, -8.55),
+				Color = Color3.fromRGB(40, 60, 90),
+			})
 		end
-		part(f, {
-			Name = "IglooDoor",
-			Size = Vector3.new(4, 4, 4),
-			CFrame = cf * CFrame.new(0, 2, -6.5),
-			Color = Color3.fromRGB(236, 246, 255),
-		})
-		part(f, {
-			Name = "IglooHole",
-			Size = Vector3.new(2.6, 3, 0.3),
-			CFrame = cf * CFrame.new(0, 1.5, -8.55),
-			Color = Color3.fromRGB(40, 60, 90),
-		})
 	end
 	-- Ice crystal clusters (glowing a little)
 	scatter(ctx, 9, 4, function(p)
@@ -1041,16 +1051,12 @@ function Zones.Build(island: Islands.Island, zone: Zone, bridgeEnd: Vector3)
 	-- A path from the bridge to the gate
 	local along = Vector3.new(gate.X - bridgeEnd.X, 0, gate.Z - bridgeEnd.Z)
 	if along.Magnitude > 1 then
-		local mid = (gate + bridgeEnd) / 2
-		part(folder, {
-			Name = "ZonePath",
-			Size = Vector3.new(World.BridgeWidth, 0.24, along.Magnitude + 4),
-			CFrame = CFrame.lookAt(Vector3.new(mid.X, 0.1, mid.Z), Vector3.new(gate.X, 0.1, gate.Z)),
-			Color = if zone.Id == "IceRink"
-				then Color3.fromRGB(200, 220, 236)
-				elseif zone.Id == "Rooftop" then Color3.fromRGB(120, 124, 136)
-				else Color3.fromRGB(214, 188, 140),
-		})
+		local style = if zone.Id == "IceRink"
+			then Kit.ROADS.Snow
+			elseif zone.Id == "Rooftop" then Kit.ROADS.City
+			elseif zone.Id == "Jungle" then Kit.ROADS.Jungle
+			else Kit.ROADS.Dirt
+		Kit.road(folder, bridgeEnd, gate, World.BridgeWidth, style)
 	end
 	local theme = THEMES[zone.Id]
 	if theme then

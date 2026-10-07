@@ -346,8 +346,8 @@ local function infoBoards(folder: Instance)
 		folder,
 		"HowToPlayBoard",
 		Vector3.new(-22, 0, 50),
-		Vector3.new(0.35, 0, -1).Unit,
-		Vector2.new(16, 10),
+		Vector3.new(0.3, 0, 1).Unit, -- (read from the south: the spawn faces north)
+		Vector2.new(18, 10),
 		C.Dark
 	)
 	do
@@ -365,9 +365,9 @@ local function infoBoards(folder: Instance)
 		list.TextXAlignment = Enum.TextXAlignment.Left
 		list.RichText = true
 		list.Text = '<font color="#FFD23C">HOW TO MAIL AN ANIMAL</font>\n'
-			.. "1. Tap PEN to zip to a zone (or cross a bridge)\n"
-			.. "2. GRAB a wild animal: hold E, or double-jump DIVE\n"
-			.. "3. BOX it: rub a ♥, tape every seam\n"
+			.. "1. Cross a bridge to a zone\n"
+			.. "2. GRAB an animal: hold E, or DIVE\n"
+			.. "3. BOX it: rub a ♥, tape the seams\n"
 			.. "4. MAIL it at Gruff's MAIL CHUTE"
 		list.Parent = gui
 		local padding = Instance.new("UIPadding")
@@ -378,8 +378,6 @@ local function infoBoards(folder: Instance)
 		padding.Parent = list
 		gui.Parent = howTo
 	end
-	-- (the boards face the spawn, which faces north, so they're read from the south: facing +Z)
-	howTo.CFrame = CFrame.lookAt(howTo.Position, howTo.Position + Vector3.new(0.3, 0, 1))
 
 	local paycheck =
 		board(folder, "PaycheckBoard", Vector3.new(22, 0, 50), Vector3.new(-0.3, 0, 1).Unit, Vector2.new(14, 6), C.Dark)
@@ -543,18 +541,7 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 		local length = (path.B - path.A).Magnitude
 		local mid = (path.A + path.B) / 2
 		local cf = CFrame.lookAt(mid + Vector3.new(0, 0.15, 0), mid + along + Vector3.new(0, 0.15, 0))
-		part(
-			folder,
-			{ Name = "Path", Size = Vector3.new(World.BridgeWidth + 2, 0.3, length), CFrame = cf, Color = C.Paving }
-		)
-		for _, side in { -1, 1 } do
-			part(folder, {
-				Name = "Curb",
-				Size = Vector3.new(1, 0.5, length),
-				CFrame = cf * CFrame.new(side * (World.BridgeWidth / 2 + 1.5), 0.1, 0),
-				Color = C.PavingDark,
-			})
-		end
+		Kit.road(folder, path.A, path.B, World.BridgeWidth + 4, Kit.ROADS.Town, index)
 		local lamps = math.floor(length / 16)
 		for i = 1, lamps do
 			for _, side in { -1, 1 } do

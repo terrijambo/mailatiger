@@ -207,13 +207,7 @@ function Volcano.Build(island: Islands.Island, bridgeEnd: Vector3)
 	local door = center + entrance * half
 	local walk = Vector3.new(bridgeEnd.X - door.X, 0, bridgeEnd.Z - door.Z)
 	skullGate(f, door + walk * 0.45, walk.Unit)
-	local mid = (door + bridgeEnd) / 2
-	part(f, {
-		Name = "BossPath",
-		Size = Vector3.new(World.BridgeWidth + 2, 0.24, ((center + entrance * half) - bridgeEnd).Magnitude + 6),
-		CFrame = CFrame.lookAt(Vector3.new(mid.X, 0.1, mid.Z), Vector3.new(bridgeEnd.X, 0.1, bridgeEnd.Z)),
-		Color = Color3.fromRGB(90, 84, 88),
-	})
+	Kit.road(f, bridgeEnd, door, World.BridgeWidth + 2, Kit.ROADS.Volcano)
 
 	-- Lava: cracks running out from the arena to the cliffs (between the stands), glowing pools, and two lava
 	-- falls pouring down the cliff into the sea

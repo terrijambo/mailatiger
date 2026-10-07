@@ -162,6 +162,7 @@ Models live in the [`art/`](art/README.md) folder: `.blend` sources, `.fbx` expo
 | `BoxModels` | `Cardboard`, `Wood`, `Steel`, `Vault` | Yes |
 | `PropModels` | `Parcel`, `MailChute`, `MailChuteExpress`, `MailChutePneumatic`, `MailChuteRocket`, `GruffHat`, `BossCrown`, `Egg`, `Envelope`, `GrabbingGloves`, `Sneakers`, `TapeGun`, `ButterflyNet`, `TapeRoll`, `RubberStamp` | Yes (the tools spin on the shop table and show in the Shop menu; `BossCrown` is the top boss helper's crown; `TapeRoll` is also the boss fight's pull handles) |
 | `MapModels` | Town: `PostOffice`, `PostCounter`, `PenCounter`, `ShopStall`, `OrdersBoard`, `LeaderboardStand`, `TravelPad`, `SpawnPad`, `Lamppost`, `Bench`, `Mailbox`, `Planter` | Yes (laid over the grey map blocks) |
+| `MapModels` | Scenery: `OakTree`, `BirchTree`, `PineTree`, `SnowPine`, `PalmTree`, `Tractor`, `Windmill`, `Silo`, `Scarecrow`, `Lighthouse`, `Rowboat`, `Shipwreck`, `TikiHut`, `Igloo`, `Cottage` (from `art/blender_scripts/scenery.py`) | Yes (replace the block-built trees, cottages and set pieces all over the islands) |
 | `MapModels` | Arenas: `ArenaGate`, `PicketFence`, `Bush`, `Doghouse`, `Flowerbed`, `Barn`, `HayBale`, `FarmFence`, `Trough`, `JungleTree`, `MudPuddle`, `BambooFence`, `Rock`, `RinkBoard`, `HockeyGoal`, `Snowman`, `ACUnit`, `WaterTower`, `Chimney` | Yes (laid over the grey map blocks) |
 
 A missing model is never a problem: that spot just keeps its grey block.

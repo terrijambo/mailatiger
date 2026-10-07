@@ -792,13 +792,31 @@ function MapBuilder.Build(): Map
 		local stand = dress(map, "LeaderboardStand", spot(x - 1.5, 0, z, Vector3.xAxis), 9.5, { face })
 		if stand then
 			ModelFit.Align(stand, Vector3.xAxis, x)
-			-- Shrink the (invisible) score part to fit exactly on the stand's dark board. The numbers come
-			-- from art/blender_scripts/town.py: the stand is 9 wide, its board 8.2 x 7.6 centered 4.6 up,
-			-- set 0.63 back from the front of the plinth.
-			local _, size = stand:GetBoundingBox()
-			local k = math.max(size.X, size.Z) / 9
-			face.Size = Vector3.new(0.2, 7.6 * k, 8.2 * k)
-			face.Position = Vector3.new(x - 0.63 * k - 0.08, 4.6 * k, z)
+			-- Put the (invisible) score part right on the stand's board, whatever shape the stand model is:
+			-- its biggest flat part facing the fountain (named "Face" in art/blender_scripts/town.py)
+			local screen: BasePart? = stand:FindFirstChild("Face", true) :: BasePart?
+			if not screen then
+				for _, p in stand:GetDescendants() do
+					if p:IsA("BasePart") and (not screen or p.Size.X * p.Size.Y > screen.Size.X * screen.Size.Y) then
+						screen = p
+					end
+				end
+			end
+			if screen then
+				-- which way its flat front points (toward the plaza, +X), and how wide and thick it is
+				local cf = screen.CFrame
+				local normal, width, thick = cf.LookVector, screen.Size.X, screen.Size.Z
+				if math.abs(cf.RightVector.X) > math.abs(normal.X) then
+					normal, width, thick = cf.RightVector, screen.Size.Z, screen.Size.X
+				end
+				normal = Vector3.new(normal.X, 0, normal.Z).Unit
+				if normal.X < 0 then
+					normal = -normal
+				end
+				face.Size = Vector3.new(0.1, screen.Size.Y * 0.94, width * 0.94)
+				face.CFrame =
+					CFrame.fromMatrix(screen.Position + normal * (thick / 2 + 0.08), normal, Vector3.new(0, 1, 0))
+			end
 		end
 		leaderboards[id] = face
 	end

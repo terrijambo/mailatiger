@@ -26,6 +26,22 @@ local function lighthouse(f: Instance, at: Vector3, random: Random)
 			random
 		)
 	end
+	local model = Kit.model(f, "Lighthouse", at + Vector3.new(0, 1, 0), Vector3.new(at.X, 0, at.Z).Unit, 36, true)
+	if model then
+		-- the lamp room glows, and shines a beam out to sea
+		local lamp = model:FindFirstChild("Lamp", true)
+		if lamp and lamp:IsA("BasePart") then
+			lamp.Material = Enum.Material.Neon
+			local beam = Instance.new("SpotLight")
+			beam.Range = 60
+			beam.Angle = 30
+			beam.Brightness = 2
+			beam.Color = Color3.fromRGB(255, 240, 190)
+			beam.Face = Enum.NormalId.Back
+			beam.Parent = lamp
+		end
+		return
+	end
 	Kit.cylinder(f, "LighthouseBase", at + Vector3.new(0, 2, 0), 3, 6, Color3.fromRGB(150, 150, 156))
 	-- Striped tower, getting a little narrower as it goes up
 	for i = 0, 6 do
@@ -86,6 +102,9 @@ local function lighthouse(f: Instance, at: Vector3, random: Random)
 end
 
 local function shipwreck(f: Instance, at: Vector3, facing: Vector3)
+	if Kit.model(f, "Shipwreck", at - Vector3.new(0, 1.5, 0), facing, 26, false) then
+		return
+	end
 	-- Run aground and leaning over, half in the water
 	local cf = CFrame.lookAt(at, at + facing) * CFrame.Angles(0, 0, math.rad(14)) * CFrame.Angles(math.rad(-6), 0, 0)
 	local hull = Color3.fromRGB(110, 72, 44)
@@ -173,34 +192,38 @@ function Beach.Build(island: Islands.Island, bridgeEnd: Vector3)
 	local hutAt = center + side * 22 + away * 6
 	do
 		local cf = CFrame.lookAt(hutAt, hutAt - side)
-		for _, x in { -4, 4 } do
-			for _, z in { -3, 3 } do
+		local hut = Kit.model(f, "TikiHut", hutAt, -side, 13, false)
+		if not hut then
+			for _, x in { -4, 4 } do
+				for _, z in { -3, 3 } do
+					part(f, {
+						Name = "HutPost",
+						Size = Vector3.new(0.7, 7, 0.7),
+						CFrame = cf * CFrame.new(x, 3.5, z),
+						Color = C.DarkWood,
+					})
+				end
+			end
+			part(f, {
+				Name = "HutCounter",
+				Size = Vector3.new(9, 3, 1.4),
+				CFrame = cf * CFrame.new(0, 1.5, -3.4),
+				Color = C.Plank[2],
+			})
+			for i = 0, 3 do
 				part(f, {
-					Name = "HutPost",
-					Size = Vector3.new(0.7, 7, 0.7),
-					CFrame = cf * CFrame.new(x, 3.5, z),
-					Color = C.DarkWood,
+					Name = "HutThatch",
+					Size = Vector3.new(11 - i * 2.4, 1.2, 9 - i * 2),
+					CFrame = cf * CFrame.new(0, 7.4 + i * 1.1, 0),
+					Color = if i % 2 == 0 then Color3.fromRGB(220, 190, 120) else Color3.fromRGB(200, 170, 100),
 				})
 			end
 		end
-		part(f, {
-			Name = "HutCounter",
-			Size = Vector3.new(9, 3, 1.4),
-			CFrame = cf * CFrame.new(0, 1.5, -3.4),
-			Color = C.Plank[2],
-		})
-		for i = 0, 3 do
-			part(f, {
-				Name = "HutThatch",
-				Size = Vector3.new(11 - i * 2.4, 1.2, 9 - i * 2),
-				CFrame = cf * CFrame.new(0, 7.4 + i * 1.1, 0),
-				Color = if i % 2 == 0 then Color3.fromRGB(220, 190, 120) else Color3.fromRGB(200, 170, 100),
-			})
-		end
+		-- (the model's thatch is lower: hang the sign just under it)
 		local sign = part(f, {
 			Name = "HutSign",
 			Size = Vector3.new(6, 1.6, 0.3),
-			CFrame = cf * CFrame.new(0, 6.2, -3.6),
+			CFrame = cf * CFrame.new(0, if hut then 4.6 else 6.2, if hut then -3.2 else -3.6),
 			Color = Color3.fromRGB(255, 120, 80),
 		})
 		Kit.signText(sign, Enum.NormalId.Front, "SMOOTHIES", Color3.new(1, 1, 1), nil, Color3.fromRGB(255, 120, 80))
@@ -327,18 +350,20 @@ function Beach.Build(island: Islands.Island, bridgeEnd: Vector3)
 	end
 	Kit.lantern(f, (pierCF * CFrame.new(2.8, 0.8, -pierLength)).Position, 4)
 	local boat = (pierCF * CFrame.new(5.5, World.WaterY + 0.6, -pierLength + 4)).Position
-	part(f, {
-		Name = "Rowboat",
-		Size = Vector3.new(3, 1.4, 8),
-		CFrame = CFrame.lookAt(boat, boat + pierDir),
-		Color = Color3.fromRGB(70, 140, 220),
-	})
-	part(f, {
-		Name = "RowboatSeat",
-		Size = Vector3.new(2.8, 0.3, 1),
-		CFrame = CFrame.lookAt(boat, boat + pierDir) * CFrame.new(0, 0.6, 0),
-		Color = C.Plank[1],
-	})
+	if not Kit.model(f, "Rowboat", boat - Vector3.new(0, 0.4, 0), pierDir, 8, false) then
+		part(f, {
+			Name = "Rowboat",
+			Size = Vector3.new(3, 1.4, 8),
+			CFrame = CFrame.lookAt(boat, boat + pierDir),
+			Color = Color3.fromRGB(70, 140, 220),
+		})
+		part(f, {
+			Name = "RowboatSeat",
+			Size = Vector3.new(2.8, 0.3, 1),
+			CFrame = CFrame.lookAt(boat, boat + pierDir) * CFrame.new(0, 0.6, 0),
+			Color = C.Plank[1],
+		})
+	end
 	-- The shipwreck, aground in the shallows off the far side
 	local wreckDir = Vector3.new(away.X - side.X * 0.6, 0, away.Z - side.Z * 0.6).Unit
 	local wreckAt = center

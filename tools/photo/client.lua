@@ -50,6 +50,10 @@ local function run()
 	-- The town
 	shot("town", Vector3.new(0, 150, 190), Vector3.new(0, 0, -10), 55)
 	shot("town_low", Vector3.new(30, 26, 70), Vector3.new(0, 8, -40), 60)
+	shot("leaderboards", Vector3.new(-30, 10, 0), Vector3.new(-55, 5, 0), 60)
+	shot("leaderboards_side", Vector3.new(-40, 8, 26), Vector3.new(-55, 5, -4), 60)
+	shot("road", Vector3.new(9, 6, 64), Vector3.new(0, 0, 92), 60)
+	shot("howto", Vector3.new(-16, 7, 66), Vector3.new(-22, 6, 50), 60)
 	shot("plaza_postoffice", Vector3.new(-18, 14, 20), Vector3.new(0, 8, -55), 65)
 	-- Each island, from its town side and a bit above
 	for _, island in World.Islands do
