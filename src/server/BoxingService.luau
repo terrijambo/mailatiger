@@ -55,6 +55,9 @@ local JUMP_HEIGHT = 7.2
 
 local BoxingService = {}
 
+-- Set by WildService: an escaped animal goes back into the wild (animal id, zone, where, Shiny/Golden)
+BoxingService.OnEscape = nil :: ((string, string, Vector3, string?) -> ())?
+
 local sessions: { [Player]: Session } = {} -- owner -> job
 local crewOf: { [Player]: Session } = {} -- crew member -> the job they're helping with
 local stunnedUntil: { [Player]: number } = {}
@@ -527,7 +530,8 @@ local function breakout(s: Session, position: Vector3)
 	end
 end
 
--- The animal gets out and runs back into the arena.
+-- The animal gets out. Normal animals go back into the wild right where they escaped (the job ends; grab or
+-- dive at it again). Giants stay your job, running loose, so the crew can have another go.
 local function escape(s: Session, how: string)
 	local root = getCharacterParts(s.Player)
 	local model = s.BoxModel
@@ -543,7 +547,20 @@ local function escape(s: Session, how: string)
 	else
 		sayAll(s, "Postmaster Gruff", pick(Gruff.Escape))
 	end
-	startCatch(s, position)
+	if Config.Animals.ById[s.AnimalId].Carriers > 1 then
+		startCatch(s, position)
+		return
+	end
+	local members = membersOf(s)
+	destroyBox(s)
+	endSession(s)
+	for _, member in members do
+		notify(member, "BoxDone", {})
+	end
+	local hook = BoxingService.OnEscape
+	if hook then
+		hook(s.AnimalId, s.ArenaId, position, s.Variant)
+	end
 end
 
 local function playVineBoom(at: BasePart)
@@ -1272,6 +1289,26 @@ BoxingService.ExternalInput = nil :: ((Player, unknown, unknown) -> ())?
 -- Is this player busy with a job (their own, or helping a crew)?
 function BoxingService.HasJob(player: Player): boolean
 	return jobOf(player) ~= nil
+end
+
+-- Is this player in the BOX screen right now?
+function BoxingService.IsBoxing(player: Player): boolean
+	local s = jobOf(player)
+	return s ~= nil and s.Stage == "Box"
+end
+
+-- Drops a job that isn't being boxed (a giant waiting for its crew, an animal running loose), so grabbing a
+-- new wild animal never gets blocked by an old one
+function BoxingService.DropJob(player: Player)
+	local s = jobOf(player)
+	if not s or s.Stage == "Box" then
+		return
+	end
+	if s.Player == player then
+		cancel(s)
+	else
+		leaveCrew(s, player)
+	end
 end
 
 -- A wild animal was grabbed (WildService has already checked the level and the bag). Normal animals go

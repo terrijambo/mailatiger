@@ -67,6 +67,6 @@ return {
 	ByTier = ByTier,
 
 	MudSpeedMult = 0.5,
-	IceGrip = 1.5,
+	IceGrip = 6, -- (was 1.5: far too slippery; now a light glide you can still steer)
 	FallBackStun = 1.5,
 }

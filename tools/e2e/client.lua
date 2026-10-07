@@ -617,13 +617,21 @@ local function run()
 		task.wait(0.3)
 		log(map.GruffHat.Anchored == false, "Gruff's cap was knocked flying")
 		log(waitFor(function()
-			return player:GetAttribute("Stage") == "Catch"
-		end, 8), "tiger escaped back into the arena")
+			if player:GetAttribute("Stage") ~= "" then
+				return false
+			end
+			for _, ball in CollectionService:GetTagged("Critter") do
+				if ball:GetAttribute("Wild") == true and ball:GetAttribute("AnimalId") == "Tiger" then
+					return true
+				end
+			end
+			return false
+		end, 8), "tiger escaped back into the wild (job over)")
 	else
 		log(false, "could not grab the tiger in 90 tries")
 	end
 	task.wait(5) -- let the ragdoll finish
-	log(giveUp(), "used the Pen twice to give up on the tiger")
+	log(player:GetAttribute("Stage") == "", "no leftover tiger job")
 
 	-- 10. Rooftop: walk off the edge and get put back up
 	remotes.RequestAnimal:FireServer("Dragon", false)

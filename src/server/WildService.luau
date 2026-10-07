@@ -229,10 +229,10 @@ local function onGrab(entry: Entry, player: Player)
 	if not profile then
 		return
 	end
-	if BoxingService.HasJob(player) then
-		say(player, "Finish the animal you've got first.")
+	if BoxingService.IsBoxing(player) then
 		return
 	end
+	BoxingService.DropJob(player) -- (an old animal still running loose doesn't block a new grab)
 	if not MailService.HasRoom(player) then
 		say(player, Config.Gruff.BagFull)
 		return
@@ -251,7 +251,14 @@ local function onGrab(entry: Entry, player: Player)
 	end
 end
 
-local function spawn(arenaId: string, near: Vector3?, lure: Lure?, luredFor: Player?, forced: string?)
+local function spawn(
+	arenaId: string,
+	near: Vector3?,
+	lure: Lure?,
+	luredFor: Player?,
+	forced: string?,
+	forcedVariant: string?
+)
 	local arena = map.Arenas[arenaId]
 	if not arena then
 		return
@@ -272,7 +279,7 @@ local function spawn(arenaId: string, near: Vector3?, lure: Lure?, luredFor: Pla
 	local position = if near
 		then CatchAI.PushOutOfObstacles(arena, CatchAI.ClampToArena(arena, flat(near), radius), radius)
 		else CatchAI.RandomArenaPoint(arena, radius)
-	local variantId = rollVariant(if lure then lure.VariantLuck else 1)
+	local variantId = forcedVariant or rollVariant(if lure then lure.VariantLuck else 1)
 	local variant = if variantId then Config.Variants.ById[variantId] else nil
 	local level = Wild.LevelOf[animalId] or 1
 
@@ -553,6 +560,10 @@ function WildService.Start(builtMap: MapBuilder.Map)
 		onGrab(best, player)
 		return true
 	end)
+	-- An animal that escaped a box goes back into the wild where it got out (a Shiny stays Shiny)
+	BoxingService.OnEscape = function(animalId: string, arenaId: string, at: Vector3, variant: string?)
+		spawn(if map.Arenas[arenaId] then arenaId else "Backyard", at, nil, nil, animalId, variant)
+	end
 	MonetizationService.OnMegaLure = function(player: Player)
 		WildService.StartLure(player, "MegaLure")
 	end

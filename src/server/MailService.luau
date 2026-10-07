@@ -196,10 +196,16 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	end
 
 	local total, orderBonus, ordersReady, best = 0, 0, 0, 1
+	local bestName, bestVariant, bestPay = "", nil :: string?, -1
 	local lines = {}
 	local progress: { { AnimalId: string, Stars: number, Orders: number, Variant: string? } } = {} -- XP and quests, after paying
 	for _, parcel in profile.Parcels do
 		local pay = math.max(1, math.round(parcel.Coins * chute.PayMult))
+		if pay > bestPay then
+			local bestAnimal = Config.Animals.ById[parcel.AnimalId]
+			bestPay, bestVariant = pay, parcel.Variant
+			bestName = if bestAnimal then bestAnimal.DisplayName else parcel.AnimalId
+		end
 		total += pay
 		local bonus, completed = Orders.OnMailed(profile, parcel.AnimalId, {
 			Stars = parcel.Stars,
@@ -290,7 +296,9 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 		Chute = chute.DisplayName,
 		Lines = lines,
 		Line = pick(Config.Gruff.Ratings[best]),
-		Best = best, -- the best star rating in this bag (the receipt stamps it)
+		Best = best, -- the best star rating in this bag
+		BestName = bestName, -- the animal that paid the most (Gruff mentions it)
+		BestVariant = bestVariant,
 	})
 end
 

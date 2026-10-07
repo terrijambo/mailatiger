@@ -526,10 +526,12 @@ function Hud.Start()
 		end
 	end
 
+	-- A friendly little card: a round badge (Gruff's face, or the message's emoji) on the left, a short title,
+	-- one short line, and the reward in big gold letters.
 	local toast = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 124),
-		Size = UDim2.fromOffset(470, 124),
+		Size = UDim2.fromOffset(420, 96),
 		BackgroundColor3 = Ui.PAPER,
 		Visible = false,
 		ZIndex = 5,
@@ -542,72 +544,103 @@ function Hud.Start()
 	end
 	player:GetAttributeChangedSignal("Stage"):Connect(placeToast)
 	placeToast()
-	Ui.round(toast, 14)
-	Ui.border(toast, 3)
+	Ui.round(toast, 18)
+	local toastStroke = Ui.border(toast, 3)
 	local toastSizer = Ui.autoScale(toast)
-	local header = Ui.make("Frame", {
-		Size = UDim2.new(1, 0, 0, 34),
+	local badge = Ui.make("Frame", {
+		AnchorPoint = Vector2.new(0, 0.5),
+		Position = UDim2.new(0, 12, 0.5, 0),
+		Size = UDim2.fromOffset(70, 70),
 		BackgroundColor3 = Ui.BLUE,
-		ZIndex = 5,
+		ZIndex = 6,
 	}, toast)
-	Ui.round(header, 14)
-	Ui.gloss(header)
-	local speaker = Ui.outlined(header, {
-		Position = UDim2.fromOffset(14, 2),
-		Size = UDim2.new(1, -28, 1, -4),
+	Ui.round(badge, 35)
+	Ui.border(badge, 3)
+	local badgeIcon: GuiObject? = nil
+	local title = Ui.outlined(toast, {
+		Position = UDim2.fromOffset(94, 8),
+		Size = UDim2.new(1, -106, 0, 28),
 		TextSize = 22,
 		TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd,
 		Text = "",
 		ZIndex = 6,
 	})
 	local body = Ui.label(toast, {
-		Position = UDim2.fromOffset(14, 40),
-		Size = UDim2.new(1, -28, 0, 48),
-		TextSize = 18,
-		TextYAlignment = Enum.TextYAlignment.Top,
+		Position = UDim2.fromOffset(94, 36),
+		Size = UDim2.new(1, -106, 0, 22),
+		TextSize = 17,
+		TextColor3 = Color3.fromRGB(80, 70, 65),
+		TextTruncate = Enum.TextTruncate.AtEnd,
+		TextWrapped = false,
 		Text = "",
 		ZIndex = 6,
 	})
 	local footer = Ui.outlined(toast, {
-		Position = UDim2.fromOffset(14, 88),
-		Size = UDim2.new(1, -28, 0, 30),
-		TextSize = 26,
+		Position = UDim2.fromOffset(94, 58),
+		Size = UDim2.new(1, -106, 0, 32),
+		TextSize = 28,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Ui.GOLD,
 		Text = "",
 		ZIndex = 6,
 	})
 
-	-- A red rating stamp that thumps onto receipts (e.g. "★★★★☆")
-	local ratingStamp = Ui.make("TextLabel", {
-		AnchorPoint = Vector2.new(0.5, 0.5),
-		Position = UDim2.new(1, -78, 1, -24),
-		Size = UDim2.fromOffset(140, 42),
-		Rotation = -10,
-		BackgroundTransparency = 1,
-		Font = Ui.TITLE_FONT,
-		TextScaled = true,
-		TextColor3 = Color3.fromRGB(220, 40, 40),
-		Text = "",
-		Visible = false,
-		ZIndex = 7,
-	}, toast)
-	Ui.make("UIStroke", { Thickness = 2, Color = Color3.fromRGB(110, 0, 0) }, ratingStamp)
-
-	-- Popups: each shows about 3.5 seconds, but only 1.2 if another is waiting. At most 2 wait in line (older
+	-- Popups: each shows about 2.8 seconds, but only 1 if another is waiting. At most 1 waits in line (older
 	-- ones are dropped, so you only ever see what's current), and repeats of the same message are skipped.
-	type Toast = { Who: string, Text: string, Foot: string?, Stars: number?, Color: Color3? }
-	local MAX_WAITING = 2
-	local SHOW_ALONE, SHOW_BUSY = 3.5, 1.2
+	type Toast = { Who: string, Text: string, Foot: string?, Stars: number?, Color: Color3?, Icon: string? }
+	local MAX_WAITING = 1
+	local SHOW_ALONE, SHOW_BUSY = 2.8, 1
 	local queue: { Toast } = {}
 	local running = false
 	local current: Toast? = nil
+	-- "📦 Boxed a Hamster!" -> badge "📦", title "Boxed a Hamster!" (titles start with their emoji)
+	local function splitEmoji(text: string): (string?, string)
+		local first, rest = string.match(text, "^(%S+)%s+(.+)$")
+		if first and rest and not string.find(first, "[%w%p]") then
+			return first, rest
+		end
+		return nil, text
+	end
 	local function present(item: Toast)
 		placeToast()
-		speaker.Text = item.Who
-		header.BackgroundColor3 = item.Color or Ui.BLUE
+		local emoji, cleanTitle = splitEmoji(item.Who)
+		title.Text = cleanTitle
 		body.Text = item.Text
 		footer.Text = item.Foot or ""
+		local color = item.Color or Ui.BLUE
+		badge.BackgroundColor3 = color
+		if toastStroke then
+			toastStroke.Color = color:Lerp(Color3.new(0, 0, 0), 0.45)
+		end
+		-- The badge: Gruff's face when he's talking, otherwise the title's emoji
+		if badgeIcon then
+			badgeIcon:Destroy()
+			badgeIcon = nil
+		end
+		local iconKey = item.Icon or (if item.Who == "Postmaster Gruff" then "Button_Gruff" else nil)
+		if iconKey then
+			badgeIcon = Ui.icon(badge, iconKey, {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromScale(0.95, 0.95),
+				ZIndex = 7,
+			})
+		else
+			badgeIcon = Ui.outlined(badge, {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromScale(0.75, 0.75),
+				TextScaled = true,
+				Text = emoji or "✉️",
+				ZIndex = 7,
+			})
+		end
+		-- Short messages: no reward line, so the card is smaller
+		local hasFoot = footer.Text ~= ""
+		toast.Size = UDim2.fromOffset(420, if hasFoot then 96 else 76)
+		body.TextWrapped = not hasFoot
+		body.Size = UDim2.new(1, -106, 0, if hasFoot then 22 else 34)
 		toast.Visible = true
 		-- Pop in (from 80% of whatever size suits this screen)
 		local full = Ui.screenScale()
@@ -615,23 +648,10 @@ function Hud.Start()
 		TweenService:Create(toastSizer, TweenInfo.new(0.25, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 			Scale = full,
 		}):Play()
-		local stars = item.Stars
-		ratingStamp.Visible = stars ~= nil
-		if stars then
-			ratingStamp.Text = string.rep("★", stars) .. string.rep("☆", 5 - stars)
-			ratingStamp.Size = UDim2.fromOffset(280, 84)
-			ratingStamp.TextTransparency = 1
-			task.delay(0.35, function()
-				TweenService:Create(ratingStamp, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-					Size = UDim2.fromOffset(140, 42),
-					TextTransparency = 0,
-				}):Play()
-			end)
-		end
 	end
 
-	local function showToast(who: string, text: string, foot: string?, stars: number?, color: Color3?)
-		local item: Toast = { Who = who, Text = text, Foot = foot, Stars = stars, Color = color }
+	local function showToast(who: string, text: string, foot: string?, stars: number?, color: Color3?, icon: string?)
+		local item: Toast = { Who = who, Text = text, Foot = foot, Stars = stars, Color = color, Icon = icon }
 		local last = queue[#queue] or current
 		if last and last.Who == who and last.Text == text then
 			return -- the same message again
@@ -765,39 +785,29 @@ function Hud.Start()
 			showToast(data.Speaker, data.Text, nil, nil, SPEAKER_COLORS[data.Speaker] or Ui.BLUE)
 		elseif kind == "Parcel" then
 			-- A taped box went into your bag
-			local stamp = if data.Stamp then `   {data.Stamp}` else ""
 			local variant = if data.Variant then Config.Variants.ById[data.Variant] else nil
-			local streak = if data.Streak and data.Streak > 1.001
-				then `   🔥 streak x{math.floor(data.Streak * 100 + 0.5) / 100}`
-				else ""
 			showToast(
-				`📦 Taped! {if variant then variant.Emoji .. " " .. variant.DisplayName .. " " else ""}{data.Animal} is in your bag ({data.Count}/{data.Capacity})`,
-				`Carry it to the Mail Chute in town and {Ui.hint("hold E", "hold X", "hold the Mail button")} to mail it.`,
-				`worth {Format.Short(data.Coins)} coins{stamp}{streak}`,
-				data.Stars,
+				`📦 Boxed a {if variant then variant.DisplayName .. " " else ""}{data.Animal}! {string.rep(
+					"★",
+					data.Stars or 0
+				)}`,
+				`Mail it at the chute in town ({data.Count}/{data.Capacity} in your bag)`,
+				`+{Format.Short(data.Coins)} coins`,
+				nil,
 				Ui.GREEN
 			)
 		elseif kind == "MailReceipt" then
 			-- You mailed your bag at the chute: coins fly into your counter
 			flyInto("Hud_Coins", math.clamp(6 + data.Count * 2, 8, 18), coinRow)
 			local ready = data.OrdersReady or 0
-			local extras = if ready > 0
-				then `   📋 {ready} order{if ready == 1 then "" else "s"} ready to CLAIM!`
-				else ""
-			local plural = if data.Count == 1 then "parcel" else "parcels"
-			showToast(
-				`✉️ {data.Count} {plural} mailed ({data.Chute})`,
-				`"{data.Line}"   {table.concat(data.Lines, ",  ")}`,
-				`+{Format.Short(data.Coins)} coins{extras}`,
-				data.Best,
-				Ui.GOLD
-			)
-		elseif kind == "Roar" then
-			showToast("ROOOOAR!", "It roared at you! You're frozen in fear for a second.", nil, nil, Ui.RED)
-		elseif kind == "Freeze" then
-			showToast("Brrr!", "It froze you solid for a moment!", nil, nil, Ui.BLUE)
-		elseif kind == "Spray" then
-			showToast("Pssssht!", "You got sprayed. Oh no. OH NO.", nil, nil, Ui.GREEN)
+			-- Gruff's speech bubble: his reaction, a word about your best animal, and the coins
+			local variant = if data.BestVariant then Config.Variants.ById[data.BestVariant] else nil
+			local about = if variant
+				then `That {data.BestName} was {string.upper(variant.DisplayName)}. Not bad.`
+				elseif ready > 0 then `{ready} order{if ready == 1 then "" else "s"} ready to claim in MENU.`
+				elseif data.Count > 1 then `{data.Count} parcels. Best one: the {data.BestName}.`
+				else `One {data.BestName}, delivered.`
+			showToast(`"{data.Line}"`, about, `+{Format.Short(data.Coins)} coins`, nil, Ui.GOLD, "Button_Gruff")
 		elseif kind == "Breakout" then
 			slamStamp("RETURN TO SENDER")
 		elseif kind == "XP" then
@@ -847,8 +857,8 @@ function Hud.Start()
 			end)
 		elseif kind == "ServerBoost" then
 			showToast(
-				"🚀 SERVER BOOST!",
-				`{data.By} gave EVERYONE {data.Mult}x coins! Go mail some animals.`,
+				`🚀 {data.Mult}x coins for everyone!`,
+				`Thanks, {data.By}!`,
 				`{clock(data.Seconds)} left`,
 				nil,
 				Ui.GOLD
@@ -856,9 +866,9 @@ function Hud.Start()
 		elseif kind == "QuestDone" then
 			local nextText = if data.Next then `Next: {data.Next}` else "That was the last one. Legend."
 			showToast(
-				`✅ Quest complete: {data.Text}`,
+				"✅ Quest done!",
 				nextText,
-				`+{Format.Short(data.XP)} XP   +{Format.Short(data.Coins)} coins   +{data.Diamonds or 0} 💎`,
+				`+{Format.Short(data.Coins)} coins  +{data.Diamonds or 0} 💎`,
 				nil,
 				Ui.GREEN
 			)
@@ -875,17 +885,11 @@ function Hud.Start()
 			if player:GetAttribute("SkipBoss") == true then
 				return -- (they pressed Skip on the boss banner)
 			end
-			showToast(
-				`⚔️ {data.Boss} HAS LANDED!`,
-				"Press GO FIGHT on the boss banner (or step on the red BOSS pad) and help box it!",
-				nil,
-				nil,
-				Ui.RED
-			)
+			showToast(`⚔️ {data.Boss} has landed!`, "Press GO FIGHT to join the whole server.", nil, nil, Ui.RED)
 		elseif kind == "BossWin" then
 			showToast(
-				`🏆 {data.Boss} BOXED!`,
-				if data.Top then `Top helper: {data.Top} (crown until the next boss!)` else "The whole server did it!",
+				`🏆 {data.Boss} boxed!`,
+				if data.Top then `Top helper: {data.Top}` else "The whole server did it!",
 				nil,
 				nil,
 				Ui.GOLD
@@ -894,11 +898,9 @@ function Hud.Start()
 			showToast(`📮 {data.Boss} got away`, "RETURN TO SENDER. It'll be back next hour.", nil, nil, Ui.GREY)
 		elseif kind == "BossReward" then
 			showToast(
-				if data.Top then "👑 You were the top helper!" else "⚔️ Boss reward",
-				if data.Mailed
-					then "Mailed it in time: rewards x1.5! Your next job is a guaranteed Shiny!"
-					else "Your next job is a guaranteed Shiny!",
-				`CLAIM +{data.Diamonds} 💎  +{Format.Short(data.Coins)} coins in MENU > ORDERS`,
+				if data.Top then "👑 Top helper!" else "⚔️ Boss reward!",
+				"Your next animal is a guaranteed Shiny.",
+				`+{data.Diamonds} 💎  +{Format.Short(data.Coins)} coins`,
 				nil,
 				Ui.GOLD
 			)
@@ -906,8 +908,8 @@ function Hud.Start()
 			local variant = Config.Variants.ById[data.Variant]
 			if variant then
 				showToast(
-					`{variant.Emoji} A {string.upper(variant.DisplayName)} {data.Animal}!`,
-					`Rare find! It pays {data.PayMult}x coins and extra XP. Don't let it get away!`,
+					`{variant.Emoji} {variant.DisplayName} {data.Animal}!`,
+					`It pays {data.PayMult}x. Don't let it get away!`,
 					nil,
 					nil,
 					variant.Color
@@ -925,33 +927,27 @@ function Hud.Start()
 				)
 			end
 		elseif kind == "StreakLost" then
-			showToast(
-				`💔 Streak lost (x{data.Count})`,
-				`Your delivery streak ended ({data.Why}). Box with 4+ stamps to build it back up!`,
-				nil,
-				nil,
-				Ui.RED
-			)
+			showToast("💔 Streak lost", "Box with 4+ stars to start a new one.", nil, nil, Ui.RED)
 		elseif kind == "ChallengeDone" then
 			showToast(
-				`✅ {if data.Weekly then "Weekly" else "Daily"} challenge done!`,
-				data.Text,
-				`+{data.Diamonds} 💎   +{Format.Short(data.Coins)} coins`,
+				"✅ Challenge done!",
+				"Claim it in MENU, then ORDERS.",
+				`+{data.Diamonds} 💎  +{Format.Short(data.Coins)} coins`,
 				nil,
 				Ui.GREEN
 			)
 		elseif kind == "AllDailies" then
 			showToast(
-				"🏆 All daily challenges done!",
-				`{data.Streak} day{if data.Streak == 1 then "" else "s"} in a row. Come back tomorrow to grow the bonus!`,
+				"🏆 All dailies done!",
+				`{data.Streak} day{if data.Streak == 1 then "" else "s"} in a row!`,
 				`+{data.Diamonds} 💎`,
 				nil,
 				Ui.GOLD
 			)
 		elseif kind == "NewSpecies" then
 			showToast(
-				`📚 New animal mailed: {data.Animal}!`,
-				"It's in your collection (BAG, then Animals).",
+				`📚 New animal: {data.Animal}!`,
+				"Added to your collection in the BAG.",
 				`+{Format.Short(data.XP)} XP`,
 				nil,
 				Ui.PURPLE
