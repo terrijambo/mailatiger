@@ -483,9 +483,30 @@ function Hud.Start()
 		if typeof(text) == "string" and text ~= "" then
 			objective.Text = text
 		else
-			local parcels = #Profile.Get().Parcels
-			objective.Text = if parcels > 0
-				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at the Mail Chute! (GRUFF = back to town)`
+			local data = Profile.Get()
+			local parcels = #data.Parcels
+			-- parcels a machine you own could still stamp (more XP), and parcels waiting inside machines
+			local stampable = 0
+			local owned: { [string]: boolean } = data.Machines or {}
+			local processing: { [string]: any } = data.Processing or {}
+			for _, parcel in data.Parcels do
+				for id in owned do
+					if not (parcel.Machines and parcel.Machines[id]) then
+						stampable += 1
+						break
+					end
+				end
+			end
+			local waiting = 0
+			for _ in processing do
+				waiting += 1
+			end
+			objective.Text = if stampable > 0
+				then `📮 Stamp your parcels at your machines (more XP), then mail them at Gruff's chute!`
+				elseif
+					parcels > 0
+				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at Gruff's chute! (GRUFF = back to town)`
+				elseif waiting > 0 then "⏳ Your parcels are in the machines: collect them when they're ready!"
 				else "🐾 Grab a wild animal (HOLD E)! At Gruff's, PEN = teleport to your best zone"
 		end
 		-- (the BOX screen has its own instructions; during the walkthrough, Gruff's panel is the only one)
@@ -966,6 +987,15 @@ function Hud.Start()
 				`+{Format.Short(data.XP)} XP`,
 				nil,
 				Ui.PURPLE
+			)
+		elseif kind == "MachineReady" then
+			showToast(
+				`✅ {data.Name}: {data.Count} parcel{if data.Count == 1 then "" else "s"} ready!`,
+				"Hold E at the machine to collect them, stamped.",
+				nil,
+				nil,
+				Ui.GREEN,
+				`Machine_{data.Id}`
 			)
 		elseif kind == "EggHatched" then
 			local rarity = Config.Rarity.ById[data.Rarity or "Common"]

@@ -9,6 +9,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -20,7 +21,7 @@ local player = Players.LocalPlayer
 
 local Inventory = {}
 
-local TABS = { "Trolls", "Boxes", "Stamps", "Tools", "Animals", "Bosses" }
+local TABS = { "Parcels", "Trolls", "Boxes", "Stamps", "Tools", "Animals", "Bosses" }
 
 function Inventory.Start()
 	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
@@ -43,7 +44,7 @@ function Inventory.Start()
 		CanvasSize = UDim2.new(),
 	}, window)
 
-	local current = "Trolls"
+	local current = "Parcels"
 	local tabButtons: { [string]: TextButton } = {}
 
 	local function clear()
@@ -148,6 +149,20 @@ function Inventory.Start()
 					LayoutOrder = index,
 					BackgroundColor3 = if mailed > 0 then Ui.WHITE else Color3.fromRGB(215, 215, 225),
 				})
+				local rarity = Config.Rarity.ById[Config.Wild.RarityOf[animal.Id] or "Common"]
+				if rarity then
+					Ui.label(card, {
+						Position = UDim2.fromOffset(6, 3),
+						Size = UDim2.new(1, -12, 0, 14),
+						TextSize = 12,
+						Font = Ui.TITLE_FONT,
+						TextXAlignment = Enum.TextXAlignment.Left,
+						TextColor3 = rarity.Color,
+						TextStrokeTransparency = 0.4,
+						Text = string.upper(rarity.DisplayName),
+						ZIndex = 3,
+					})
+				end
 				local icon = Ui.icon(card, `Animal_{animal.Id}`, {
 					AnchorPoint = Vector2.new(0.5, 0),
 					Position = UDim2.new(0.5, 0, 0, 8),
@@ -188,7 +203,72 @@ function Inventory.Start()
 		title.Text = "Your Bag"
 		Ui.make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, list)
 
-		if current == "Trolls" then
+		if current == "Parcels" then
+			-- Your parcels: each one's stamps (from the Post Office machines) and what they multiply its XP by,
+			-- then any parcels sitting in a machine
+			local order = 0
+			local function stampsOf(parcel: any): (string, number)
+				local text, mult = "", 1
+				for _, machine in Config.Machines.List do
+					if parcel.Machines and parcel.Machines[machine.Id] then
+						text ..= machine.Emoji
+						mult *= machine.XPMult
+					end
+				end
+				return text, mult
+			end
+			for _, parcel in data.Parcels do
+				order += 1
+				local animal = Config.Animals.ById[parcel.AnimalId]
+				local stamps, mult = stampsOf(parcel)
+				local card = row(
+					order,
+					`Animal_{parcel.AnimalId}`,
+					`{if animal then animal.DisplayName else parcel.AnimalId}  {string.rep("★", parcel.Stars or 0)}`,
+					if stamps ~= ""
+						then `Stamped {stamps}  ·  x{string.format("%g", math.round(mult * 100) / 100)} XP when you mail it`
+						else "No stamps yet: drop it in a machine in the plaza for more XP, then mail it at Gruff's chute."
+				)
+				rowButton(
+					card,
+					if stamps ~= "" then `x{string.format("%g", math.round(mult * 100) / 100)} XP` else "x1 XP",
+					if stamps ~= "" then Ui.PURPLE else Ui.GREY,
+					nil
+				)
+			end
+			local now = Workspace:GetServerTimeNow()
+			for _, machine in Config.Machines.List do
+				local batch = (data.Processing or {})[machine.Id]
+				if batch then
+					order += 1
+					local left = math.ceil(batch.ReadyAt - now)
+					local count = #batch.Parcels
+					local card = row(
+						order,
+						`Machine_{machine.Id}`,
+						`In the {machine.DisplayName}: {count} parcel{if count == 1 then "" else "s"}`,
+						if left > 0
+							then `Working... ready in {left}s. Then hold E at it to collect them, stamped.`
+							else "Ready! Hold E at the machine to collect them, stamped."
+					)
+					rowButton(
+						card,
+						if left > 0 then `⏳ {left}s` else "READY ✓",
+						if left > 0 then Ui.GREY else Ui.GREEN,
+						nil
+					)
+				end
+			end
+			if order == 0 then
+				Ui.label(list, {
+					LayoutOrder = 1,
+					Size = UDim2.new(1, -12, 0, 60),
+					TextSize = 16,
+					TextColor3 = Color3.fromRGB(110, 100, 90),
+					Text = "No parcels. Grab a wild animal and box it: it goes in your bag as a parcel. Stamp it at the machines in the plaza, then mail it at Gruff's chute.",
+				})
+			end
+		elseif current == "Trolls" then
 			local keyIndex = 0
 			for index, troll in Config.Trolls.List do
 				local owned = (data.Trolls or {})[troll.Id]
