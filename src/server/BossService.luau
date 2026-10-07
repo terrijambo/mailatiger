@@ -34,6 +34,8 @@ local MapBuilder = require(script.Parent.MapBuilder)
 local Remotes = require(script.Parent.Remotes)
 
 local Boss = Config.Events.Boss
+-- The arena's way in (toward town and the bridge): the stands are on the other three sides
+local ENTRANCE = Config.World.ById.Boss.Gate or Vector3.zAxis
 local SEAMS = 5
 
 local BossService = {}
@@ -229,48 +231,14 @@ end
 ---------------------------------------------------------------------------------------------------
 -- The arena (built once: a floating grass island over the ocean, with a rim and a way home)
 
+-- The arena's stage: stands, crowd, floodlights, scoreboard (BossArena). The ground is the volcano island
+-- itself (Scenery/Volcano.luau), joined to town by a bridge.
 local function buildArena(map: MapBuilder.Map)
 	arena = Instance.new("Folder")
 	arena.Name = "BossArena"
 	arena.Parent = Workspace
-	local size = Boss.ArenaSize
-	local function block(name: string, cframe: CFrame, partSize: Vector3, color: Color3, material: Enum.Material?)
-		local part = Instance.new("Part")
-		part.Name = name
-		part.Anchored = true
-		part.Size = partSize
-		part.CFrame = cframe
-		part.Color = color
-		part.Material = material or Enum.Material.SmoothPlastic
-		part.TopSurface = Enum.SurfaceType.Smooth
-		part.Parent = arena
-		return part
-	end
-	local c = Boss.ArenaCenter
-	block("Island", CFrame.new(c + Vector3.new(0, -4, 0)), Vector3.new(size, 8, size), Color3.fromRGB(112, 214, 86))
-	block(
-		"Cliff",
-		CFrame.new(c + Vector3.new(0, -14, 0)),
-		Vector3.new(size - 8, 14, size - 8),
-		Color3.fromRGB(150, 110, 80)
-	)
-	for _, side in { -1, 1 } do
-		block(
-			"Rim",
-			CFrame.new(c + Vector3.new(side * (size / 2 - 1), 1.5, 0)),
-			Vector3.new(2, 3, size),
-			Color3.fromRGB(200, 200, 210)
-		)
-		block(
-			"Rim",
-			CFrame.new(c + Vector3.new(0, 1.5, side * (size / 2 - 1))),
-			Vector3.new(size, 3, 2),
-			Color3.fromRGB(200, 200, 210)
-		)
-	end
 	platformTop = 0
-	map.Leaderboards.BossHunters = BossArena.Build(arena, c, size)
-	local _ = map
+	map.Leaderboards.BossHunters = BossArena.Build(arena, Boss.ArenaCenter, Boss.ArenaSize, ENTRANCE)
 end
 
 -- Into the arena (GO on the boss banner, or MENU > TRAVEL). Not mid-job: finish that first.
@@ -286,7 +254,8 @@ local function enterArena(player: Player)
 		})
 		return
 	end
-	teleport(player, center() + Vector3.new(math.random(-10, 10), 0, Boss.ArenaSize / 2 - 16))
+	local across = Vector3.new(0, 1, 0):Cross(ENTRANCE)
+	teleport(player, center() + ENTRANCE * (Boss.ArenaSize / 2 - 16) + across * math.random(-10, 10))
 end
 
 -- GO on the boss banner: straight to the arena while a boss is coming or on
@@ -1401,7 +1370,7 @@ function BossService.Init(map: MapBuilder.Map)
 			if root then
 				local offset = root.Position - Boss.ArenaCenter
 				if math.abs(offset.X) < 120 and math.abs(offset.Z) < 120 and root.Position.Y < -6 then
-					teleport(player, center() + Vector3.new(0, 0, Boss.ArenaSize / 2 - 16))
+					teleport(player, center() + ENTRANCE * (Boss.ArenaSize / 2 - 16))
 				end
 			end
 		end

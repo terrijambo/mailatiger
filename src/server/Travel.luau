@@ -128,6 +128,22 @@ local function watchZones()
 		for _, player in Players:GetPlayers() do
 			local character = player.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			-- Fell into the sea (off a cliff or a bridge): Gruff fishes you out and puts you back in town. (The
+			-- boss island puts you back in its arena instead: BossService.)
+			local bossCenter = Config.Events.Boss.ArenaCenter
+			if
+				root
+				and root.Position.Y < Config.World.WaterY + 2
+				and (Vector3.new(root.Position.X - bossCenter.X, 0, root.Position.Z - bossCenter.Z)).Magnitude > 125
+				and player:GetAttribute("Stage") ~= "Box"
+			then
+				Travel.ToTown(player)
+				Remotes.Notify:FireClient(player, "Message", {
+					Speaker = "Postmaster Gruff",
+					Text = "SPLASH! I fished you out. Mind the edge next time.",
+				})
+				continue
+			end
 			if root then
 				for arenaId, arena in map.Arenas do
 					local p = root.Position

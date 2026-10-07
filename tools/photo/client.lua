@@ -1,0 +1,88 @@
+-- Photo tour, client side (used instead of tools/e2e/client.lua by tools/photo/run.sh). Hides the UI, sets
+-- bright daylight, and flies the camera through a list of shots (the whole archipelago from above, the
+-- town, each island), holding each one while tools/photo/shoot.py screenshots the test window.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ScriptContext = game:GetService("ScriptContext")
+local StarterGui = game:GetService("StarterGui")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local steps, clientErrors = {}, {}
+ScriptContext.Error:Connect(function(message, trace)
+	if #clientErrors < 30 then
+		table.insert(clientErrors, message .. " @ " .. string.sub(trace, 1, 160))
+	end
+end)
+
+local HOLD = tonumber(os.getenv and os.getenv("PHOTO_HOLD") or nil) or 7
+
+local function run()
+	local map = Workspace:WaitForChild("GrayboxMap", 30)
+	if not map then
+		table.insert(steps, "FAIL no map")
+		return
+	end
+	local remotes = ReplicatedStorage:WaitForChild("Remotes")
+	remotes.ShopAction:FireServer("Promo", "Noon")
+	task.wait(8) -- (let the models and the islands finish loading)
+	local Config = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Config"))
+	local World = Config.World
+
+	local camera = Workspace.CurrentCamera
+	local function hideUi()
+		pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.All, false)
+		for _, gui in player.PlayerGui:GetChildren() do
+			if gui:IsA("ScreenGui") then
+				gui.Enabled = false
+			end
+		end
+	end
+
+	local shots = {}
+	local function shot(name, from, to, fov)
+		table.insert(shots, { Name = name, CFrame = CFrame.lookAt(from, to), Fov = fov or 60 })
+	end
+	-- The whole archipelago, from high up in the south (like the concept art)
+	shot("overview", Vector3.new(0, 640, 520), Vector3.new(0, 0, -20), 62)
+	shot("overview_west", Vector3.new(-520, 560, 260), Vector3.new(-40, 0, 0), 62)
+	shot("overview_north", Vector3.new(160, 600, -560), Vector3.new(0, 0, 0), 62)
+	-- The town
+	shot("town", Vector3.new(0, 150, 190), Vector3.new(0, 0, -10), 55)
+	shot("town_low", Vector3.new(30, 26, 70), Vector3.new(0, 8, -40), 60)
+	shot("plaza_postoffice", Vector3.new(-18, 14, 20), Vector3.new(0, 8, -55), 65)
+	-- Each island, from its town side and a bit above
+	for _, island in World.Islands do
+		local toTown = (Vector3.zero - island.Center)
+		toTown = Vector3.new(toTown.X, 0, toTown.Z).Unit
+		local from = island.Center + toTown * (island.Radius + 70) + Vector3.new(0, 95, 0)
+		shot(island.Id, from, island.Center + Vector3.new(0, 4, 0), 58)
+		local side = Vector3.new(0, 1, 0):Cross(toTown)
+		shot(island.Id .. "_close", island.Center + side * 75 + toTown * 55 + Vector3.new(0, 52, 0), island.Center + Vector3.new(0, 6, 0), 65)
+	end
+	-- A bridge up close
+	local barn = World.ById.Barn
+	local from, to = World.Bridge(barn)
+	shot("bridge", (from + to) / 2 + Vector3.new(26, 12, 10), (from + to) / 2 + Vector3.new(0, 1, 0), 60)
+
+	for index, s in shots do
+		hideUi()
+		camera.CameraType = Enum.CameraType.Scriptable
+		camera.FieldOfView = s.Fov
+		camera.CFrame = s.CFrame
+		print(string.format("PHOTO %d %s %.1f", index, s.Name, os.clock()))
+		table.insert(steps, string.format("PASS shot %d %s", index, s.Name))
+		local started = os.clock()
+		while os.clock() - started < HOLD do
+			camera.CameraType = Enum.CameraType.Scriptable
+			camera.CFrame = s.CFrame
+			task.wait()
+		end
+	end
+end
+
+local ok, err = pcall(run)
+if not ok then
+	table.insert(steps, "FAIL photo tour crashed: " .. tostring(err))
+end
+ReplicatedStorage:WaitForChild("E2EReport"):FireServer({ Steps = steps, Errors = clientErrors })

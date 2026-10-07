@@ -29,6 +29,7 @@ return {
 	Variants = require(script.Variants),
 	Challenges = require(script.Challenges),
 	Events = require(script.Events),
+	World = require(script.World),
 	Wild = require(script.Wild),
 	Dive = require(script.Dive),
 

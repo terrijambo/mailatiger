@@ -63,6 +63,8 @@ local function promo(player: Player, profile: DataService.Profile, id: string)
 			"Message",
 			{ Speaker = "Promo Kit", Text = "Every animal and zone unlocked, +1M coins." }
 		)
+	elseif id == "Noon" then
+		Look.SetClock(13) -- (the photo tool: bright daylight)
 	elseif id == "Sunset" then
 		Look.SetClock(17.7)
 	elseif id == "Night" then

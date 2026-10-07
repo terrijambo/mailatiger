@@ -90,11 +90,12 @@ end
 
 -- The permanent dressing: stands, crowd, floodlights, banners, the scoreboard and the Boss Hunters board.
 -- Returns the part the Boss Hunters leaderboard is drawn on (its +X face looks into the arena).
-function BossArena.Build(parent: Instance, center: Vector3, size: number): BasePart
+function BossArena.Build(parent: Instance, center: Vector3, size: number, entrance: Vector3): BasePart
 	local half = size / 2
 	local steps = 4
-	-- Stands on the north, east and west sides (south is the way in)
-	for _, out in { Vector3.new(0, 0, -1), Vector3.new(1, 0, 0), Vector3.new(-1, 0, 0) } do
+	local across = Vector3.new(0, 1, 0):Cross(entrance)
+	-- Stands on the three sides away from the way in
+	for _, out in { -entrance, across, -across } do
 		local facing = CFrame.lookAt(center, center - out) -- looking from the stands toward the middle
 		for step = 1, steps do
 			local distance = half + 2 + (step - 0.5) * 4
@@ -161,8 +162,9 @@ function BossArena.Build(parent: Instance, center: Vector3, size: number): BaseP
 		light.Parent = lamp
 		CollectionService:AddTag(lamp, "BossFloodlight")
 	end
-	-- The scoreboard over the way in (south)
-	local boardCF = CFrame.lookAt(center + Vector3.new(0, 26, half - 2), center + Vector3.new(0, 26, 0))
+	-- The scoreboard over the way in
+	local boardCF =
+		CFrame.lookAt(center + entrance * (half - 2) + Vector3.new(0, 26, 0), center + Vector3.new(0, 26, 0))
 	local board = block(parent, "Scoreboard", boardCF, Vector3.new(36, 14, 2), Color3.fromRGB(25, 25, 35))
 	for _, x in { -16, 16 } do
 		block(
@@ -177,19 +179,22 @@ function BossArena.Build(parent: Instance, center: Vector3, size: number): BaseP
 	label.Font = Enum.Font.FredokaOne
 	scoreboard = label
 
-	-- The Boss Hunters board, on the west side near the way in (LeaderboardService draws on its +X face)
-	local hunterAt = center + Vector3.new(-half + 4, 0, half - 22)
+	-- The Boss Hunters board, on one side near the way in, facing into the arena (LeaderboardService draws on
+	-- its Right face, so its right points inward)
+	local inward = across
+	local hunterAt = center - across * (half - 4) + entrance * (half - 22)
+	local turned = CFrame.fromMatrix(Vector3.zero, inward, Vector3.yAxis)
 	block(
 		parent,
 		"HunterBoardStand",
-		CFrame.new(hunterAt + Vector3.new(-0.8, 6.5, 0)),
+		CFrame.new(hunterAt + Vector3.new(0, 6.5, 0) - inward * 0.8) * turned,
 		Vector3.new(1, 13, 12),
 		Color3.fromRGB(150, 25, 35)
 	)
 	return block(
 		parent,
 		"HunterBoard",
-		CFrame.new(hunterAt + Vector3.new(0, 7, 0)),
+		CFrame.new(hunterAt + Vector3.new(0, 7, 0)) * turned,
 		Vector3.new(0.2, 10, 10),
 		Color3.fromRGB(30, 40, 80)
 	)

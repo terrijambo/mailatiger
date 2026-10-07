@@ -415,6 +415,9 @@ local function run()
 	local myRoot = me and me:FindFirstChild("HumanoidRootPart")
 	local wentPhysics, wentFlat, flew = false, false, 0
 	if DiveMove and myHumanoid and myRoot then
+		-- (you land facing the zone gate: turn round and dive down the open path instead)
+		myRoot.CFrame = myRoot.CFrame * CFrame.Angles(0, math.pi, 0)
+		task.wait(0.2)
 		local from = myRoot.Position
 		DiveMove.Try()
 		local t0 = os.clock()

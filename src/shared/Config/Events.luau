@@ -5,6 +5,8 @@
 --     in a row), announced AnnounceSeconds early
 --   * on the hour (:00) THE BIG ONE: a boss fight for the whole server (Boss below)
 
+local World = require(script.Parent.World)
+
 export type SmallEvent = {
 	Id: string,
 	DisplayName: string,
@@ -87,8 +89,8 @@ return {
 		Jobs = { 10, 6, 4 }, -- coins worth this many jobs of your best animal
 	},
 	CoinRain = {
-		Center = Vector3.new(0, 0, 17),
-		Radius = 80,
+		Center = Vector3.zero, -- the round plaza in town
+		Radius = 56,
 		Drops = 160,
 		DiamondChance = 0.06,
 		CoinJobs = 0.5, -- each coin = half a job of your best animal
@@ -96,24 +98,24 @@ return {
 	Mystery = {
 		Diamonds = 8,
 		Jobs = 15,
-		-- Where it can land: the plaza, the boulevard and the avenues (x, z)
+		-- Where it can land: around the plaza and out on the town island's green (x, z)
 		Spots = {
-			Vector3.new(-60, 0, 40),
-			Vector3.new(60, 0, -20),
-			Vector3.new(0, 0, 80),
-			Vector3.new(-120, 0, -112),
-			Vector3.new(120, 0, -112),
-			Vector3.new(-76, 0, -180),
-			Vector3.new(76, 0, -200),
-			Vector3.new(-100, 0, 117),
-			Vector3.new(100, 0, 117),
+			Vector3.new(-40, 0, 28),
+			Vector3.new(40, 0, 28),
+			Vector3.new(30, 0, -36),
+			Vector3.new(-30, 0, -36),
+			Vector3.new(0, 0, 50),
+			Vector3.new(-82, 0, 30),
+			Vector3.new(82, 0, -30),
+			Vector3.new(70, 0, 70),
+			Vector3.new(-70, 0, -70),
 		},
 	},
 	Stampede = {
 		Animals = { "Hamster", "Bunny", "Goldfish", "Hedgehog" },
 		Count = 20,
-		Center = Vector3.new(0, 0, 17),
-		Radius = 75,
+		Center = Vector3.zero, -- (they run around the round plaza)
+		Radius = 55,
 		Jobs = 1.5, -- each catch = this many jobs of your best animal
 		XP = 15,
 	},
@@ -125,7 +127,7 @@ return {
 			{ AnimalId = "Yeti", DisplayName = "KING YETI" },
 			{ AnimalId = "Dragon", DisplayName = "MAMA DRAGON" },
 		},
-		ArenaCenter = Vector3.new(400, 0, -150), -- a floating island over the ocean, east of town
+		ArenaCenter = World.ById.Boss.Center, -- the volcano island, southwest of town (Config/World.luau)
 		ArenaSize = 110,
 		WarnSeconds = 300, -- a small countdown shows this long before...
 		GoSeconds = 30, -- ...and the real notification (GO FIGHT, teleporting in) only this long before

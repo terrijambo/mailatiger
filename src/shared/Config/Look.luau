@@ -28,8 +28,8 @@ return {
 	},
 
 	-- Vivid color (the bright, saturated look of popular simulators), toned down a little
-	Saturation = 0.14,
-	Contrast = 0.1,
+	Saturation = 0.02,
+	Contrast = 0.12,
 	Exposure = -0.04, -- (ColorCorrection brightness: slightly darker overall)
 
 	-- Day and night: a full day is DayMinutes of daylight (6:00 to 18:00) and NightMinutes of night. Every
