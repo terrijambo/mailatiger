@@ -120,7 +120,7 @@ function SideButtons.Start()
 			Menus.Toggle("Pen")
 		end
 	)
-	add(
+	local shopButton = add(
 		column,
 		{ Label = "SHOP", Icon = "Button_Shop", Color = Ui.ORANGE, LayoutOrder = 2 },
 		Enum.KeyCode.DPadUp,
@@ -128,9 +128,14 @@ function SideButtons.Start()
 			Menus.Toggle("Shop")
 		end
 	)
-	add(column, { Label = "STORE", Icon = "Button_Store", Color = Ui.GOLD, LayoutOrder = 3 }, nil, function()
-		Menus.Toggle("Store")
-	end)
+	local storeButton = add(
+		column,
+		{ Label = "STORE", Icon = "Button_Store", Color = Ui.GOLD, LayoutOrder = 3 },
+		nil,
+		function()
+			Menus.Toggle("Store")
+		end
+	)
 	local menuButton = add(
 		column,
 		{ Label = "MENU", Icon = "Button_Menu", Color = Ui.PURPLE, LayoutOrder = 4 },
@@ -182,15 +187,6 @@ function SideButtons.Start()
 	)
 	invite.Visible = false
 
-	-- Red "!" on MENU and ORDERS while a finished order or challenge is waiting for CLAIM
-	local menuDot = Ui.alertDot(menuButton)
-	local ordersDot = Ui.alertDot(ordersButton)
-	Profile.Watch(function()
-		local waiting = Profile.Claimable(Profile.Get()) > 0
-		menuDot.Visible = waiting
-		ordersDot.Visible = waiting
-	end)
-
 	local function layout()
 		local compact = Ui.compact()
 		local margin = Ui.margin()
@@ -230,6 +226,38 @@ function SideButtons.Start()
 		task.defer(layout) -- (after the column's own size and scale update)
 	end)
 	popup:GetPropertyChangedSignal("Visible"):Connect(layout)
+
+	-- Red "!" on MENU and ORDERS while a finished order or challenge is waiting for CLAIM
+	local menuDot = Ui.alertDot(menuButton)
+	local ordersDot = Ui.alertDot(ordersButton)
+	Profile.Watch(function()
+		local data = Profile.Get()
+		local learning = Profile.Learning()
+		local waiting = Profile.Claimable(data) > 0 and not learning
+		menuDot.Visible = waiting
+		ordersDot.Visible = waiting
+		-- Simple start: PEN first, SHOP once you've mailed something (Gruff sends you there), STORE and MENU
+		-- once the walkthrough is done
+		local shopWas, menuWas = shopButton.Visible, menuButton.Visible
+		shopButton.Visible = not learning or (data.Mailed or 0) > 0
+		storeButton.Visible = not learning
+		menuButton.Visible = not learning
+		local function popIn(button: TextButton, was: boolean)
+			if button.Visible and not was then
+				-- A little pop so the new button gets noticed
+				local pop = button:FindFirstChildOfClass("UIScale") or Ui.make("UIScale", {}, button)
+				pop.Scale = 0.3
+				TweenService:Create(pop, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+					Scale = 1,
+				}):Play()
+			end
+		end
+		popIn(shopButton, shopWas)
+		popIn(menuButton, menuWas)
+		if menuButton.Visible ~= menuWas or shopButton.Visible ~= shopWas then
+			layout()
+		end
+	end)
 
 	-- Opening any window folds the menu away
 	Menus.OnOpen = function()

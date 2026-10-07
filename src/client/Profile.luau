@@ -121,6 +121,12 @@ function Profile.Claimable(data: Data): number
 	return count
 end
 
+-- Still doing Gruff's first-time walkthrough? (Simple start: most of the HUD stays hidden until it's done,
+-- so a new player only sees what they need right now)
+function Profile.Learning(): boolean
+	return Profile.Get().TutorialDone ~= true
+end
+
 function Profile.Watch(callback: () -> ())
 	player:GetAttributeChangedSignal("Profile"):Connect(callback)
 	callback()

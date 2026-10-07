@@ -108,7 +108,7 @@ function Hud.Start()
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
 	}, rightStack)
 	local boostRow, boostLabel = statRow(rightStack, 1, "Hud_Boost", BOOST_ORANGE, true)
-	local _, bagLabel = statRow(rightStack, 2, "Hud_Bag", BAG_TAN, true)
+	local bagRow, bagLabel = statRow(rightStack, 2, "Hud_Bag", BAG_TAN, true)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
 
 	-- Delivery streak: a flame next to your coins ("🔥x5") that pops each time it grows
@@ -151,7 +151,9 @@ function Hud.Start()
 		Menus.Open("Upgrades")
 	end)
 	Profile.Watch(function()
-		diamondLabel.Text = Format.Short(Profile.Get().Diamonds or 0)
+		local diamonds = Profile.Get().Diamonds or 0
+		diamondLabel.Text = Format.Short(diamonds)
+		diamondRow.Visible = diamonds > 0 and not Profile.Learning() -- (simple start)
 	end)
 
 	-- Level + XP bar (top of the stack)
@@ -318,7 +320,8 @@ function Hud.Start()
 			then quest.Text
 			else `QUEST: {quest.Text}{if quest.Progress ~= "" then "  ·  " .. quest.Progress else ""}`
 		questFill.Size = UDim2.fromScale(quest.Fraction, 1)
-		questPill.Visible = player:GetAttribute("Stage") ~= "Box"
+		-- (simple start: during the walkthrough, Gruff's panel is the only instruction)
+		questPill.Visible = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()
 	end
 	Profile.Watch(refreshQuest)
 	player:GetAttributeChangedSignal("Stage"):Connect(refreshQuest)
@@ -338,6 +341,8 @@ function Hud.Start()
 		showCoins(profile.Coins)
 		local capacity = Profile.BagCapacity(profile)
 		bagLabel.Text = `{#profile.Parcels} / {capacity}`
+		-- (simple start: the bag shows up once you've boxed something)
+		bagRow.Visible = not Profile.Learning() or #profile.Parcels > 0 or profile.Mailed > 0
 		bagLabel.TextColor3 = if #profile.Parcels >= capacity then Color3.fromRGB(255, 100, 90) else BAG_TAN
 
 		-- Total coin boost from rebirths, Golden Paws, the server boost, Premium and the group
@@ -443,7 +448,8 @@ function Hud.Start()
 				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at the Mail Chute!`
 				else "🐹 Pick an animal at the PEN!"
 		end
-		banner.Visible = player:GetAttribute("Stage") ~= "Box" -- the BOX screen has its own instructions
+		-- (the BOX screen has its own instructions; during the walkthrough, Gruff's panel is the only one)
+		banner.Visible = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()
 	end
 	Profile.Watch(refreshObjective)
 	player:GetAttributeChangedSignal("Tip"):Connect(refreshObjective)
@@ -715,7 +721,21 @@ function Hud.Start()
 	}
 
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
+	-- Simple start: these popups wait until the walkthrough is done (events, the boss, quests, challenges)
+	local QUIET_WHILE_LEARNING: { [string]: boolean } = {
+		EventStart = true,
+		EventWinner = true,
+		BossStart = true,
+		BossWin = true,
+		BossLose = true,
+		QuestDone = true,
+		ChallengeDone = true,
+		AllDailies = true,
+	}
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })
+		if QUIET_WHILE_LEARNING[kind] and Profile.Learning() then
+			return
+		end
 		if kind == "Message" then
 			showToast(data.Speaker, data.Text, nil, nil, SPEAKER_COLORS[data.Speaker] or Ui.BLUE)
 		elseif kind == "Parcel" then

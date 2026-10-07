@@ -59,6 +59,6 @@ return {
 		Escaped = "You LOST it?! Catch it again. And rub the ♥ spots faster this time.",
 		Mail = "It's taped up and in your bag. Get back to town and HOLD E at the MAIL CHUTE by my counter. Follow the arrow.",
 		Shop = "Coins! Spend them at the SUPPLY SHOP on better tools, or unlock bigger animals at the Pen. Now get back to work.",
-		Reward = "Here, a little signing bonus. Don't spend it all on tape.",
+		Reward = "Here, a little signing bonus. Your MENU has orders, upgrades and more. Don't spend it all on tape.",
 	},
 }

@@ -15,6 +15,7 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
 local player = Players.LocalPlayer
@@ -135,6 +136,10 @@ function EventBanner.Start()
 		local nextId = attr("EventNext")
 		local nextAt = attr("EventNextAt")
 		barBack.Visible = false
+		if Profile.Learning() then
+			card.Visible = false -- (simple start: events and the boss show up after Gruff's walkthrough)
+			return
+		end
 
 		-- A boss coming or on? (SKIP lasts until it's over)
 		local bossComing = nextId == "Boss" and typeof(nextAt) == "number" and nextAt > now
@@ -379,7 +384,7 @@ function EventBanner.Start()
 			showVictory(data)
 			return
 		end
-		if kind ~= "BossTitle" or skipped then
+		if kind ~= "BossTitle" or skipped or Profile.Learning() then
 			return
 		end
 		bigName.Text = `👑 {data.Boss} 👑`
