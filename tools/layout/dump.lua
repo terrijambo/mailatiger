@@ -50,4 +50,15 @@ local function walk(node)
 	end
 end
 walk(map)
+-- Invisible walls: parts you can't see but still bump into (I|path|box...)
+for _, p in map:GetDescendants() do
+	if p:IsA("BasePart") and p.CanCollide and p.Transparency >= 0.95 then
+		local cf, size = p.CFrame, p.Size
+		local r = cf - cf.Position
+		local hx = math.abs(r.RightVector.X) * size.X + math.abs(r.UpVector.X) * size.Y + math.abs(r.LookVector.X) * size.Z
+		local hz = math.abs(r.RightVector.Z) * size.X + math.abs(r.UpVector.Z) * size.Y + math.abs(r.LookVector.Z) * size.Z
+		local pos = cf.Position
+		print(string.format("I|%s|%.1f|%.1f|%.1f|%.1f|%.1f|%.1f", pathOf(p), pos.X - hx / 2, pos.Y - size.Y / 2, pos.Z - hz / 2, pos.X + hx / 2, pos.Y + size.Y / 2, pos.Z + hz / 2))
+	end
+end
 print("LAYOUT done")

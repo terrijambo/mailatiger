@@ -48,7 +48,9 @@ type Ctx = {
 	HW: number, -- ...and along
 	BridgeEnd: Vector3,
 	Gate: Vector3, -- just outside the gate
-	Free: (Vector3, number) -> boolean, -- on the island, clear of the play area and the approach path
+	-- Spots already used by scenery (and other islands' bridges leaving from here): { Center, Radius }
+	Taken: { { Center: Vector3, Radius: number } },
+	Free: (Vector3, number) -> boolean, -- on the island, clear of the play area, the approach path and Taken
 	At: (number, number) -> Vector3, -- a ground point from (across, along) around the play area's center
 }
 
@@ -80,6 +82,7 @@ local function scatter(ctx: Ctx, count: number, pad: number, make: (Vector3) -> 
 		if ctx.Free(p, pad) then
 			placed += 1
 			make(p)
+			table.insert(ctx.Taken, { Center = p, Radius = pad })
 			if pad >= 3 then -- (trees, hay, rocks: not flowers and ferns)
 				table.insert(ctx.Zone.Obstacles, { Center = p, Radius = pad })
 			end
@@ -903,6 +906,7 @@ local function city(ctx: Ctx)
 				local height = random:NextNumber(40, 95)
 				local color = palette[random:NextInteger(1, #palette)]
 				box(f, "Skyscraper", p + Vector3.new(0, height / 2, 0), Vector3.new(size, height, size), color)
+				table.insert(ctx.Taken, { Center = p, Radius = size * 0.72 }) -- (no lamps inside it)
 				for wy = 5, height - 4, 5 do
 					if random:NextNumber() < 0.85 then
 						box(
@@ -1427,7 +1431,8 @@ local function arrival(ctx: Ctx)
 	end
 end
 
-function Zones.Build(island: Islands.Island, zone: Zone, bridgeEnd: Vector3)
+-- bridgesOut: where other islands' bridges leave this one (their arch stands there): kept clear
+function Zones.Build(island: Islands.Island, zone: Zone, bridgeEnd: Vector3, bridgesOut: { Vector3 }?)
 	local folder = Instance.new("Folder")
 	folder.Name = "Theme"
 	folder.Parent = island.Folder
@@ -1439,6 +1444,22 @@ function Zones.Build(island: Islands.Island, zone: Zone, bridgeEnd: Vector3)
 	local hu = math.abs(half:Dot(r))
 	local hw = math.abs(half:Dot(f))
 	local gate = center + f * (hw + 12)
+	local taken: { { Center: Vector3, Radius: number } } = {}
+	local outgoing: { Vector3 } = bridgesOut or {}
+	for _, at in outgoing do
+		table.insert(taken, { Center = at, Radius = World.BridgeWidth / 2 + 12 })
+	end
+	-- The set pieces MapBuilder placed (the barn, hay bales...). Big things: keep a little extra room for
+	-- tree canopies, which spread wider than their spacing. (Not what this file adds to the list later.)
+	local placed: { { Center: Vector3, Radius: number } } = table.clone(zone.Obstacles)
+	local function clear(p: Vector3, pad: number, list: { { Center: Vector3, Radius: number } }): boolean
+		for _, spot in list do
+			if Vector3.new(p.X - spot.Center.X, 0, p.Z - spot.Center.Z).Magnitude < spot.Radius + pad then
+				return false
+			end
+		end
+		return true
+	end
 	local function inPlay(p: Vector3, pad: number): boolean
 		return p.X > zone.Min.X - pad and p.X < zone.Max.X + pad and p.Z > zone.Min.Z - pad and p.Z < zone.Max.Z + pad
 	end
@@ -1454,10 +1475,13 @@ function Zones.Build(island: Islands.Island, zone: Zone, bridgeEnd: Vector3)
 		HW = hw,
 		BridgeEnd = bridgeEnd,
 		Gate = gate,
+		Taken = taken,
 		Free = function(p: Vector3, pad: number): boolean
 			return island.OnLand(p, pad + 2)
 				and not inPlay(p, pad + 6)
 				and segmentDistance(p, bridgeEnd, gate) > World.BridgeWidth / 2 + 3 + pad
+				and clear(p, pad, taken)
+				and clear(p, pad + 5, placed)
 		end,
 		At = function(u: number, w: number): Vector3
 			return center + r * u + f * w

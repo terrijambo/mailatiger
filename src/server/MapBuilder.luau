@@ -161,8 +161,14 @@ local function dress(
 		model.Name = `{name}Art`
 	end
 	if model and hide then
+		local solid = options ~= nil and options.Solid == true
 		for _, p in hide do
 			(p :: BasePart).Transparency = 1
+			-- A solid model does its own bumping. Its grey block is often a different shape (the Barn's was
+			-- more than twice as wide), so leaving that collidable made invisible walls
+			if solid then
+				(p :: BasePart).CanCollide = false
+			end
 		end
 	end
 	return model
@@ -420,8 +426,13 @@ local function buildBarn(parent: Instance): Arena
 	local wall = lbox(folder, "BarnWall", fr, -25, -hw - 14, 25, -hw - 2, 0, 16, COLORS.BarnRed)
 	local roof = lbox(folder, "BarnRoof", fr, -27, -hw - 16, 27, -hw, 16, 18, COLORS.Stone)
 	local barn = dress(folder, "Barn", lspot(fr, 0, -hw - 20, 0), 28, { wall, roof }, { Solid = true })
-	for _, u in { -16, 0, 16 } do -- (the animals roam the whole island: they go round the barn)
-		addObstacle(arena, fr, u, -hw - 8, 9)
+	-- (the animals roam the whole island: they go round the barn. Your model is about 21 wide and 28 deep,
+	-- from just behind the play area back; the grey block is 50 wide and 14 deep. Scenery keeps off these too)
+	local spots: { { number } } = if barn
+		then { { -6, -hw - 9, 8 }, { 6, -hw - 9, 8 }, { -6, -hw - 23, 8 }, { 6, -hw - 23, 8 } }
+		else { { -16, -hw - 8, 9 }, { 0, -hw - 8, 9 }, { 16, -hw - 8, 9 } }
+	for _, at in spots do
+		addObstacle(arena, fr, at[1], at[2], at[3])
 	end
 	if barn then
 		ModelFit.Align(barn, fr.F, L(fr, 0, -hw - 2):Dot(fr.F)) -- its front sits just behind the back fence
@@ -729,8 +740,8 @@ function MapBuilder.Build(): Map
 		local inward = -Vector3.new(at.X, 0, at.Z).Unit
 		local station = part(machineFolder, {
 			Name = "MachineStation",
-			Size = Vector3.new(10, 10, 10),
-			CFrame = CFrame.lookAt(at + Vector3.new(0, 5, 0), at + Vector3.new(0, 5, 0) + inward),
+			Size = Vector3.new(7, 7, 7),
+			CFrame = CFrame.lookAt(at + Vector3.new(0, 3.5, 0), at + Vector3.new(0, 3.5, 0) + inward),
 			Transparency = 1,
 			CanCollide = false,
 		})
@@ -744,25 +755,25 @@ function MapBuilder.Build(): Map
 		part(machineFolder, {
 			Name = "MachineBase",
 			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(0.6, 15, 15),
+			Size = Vector3.new(0.6, 10.5, 10.5),
 			CFrame = CFrame.new(at + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.pi / 2),
 			Color = COLORS.Stone,
 		})
 		part(machineFolder, {
 			Name = "MachineBaseRing",
 			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(0.62, 13.6, 13.6),
+			Size = Vector3.new(0.62, 9.5, 9.5),
 			CFrame = CFrame.new(at + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.pi / 2),
 			Color = machine.Color,
 		})
 		part(machineFolder, {
 			Name = "MachineBaseTop",
 			Shape = Enum.PartType.Cylinder,
-			Size = Vector3.new(0.64, 12.4, 12.4),
+			Size = Vector3.new(0.64, 8.6, 8.6),
 			CFrame = CFrame.new(at + Vector3.new(0, 0.3, 0)) * CFrame.Angles(0, 0, math.pi / 2),
 			Color = COLORS.Stone,
 		})
-		table.insert(machineKeep, { at.X, at.Z, 10 })
+		table.insert(machineKeep, { at.X, at.Z, 7 })
 	end
 
 	-- Animal Pen counter (beside the start): sends you to your best zone
@@ -798,8 +809,12 @@ function MapBuilder.Build(): Map
 		dress(map, "Lamppost", spot(at[1], 0, at[2]), 9, nil, { ByHeight = true, Solid = true })
 	end
 	dress(map, "Mailbox", spot(36, 0, 6, west), 3.5, nil, { ByHeight = true, Solid = true })
-	dress(map, "Planter", spot(42, 0, -20), 5, nil, { Solid = true })
-	dress(map, "Planter", spot(42, 0, 20), 5, nil, { Solid = true })
+	for _, at in { Vector3.new(42, 0, -20), Vector3.new(42, 0, 20) } do
+		-- (not where the Supply Shop stands now: it moved northeast and one planter ended up inside it)
+		if (at - Vector3.new(shopAt.X, 0, shopAt.Z)).Magnitude > 12 then
+			dress(map, "Planter", spot(at.X, 0, at.Z), 5, nil, { Solid = true })
+		end
+	end
 
 	-- Zones
 	local arenaFolder = Instance.new("Folder")

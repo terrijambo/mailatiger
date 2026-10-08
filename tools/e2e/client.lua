@@ -640,10 +640,14 @@ local function run()
 		root.CFrame = eggStand.CFrame * CFrame.new(0, -3, -6)
 		task.wait(1.2) -- (let the prompt show up before holding it)
 		local hatched = events.EggHatched or 0
-		holdPrompt(eggStand:FindFirstChildOfClass("ProximityPrompt"), eggStand)
-		log(waitFor(function()
+		local function rolling()
 			return player.PlayerGui:FindFirstChild("EggRoller") ~= nil
-		end, 3), "the egg roller spins on screen")
+		end
+		holdPrompt(eggStand:FindFirstChildOfClass("ProximityPrompt"), eggStand)
+		if not waitFor(rolling, 2) then -- (the hold sometimes doesn't take on the first try: try once more)
+			holdPrompt(eggStand:FindFirstChildOfClass("ProximityPrompt"), eggStand)
+		end
+		log(waitFor(rolling, 3), "the egg roller spins on screen")
 		log(waitFor(function()
 			return (events.EggHatched or 0) > hatched
 		end, 10), "hatched a Backyard egg")

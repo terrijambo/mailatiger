@@ -134,6 +134,7 @@ function Scenery.Build(parent: Instance, layout: Layout)
 	-- Bridges (and what the town's arches say about where each one goes)
 	local destinations: { Town.Destination } = {}
 	local bridgeEnds: { [string]: Vector3 } = {}
+	local bridgesOut: { [string]: { Vector3 } } = {} -- (where bridges to other islands leave each island)
 	for _, spec in World.Islands do
 		local from, to = World.Bridge(spec)
 		Islands.Bridge(folder, from, to, spec.Id)
@@ -164,6 +165,9 @@ function Scenery.Build(parent: Instance, layout: Layout)
 				-- (a bridge from another island gets its arch over there)
 				local along = Vector3.new(to.X - from.X, 0, to.Z - from.Z).Unit
 				Town.Arch(built[spec.BridgeFrom].Folder, from - along * 3, along, title, subtitle, color)
+				local list = bridgesOut[spec.BridgeFrom] or {}
+				table.insert(list, from)
+				bridgesOut[spec.BridgeFrom] = list
 			end
 			islandName(built[spec.Id], title, subtitle, color, if spec.Id == "Rooftop" then 110 else 60)
 		end
@@ -173,7 +177,7 @@ function Scenery.Build(parent: Instance, layout: Layout)
 	for _, zone in layout.Zones do
 		local island = built[zone.Id]
 		if island then
-			Zones.Build(island, zone, bridgeEnds[zone.Id])
+			Zones.Build(island, zone, bridgeEnds[zone.Id], bridgesOut[zone.Id])
 		end
 	end
 	Beach.Build(built.Beach, bridgeEnds.Beach)

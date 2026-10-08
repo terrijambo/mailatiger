@@ -621,7 +621,15 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 			if free then
 				placed += 1
 				local roll = random:NextNumber()
-				if roll < 0.55 then
+				-- (a tree's canopy needs more room: next to a path its branches hit the path's lamps, and at a
+				-- bridge they hang through the ropes; a bush goes there instead)
+				local cramped = nearPath(p, 9)
+				for _, d in destinations do
+					if segmentDistance(p, d.From, d.To) < World.BridgeWidth / 2 + 16 then
+						cramped = true
+					end
+				end
+				if roll < 0.55 and not cramped then
 					Kit.tree(folder, p, random:NextNumber(13, 22))
 				elseif roll < 0.72 then
 					Kit.bush(folder, p, random:NextNumber(2.5, 4))

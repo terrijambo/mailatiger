@@ -133,6 +133,9 @@ def main():
                 seen.add(key)
                 if group(a) == group(b):
                     continue
+                # (a zone lock is a see-through barrier across the way in: it crosses the bridge on purpose)
+                if a["path"].startswith("ZoneLock_") or b["path"].startswith("ZoneLock_"):
+                    continue
                 if overlap(a["box"], b["box"], 0.4) and area(a["box"], b["box"]) > 2 and not round_miss(a, b):
                     problems.append(("OVERLAP", a["path"], b["path"], a["box"]))
 

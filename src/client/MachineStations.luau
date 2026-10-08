@@ -22,7 +22,7 @@ type Machine = typeof(Machines.List[1])
 local MachineStations = {}
 
 local GHOST = Color3.fromRGB(196, 214, 236)
-local SCALE = 2.1 -- (machines are drawn at this size)
+local SCALE = 1.4 -- (machines are drawn at this size; 2.1 crowded the plaza)
 local METAL = Color3.fromRGB(86, 92, 108)
 
 type Look = {
@@ -317,8 +317,8 @@ end
 local function sign(station: BasePart, machine: Machine): (BillboardGui, TextLabel)
 	local gui = Instance.new("BillboardGui")
 	gui.Name = "MachineSign"
-	gui.Size = UDim2.fromScale(9, 2.8)
-	gui.StudsOffset = Vector3.new(0, 15, 0)
+	gui.Size = UDim2.fromScale(7, 2.2)
+	gui.StudsOffset = Vector3.new(0, 10.5, 0)
 	gui.MaxDistance = 110
 	gui.LightInfluence = 0
 	local title = Instance.new("TextLabel")
@@ -438,9 +438,9 @@ function MachineStations.Start()
 			box.Anchored = true
 			box.CanCollide = false
 			box.CanQuery = false
-			box.Size = Vector3.one * 1.6
+			box.Size = Vector3.one * 1.2
 			box.Color = Color3.fromRGB(198, 156, 109)
-			box.CFrame = base * CFrame.new(0, 2.3 * SCALE / 2.1 + 0.8, (i - 1.5) * 1.8)
+			box.CFrame = base * CFrame.new(0, 1.23 * SCALE + 0.6, (i - 1.5) * 1.3)
 			box.Parent = Workspace
 			table.insert(station.Boxes, box)
 		end
@@ -524,7 +524,7 @@ function MachineStations.Start()
 		if not station then
 			return
 		end
-		local top = station.Part.Position + Vector3.new(0, 9, 0)
+		local top = station.Part.Position + Vector3.new(0, 7, 0)
 		if kind == "MachineReady" then
 			pop(top, "READY!", Color3.fromRGB(120, 255, 140))
 		elseif kind == "MachineCollected" and (data.Count or 0) > 0 then

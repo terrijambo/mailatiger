@@ -98,9 +98,11 @@ The E2E scripts only run in a place marked with the `MailATigerTestPlace` attrib
 ## Your tasks
 ### A. Code (yours)
 1. **Owner's fix list from playing the Oct 7 update (2026-10-08):**
-   - Overlapping map models (use `tools/layout/run.sh` to find them).
-   - Invisible walls (leftover colliders blocking the way).
-   - Sizing of the new Post Office machines round the plaza.
+   - ~~Overlapping map models~~: fixed 2026-10-08 (37 → 0 in `tools/layout/run.sh`; it now ignores zone-lock
+     barriers and also lists invisible collidable parts as `I|` lines in `tools/layout/dump.txt`).
+   - ~~Invisible walls on the Farm~~: fixed 2026-10-08. The barn's old grey block (50 studs wide) stayed
+     collidable under the 21-wide model. Rule now: a `Solid` model's hidden grey blocks stop colliding (`dress`).
+   - ~~Machines too big, cluttering the spawn plaza~~: drawn at 1.4 instead of 2.1, smaller bases and signs.
    - ~~Eggs don't feel good yet~~: slot-machine roller added 2026-10-08 (`client/EggRoller.luau`); waiting
      on the owner's verdict in Play.
 2. **Run `bash tools/e2e/run.sh`** (ask the owner to save and close Studio first). Fix whatever fails, then
