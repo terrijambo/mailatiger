@@ -105,7 +105,7 @@ def main():
 
     # Lampposts poking into anything at any height (tree branches, signs...)
     for lamp in items:
-        if lamp["name"] != "LampPole":
+        if lamp["name"] not in ("LampPole", "LamppostArt"):
             continue
         for thing in items:
             if thing is lamp or is_ground(thing) or thing["name"].startswith("Lamp"):

@@ -805,8 +805,11 @@ function MapBuilder.Build(): Map
 	end
 
 	-- Scenery right around the counters (only if imported)
-	for _, at in { { 40, -19 }, { 40, 19 } } do
-		dress(map, "Lamppost", spot(at[1], 0, at[2]), 9, nil, { ByHeight = true, Solid = true })
+	for _, at in { { 40, -19 }, { 37, 15 } } do -- (the second beside the planter, not in it)
+		-- (picked for the old counters: skip the one the Supply Shop now stands on)
+		if (Vector3.new(at[1], 0, at[2]) - Vector3.new(shopAt.X, 0, shopAt.Z)).Magnitude > 12 then
+			dress(map, "Lamppost", spot(at[1], 0, at[2]), 9, nil, { ByHeight = true, Solid = true })
+		end
 	end
 	dress(map, "Mailbox", spot(36, 0, 6, west), 3.5, nil, { ByHeight = true, Solid = true })
 	for _, at in { Vector3.new(42, 0, -20), Vector3.new(42, 0, 20) } do
