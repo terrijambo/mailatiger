@@ -8,7 +8,12 @@
 local Eggs = {
 	-- An egg costs this many minutes of chute income at the level its island opens (Config/Machines.luau)
 	PriceMinutes = 3,
-	HatchSeconds = 1.4, -- the egg wobbles and cracks for this long before the animal pops out
+	HatchSeconds = 1.4, -- the egg on the stand wobbles and cracks for this long
+	-- The slot-machine roller (client/EggRoller.luau): the reel spins for RollSeconds, slowing down, lands on
+	-- the animal you got and shows it off for RevealSeconds. The animal hatches next to you as it lands.
+	RollSeconds = 3.4,
+	RevealSeconds = 1.6,
+	ReelCards = 34, -- cards that go past before it lands (more = a longer, faster-looking spin)
 }
 
 local function tidy(raw: number): number

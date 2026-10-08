@@ -55,6 +55,8 @@ local sounds: { [string]: Sound } = {
 	LevelUp = { Id = "rbxassetid://12221990", Volume = 1, Pitch = 0.8 }, -- LEVEL UP popup (borrows Ding)
 	QuestDone = { Id = "rbxassetid://127645268874265", Volume = 0.9, Pitch = 1.15 }, -- quest finished (borrows CoinJingle)
 	Diamond = { Id = "rbxassetid://12221990", Volume = 0.7, Pitch = 1.6 }, -- got diamonds (borrows Ding)
+	EggTick = { Id = "rbxassetid://15675059323", Volume = 0.35, Pitch = 1.4, Cooldown = 0.03 }, -- each card passing on the egg roller (borrows Click)
+	EggWin = { Id = "rbxassetid://16480570986", Volume = 0.9, Pitch = 1.2 }, -- the egg roller lands (borrows Kaching)
 	ServerBoost = { Id = "rbxassetid://16480570986", Volume = 1, Pitch = 1.3 }, -- 2x coins server boost (borrows Kaching)
 	Troll_BananaPeel = { Id = "rbxassetid://12222054", Volume = 1, Pitch = 1.3, Heard = "Everyone" }, -- (borrows Bonk)
 	Troll_StinkBomb = { Id = "rbxassetid://17208402198", Volume = 1, Pitch = 0.7, Heard = "Everyone" }, -- (borrows Spray)

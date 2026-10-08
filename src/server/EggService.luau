@@ -77,17 +77,36 @@ function EggService.Hatch(player: Player, stand: BasePart)
 	end
 	hatching[player] = true
 	Analytics.Custom(player, `Egg_{zoneId}`, 1)
-	crack(stand)
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local at = if root then root.Position + root.CFrame.LookVector * 7 else stand.Position + stand.CFrame.LookVector * 7
-	WildService.Hatch(animalId, at, player)
+	-- The slot-machine roller on the player's screen (client/EggRoller.luau) spins through this egg's odds
+	-- and lands on the animal already rolled here; it hatches as the reel stops
+	local odds = {}
+	for _, odd in Eggs.Odds(zoneId, profile.Level) do
+		if odd.Chance > 0 then
+			table.insert(odds, { AnimalId = odd.AnimalId, Chance = odd.Chance })
+		end
+	end
 	local animal = Config.Animals.ById[animalId]
 	local rarityId = Config.Wild.RarityOf[animalId] or "Common"
-	Remotes.Notify:FireClient(player, "EggHatched", {
-		Animal = if animal then animal.DisplayName else animalId,
+	Remotes.Notify:FireClient(player, "EggRoll", {
+		ZoneId = zoneId,
+		Odds = odds,
 		AnimalId = animalId,
 		Rarity = rarityId,
 	})
+	task.spawn(crack, stand)
+	task.wait(Eggs.RollSeconds)
+	if player.Parent then
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local at = if root
+			then root.Position + root.CFrame.LookVector * 7
+			else stand.Position + stand.CFrame.LookVector * 7
+		WildService.Hatch(animalId, at, player)
+		Remotes.Notify:FireClient(player, "EggHatched", {
+			Animal = if animal then animal.DisplayName else animalId,
+			AnimalId = animalId,
+			Rarity = rarityId,
+		})
+	end
 	hatching[player] = nil
 end
 

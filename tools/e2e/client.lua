@@ -642,8 +642,11 @@ local function run()
 		local hatched = events.EggHatched or 0
 		holdPrompt(eggStand:FindFirstChildOfClass("ProximityPrompt"), eggStand)
 		log(waitFor(function()
+			return player.PlayerGui:FindFirstChild("EggRoller") ~= nil
+		end, 3), "the egg roller spins on screen")
+		log(waitFor(function()
 			return (events.EggHatched or 0) > hatched
-		end, 5), "hatched a Backyard egg")
+		end, 10), "hatched a Backyard egg")
 		local near = false
 		task.wait(0.5)
 		for _, ball in CollectionService:GetTagged("Critter") do

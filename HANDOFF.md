@@ -101,8 +101,8 @@ The E2E scripts only run in a place marked with the `MailATigerTestPlace` attrib
    - Overlapping map models (use `tools/layout/run.sh` to find them).
    - Invisible walls (leftover colliders blocking the way).
    - Sizing of the new Post Office machines round the plaza.
-   - **Eggs don't feel good yet:** add a slot-machine style roller that spins through the island's animals
-     before landing on the one that hatches.
+   - ~~Eggs don't feel good yet~~: slot-machine roller added 2026-10-08 (`client/EggRoller.luau`); waiting
+     on the owner's verdict in Play.
 2. **Run `bash tools/e2e/run.sh`** (ask the owner to save and close Studio first). Fix whatever fails, then
    run `tools/devices/run.sh` for the phone layout.
 3. **Sound ids:** paste into `src/shared/Config/Sounds.luau`. What to replace first is in `docs/SOUNDS_TO_REPLACE.md`.
