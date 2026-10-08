@@ -163,19 +163,18 @@ A missing model is never a problem: that spot keeps its grey block.
    `YawOffset` = `180` to the Model.
 
 ## Launch checklist (things only you can do)
-Done: published (private), Robux items created, icon sheets uploaded, the vine boom, 5 badges, fresh launch saves.
-1. **Turn on saving** in Studio (see Saving above) and do a live save test: earn, leave, rejoin; rejoin twice quickly.
-2. **Put the passes on sale:** Creator Dashboard → Mail a Tiger → Monetization → Passes → each pass → Sales
-   (VIP Postie 149, Big Mail Bag 99).
-3. **Last 3 badges:** Dashboard → Engagement → Badges: Chaos Courier, Reborn, Boss Hunter (names and
-   descriptions in `Config/Badges.luau`). Send me the ids.
-4. **Maturity questionnaire:** Dashboard → Experience Questionnaire (cartoon slapstick, no blood, opt-in shoving).
-5. **Store page:** description (in `HANDOFF.md`), icon `art/marketing/final/mail-a-tiger-game-icon.png`,
-   thumbnails from the same folder, Genre *Simulation*, max players 12–16.
-6. Optional: private servers price, a Roblox group (`GroupId` in `Config/Monetization.luau`, +10% coins for
-   members), launch codes in `Config/Codes.luau` (`LAUNCH` and `GRUFF` exist).
-7. **Go public:** Dashboard → Access → Public. Then watch **Analytics → Onboarding funnel**. Promo posts:
+**The game is public.** Done: Robux items created and both passes on sale, icon sheets uploaded, the vine
+boom, 5 badges, fresh launch saves, maturity questionnaire passed, store page set up.
+1. **Thumbnails:** Creator Dashboard → Mail a Tiger → Places / Configure → upload them from `art/marketing/final/`.
+2. **Last 3 badges (optional, they cost Robux):** Chaos Courier, Reborn, Boss Hunter (names and descriptions
+   in `Config/Badges.luau`). Send me the ids if you make them.
+3. Optional: private servers price, a Roblox group (`GroupId` in `Config/Monetization.luau`, +10% coins for
+   members), new codes in `Config/Codes.luau` (`LAUNCH` and `GRUFF` exist).
+4. Watch **Analytics → Onboarding funnel** to see where new players drop off. Promo posts:
    `docs/PROMO_POSTS.md`; ad plan: `docs/AD_PLAN.md`.
+
+> Since the game is live, code changes reach players only when you **publish** from Studio
+> (**File → Publish to Roblox**) after testing.
 
 ## Handy commands
 ```

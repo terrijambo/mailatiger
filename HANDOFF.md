@@ -84,22 +84,27 @@ lune run tests/run.luau        # 1,177 checks, all passing on 2026-10-07
 
 The E2E scripts only run in a place marked with the `MailATigerTestPlace` attribute, so they can never touch the real game.
 
-## State right now (2026-10-07)
-- **Published** as "Mail a Tiger", still **private**. Fresh launch data stores are already set
-  (`PlayerData_launch1`, leaderboards `launch1`, referrals `Referrals_launch1`).
+## State right now (2026-10-08)
+- **The game is PUBLIC and live.** Real players have saves in `PlayerData_launch1` (leaderboards `launch1`,
+  referrals `Referrals_launch1`). Treat every change as a live update: never wipe or break saves.
+- **Done by the owner:** both passes on sale, maturity questionnaire passed, store page set up.
+  Still to do: upload the thumbnails.
 - **Filled in:** all Robux pass/product ids (`Config/Monetization.luau`), all 8 icon sheets
-  (`Config/IconSheets.luau`), the real vine boom sound, 5 of 8 badge ids.
-- **Built Oct 7 and not yet confirmed by a full playtest:** machines round the plaza (drop, wait, collect),
-  chute level as the player level, coins per minute, rebirth points, rarities, egg stands, the 60% player
-  scale with bigger animals, the Parcels tab in the Bag. The playtest steps for them exist; the run hasn't
-  been reported passing.
+  (`Config/IconSheets.luau`), the real vine boom sound, 5 of 8 badge ids. The last 3 badges (Chaos Courier,
+  Reborn, Boss Hunter) stay at 0 for now: they cost Robux to create, so the owner is holding off.
+- **Oct 7 update (machines, chute level, rarities, eggs, 60% player):** the owner played it: "a good update",
+  with fixes needed (below). A full automated playtest of it hasn't been reported passing yet.
 
 ## Your tasks
 ### A. Code (yours)
-1. **Run `bash tools/e2e/run.sh`** (ask the owner to save and close Studio first). Fix whatever fails, then
+1. **Owner's fix list from playing the Oct 7 update (2026-10-08):**
+   - Overlapping map models (use `tools/layout/run.sh` to find them).
+   - Invisible walls (leftover colliders blocking the way).
+   - Sizing of the new Post Office machines round the plaza.
+   - **Eggs don't feel good yet:** add a slot-machine style roller that spins through the island's animals
+     before landing on the one that hatches.
+2. **Run `bash tools/e2e/run.sh`** (ask the owner to save and close Studio first). Fix whatever fails, then
    run `tools/devices/run.sh` for the phone layout.
-2. **Badge ids:** paste the owner's ids into `src/shared/Config/Badges.luau` (0 = off). Missing: Chaos
-   Courier, Reborn, Boss Hunter.
 3. **Sound ids:** paste into `src/shared/Config/Sounds.luau`. What to replace first is in `docs/SOUNDS_TO_REPLACE.md`.
 4. **Economy check after the machines rework:** `python tools/economy_sheet.py` → `docs/economy.csv`.
    Look for walls in the chute level curve and the time to the first rebirth.
@@ -108,20 +113,12 @@ The E2E scripts only run in a place marked with the `MailATigerTestPlace` attrib
 6. After each batch: run the checks, commit, and tell the owner to press Play in Studio (Rojo syncs it live).
 
 ### B. Owner's steps (give them these; you can't do them)
-1. **Saving in Studio:** File → Game Settings → Security → turn on *Enable Studio Access to API Services*.
-   Test: Play, earn, Stop, Play again; progress is kept, and the free 2M Studio test coins stop appearing.
-2. **Passes on sale:** Creator Dashboard → Mail a Tiger → Monetization → Passes → each pass → Sales.
-   VIP Postie 149, Big Mail Bag 99.
-3. **Badges:** Dashboard → Mail a Tiger → Engagement → Badges. Create Chaos Courier, Reborn and Boss Hunter
-   (names and descriptions in `Config/Badges.luau`) and send the ids.
-4. **Maturity questionnaire:** Dashboard → Experience Questionnaire. Cartoon slapstick, no blood; players can
-   shove each other in Chaos Mode.
-5. **Store page:** paste the description (below), icon and thumbnails from `art/marketing/final/`,
-   Genre Simulation, max players 12–16. Optional: private servers price, a Roblox group (`GroupId`).
-6. **Go public:** Dashboard → Access → Public. Then watch Analytics → onboarding funnel. Promo posts are in
-   `docs/PROMO_POSTS.md`, the ad plan in `docs/AD_PLAN.md`.
+Done: public, passes on sale, maturity questionnaire, store page.
+1. **Thumbnails:** Creator Dashboard → Mail a Tiger → Places / Configure → upload from `art/marketing/final/`.
+2. **Badges (optional, cost Robux):** Chaos Courier, Reborn, Boss Hunter when they want them.
+3. Watch Analytics → onboarding funnel. Promo posts are in `docs/PROMO_POSTS.md`, the ad plan in `docs/AD_PLAN.md`.
 
-Game description (under Roblox's 1,000-character limit):
+Game description (for reference; the store page is already set):
 ```
 Postmaster Gruff has one job for you: grab wild animals, stuff them in a box, and mail them. They do NOT want to be mailed.
 
