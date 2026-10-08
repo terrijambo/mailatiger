@@ -107,7 +107,7 @@ SHOP, STORE and MENU appear as the tutorial goes on.
 ### Studio-only test helpers (never in the live game)
 - Every animal is free and you start with 2,000,000 test coins while saving is off (`Config/init.luau` → `Dev`).
 - The Store shows a purple **TEST** button on every Robux item and every event.
-- **Promo Kit:** **F7** opens a panel to start bosses and events, force Shiny/Golden, unlock everything and
+- **Promo Kit:** **F7** opens a panel to start bosses and events, force Shiny/Golden, unlock every animal and
   set sunset/day/night. **F8** hides the UI for filming.
 
 ## Playtest checklist (the Oct 7 changes)
@@ -118,7 +118,7 @@ Play once with a fresh save (saving is off in Studio, so every Play is fresh).
 - [ ] Coins per minute under your coins goes up when you level.
 - [ ] Each island's egg stand: the sign is readable, hatching pops an animal next to you, the toast shows its rarity.
 - [ ] Rarity shows as a second line on wild animals' name tags and on the Bag → Collection cards.
-- [ ] Rebirth at chute level 20 (Promo Kit → unlock all to get there quickly): Rebirth Points, then buy a Tool.
+- [ ] Rebirth at chute level 20: Rebirth Points, then buy a Tool.
 - [ ] On a phone size (**Test → Device**): nothing overlaps the thumbstick or jump button.
 - [ ] Anything that looks wrong: tell me what and where (a screenshot helps).
 
