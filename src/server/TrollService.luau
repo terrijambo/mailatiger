@@ -1,5 +1,5 @@
 --!strict
--- Troll items (list and numbers in src/shared/Config/Trolls.luau): bought at the Supply Shop once you reach
+-- Troll items (list and numbers in src/shared/Config/Trolls.luau): bought at the Rebirth Market once you reach
 -- their level, used from the hotbar. The server checks everything: you own it, it's off cooldown, and it only
 -- affects players on a Chaos Mode job (the opt-in PvP mode) and their animals.
 
@@ -240,17 +240,17 @@ function TrollService.Buy(player: Player, trollId: string): boolean
 		return false
 	end
 	if profile.Level < troll.Level then
-		say(player, "Supply Shop", `🔒 The {troll.DisplayName} unlocks at Level {troll.Level}.`)
+		say(player, "Rebirth Market", `🔒 The {troll.DisplayName} unlocks at Level {troll.Level}.`)
 		return false
 	end
 	if not Economy.TrySpend(player, troll.Price, `Troll_{trollId}`) then
-		say(player, "Supply Shop", `The {troll.DisplayName} costs {Format.Short(troll.Price)} coins.`)
+		say(player, "Rebirth Market", `The {troll.DisplayName} costs {Format.Short(troll.Price)} coins.`)
 		return false
 	end
 	profile.Trolls[trollId] = true
 	say(
 		player,
-		"Supply Shop",
+		"Rebirth Market",
 		`{troll.Emoji} {troll.DisplayName} is in your hotbar! It only works on players in Chaos Mode.`
 	)
 	Economy.Sync(player)

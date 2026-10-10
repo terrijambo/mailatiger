@@ -1,7 +1,10 @@
 --!strict
--- The Supply Shop window: Machines, Boxes, Tools, Stamps, Lures, Trolls and Rebirth tabs.
+-- The two shop windows:
+--   Gruff's Shop (talk to Gruff, or the SHOP button, from anywhere): Machines, Boxes and Stamps
+--   Rebirth Market (only at its stall on Rebirth Beach): Rebirth, Tools, Upgrades, Trolls and Lures. Tools and
+--     Rebirth Upgrades cost Rebirth Points, which only come from rebirthing. It closes if you walk away.
 -- Buttons only ASK the server (ShopAction). The server checks coins and distance, then updates your profile,
--- and this window redraws from the new profile.
+-- and the window redraws from the new profile.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,18 +19,31 @@ local player = Players.LocalPlayer
 
 local Shop = {}
 
-local TABS = { "Machines", "Boxes", "Tools", "Stamps", "Lures", "Trolls", "Rebirth" }
+local SHOP_TABS = { "Machines", "Boxes", "Stamps" }
+local MARKET_TABS = { "Rebirth", "Tools", "Upgrades", "Trolls", "Lures" }
 
 local function multText(mult: number): string
 	return string.format("%g", math.round(mult * 100) / 100)
 end
 
-function Shop.Start()
+-- Are you on Rebirth Beach? (the same check the server makes before selling Rebirth Market items)
+local function onRebirthBeach(): boolean
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local beach = Config.World.ById.Beach
+	if not root then
+		return false
+	end
+	local offset = root.Position - beach.Center
+	return Vector3.new(offset.X, 0, offset.Z).Magnitude < beach.Radius + 12
+end
+
+-- Builds one shop window with its tabs. Returns its ScreenGui.
+local function build(menuName: string, windowTitle: string, windowColor: Color3, tabs: { string }): ScreenGui
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local shopAction = remotes:WaitForChild("ShopAction") :: RemoteEvent
-	local notify = remotes:WaitForChild("Notify") :: RemoteEvent
 
-	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "Shop", "Supply Shop", Ui.ORANGE)
+	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), menuName, windowTitle, windowColor)
 
 	local tabBar = Ui.make("Frame", {
 		Position = UDim2.fromOffset(20, 56),
@@ -37,6 +53,7 @@ function Shop.Start()
 	Ui.make("UIListLayout", {
 		FillDirection = Enum.FillDirection.Horizontal,
 		Padding = UDim.new(0, 8),
+		SortOrder = Enum.SortOrder.LayoutOrder,
 	}, tabBar)
 
 	local list = Ui.make("ScrollingFrame", {
@@ -50,7 +67,7 @@ function Shop.Start()
 	}, window)
 	Ui.make("UIListLayout", { Padding = UDim.new(0, 8), SortOrder = Enum.SortOrder.LayoutOrder }, list)
 
-	local currentTab = "Machines"
+	local currentTab = tabs[1]
 	local tabButtons: { [string]: TextButton } = {}
 	local rebirthArmedUntil = 0
 
@@ -192,6 +209,37 @@ function Shop.Start()
 					end)
 				end
 			end
+		elseif currentTab == "Upgrades" then
+			-- Rebirth Upgrades: permanent boosts, bought with Rebirth Points (Config/Upgrades.luau)
+			local points = profile.RebirthPoints or 0
+			row(
+				0,
+				`You have {points} Rebirth Point{if points == 1 then "" else "s"}`,
+				"Rebirth to earn more. Upgrades are yours forever, through every rebirth.",
+				"Button_Upgrades"
+			)
+			local Upgrades = Config.Upgrades
+			for index, upgrade in Upgrades.List do
+				local level = profile.Upgrades[upgrade.Id] or 0
+				local maxed = level >= upgrade.MaxLevel
+				local frame = row(
+					index,
+					`{upgrade.DisplayName}  (Lv {level}/{upgrade.MaxLevel})`,
+					if maxed
+						then `Now: {Upgrades.Text(upgrade, level)} (MAX)`
+						elseif level == 0 then `Next: {Upgrades.Text(upgrade, 1)}`
+						else `Now: {Upgrades.Text(upgrade, level)}  →  {Upgrades.Text(upgrade, level + 1)}`,
+					`Upgrade_{upgrade.Id}`
+				)
+				if maxed then
+					rowButton(frame, 1, "MAXED", Ui.GREEN, nil)
+				else
+					local cost = Upgrades.Cost(upgrade, level)
+					rowButton(frame, 1, `Upgrade: {cost} RP`, if points >= cost then Ui.PURPLE else Ui.GREY, function()
+						shopAction:FireServer("BuyUpgrade", upgrade.Id)
+					end)
+				end
+			end
 		elseif currentTab == "Stamps" then
 			local none = row(0, "No stamp", "Your next job uses no stamp.")
 			if profile.SelectedStamp == nil then
@@ -270,16 +318,17 @@ function Shop.Start()
 			local rebirth = Config.Machines.Rebirth
 			local cost = Config.Machines.RebirthCost(profile.Rebirths)
 			local level = profile.Level or 1
-			local ready = level >= rebirth.MinLevel and profile.Coins >= cost
+			local needLevel = Config.Machines.RebirthLevel(profile.Rebirths)
+			local ready = level >= needLevel and profile.Coins >= cost
 			local points = Config.Machines.RebirthPoints(profile.Rebirths + 1)
 			local frame = row(
 				1,
-				`Rebirth #{profile.Rebirths + 1}   (Level {rebirth.MinLevel} chute + {Format.Short(cost)} coins)`,
-				`Coins per minute x{multText(rebirth.ChuteMult ^ (profile.Rebirths + 1))} forever, and +{points} Rebirth Points for tools.`
+				`Rebirth #{profile.Rebirths + 1}   (Level {needLevel} chute + {Format.Short(cost)} coins)`,
+				`Coins per minute x{multText(rebirth.ChuteMult ^ (profile.Rebirths + 1))} forever, and +{points} Rebirth Points.`
 			)
 			local armed = os.clock() < rebirthArmedUntil
-			if level < rebirth.MinLevel then
-				rowButton(frame, 1, `🔒 Level {rebirth.MinLevel}`, Ui.GREY, nil)
+			if level < needLevel then
+				rowButton(frame, 1, `🔒 Level {needLevel}`, Ui.GREY, nil)
 			else
 				rowButton(
 					frame,
@@ -310,15 +359,16 @@ function Shop.Start()
 			row(
 				3,
 				"What you keep",
-				`Tools, your collection, quests, diamonds and troll items. Now: x{multText(
+				`Rebirth Points, tools, Rebirth Upgrades, your collection, quests and troll items. Now: x{multText(
 					rebirth.ChuteMult ^ profile.Rebirths
 				)} coins per minute.`
 			)
 		end
 	end
 
-	for index, name in TABS do
+	for index, name in tabs do
 		local button = Ui.button(tabBar, {
+			Name = `Tab{name}`,
 			LayoutOrder = index,
 			Size = UDim2.fromOffset(104, 36),
 			TextSize = 18,
@@ -337,12 +387,30 @@ function Shop.Start()
 		end
 	end)
 
-	-- The SHOP side button and the shop counter both open it
-	Menus.Register("Shop", gui, redraw)
+	Menus.Register(menuName, gui, redraw)
+	return gui
+end
 
+function Shop.Start()
+	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
+	-- Gruff's Shop: the SHOP side button, or talking to Gruff
+	build("Shop", "Gruff's Shop", Ui.ORANGE, SHOP_TABS)
+	-- The Rebirth Market: its stall on Rebirth Beach
+	local market = build("Market", "Rebirth Market", Ui.PURPLE, MARKET_TABS)
 	notify.OnClientEvent:Connect(function(kind: string)
 		if kind == "OpenShop" then
 			Menus.Open("Shop")
+		elseif kind == "OpenMarket" then
+			Menus.Open("Market")
+		end
+	end)
+	-- Walk off the beach and the market closes (it only sells there)
+	task.spawn(function()
+		while market.Parent do
+			if market.Enabled and not onRebirthBeach() then
+				market.Enabled = false
+			end
+			task.wait(0.5)
 		end
 	end)
 end

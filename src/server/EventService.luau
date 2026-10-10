@@ -85,12 +85,12 @@ local function coinRain()
 			local angle, distance = math.random() * math.pi * 2, math.sqrt(math.random()) * cfg.Radius
 			local at = cfg.Center
 				+ Vector3.new(math.cos(angle) * distance, 40 + math.random() * 15, math.sin(angle) * distance)
-			local diamond = math.random() < cfg.DiamondChance
+			local big = math.random() < cfg.BigCoinChance -- (a rare big coin worth BigCoinJobs)
 			local drop = Instance.new("Part")
-			drop.Name = if diamond then "DiamondDrop" else "CoinDrop"
-			drop.Shape = if diamond then Enum.PartType.Ball else Enum.PartType.Cylinder
-			drop.Size = if diamond then Vector3.new(1.6, 1.6, 1.6) else Vector3.new(0.5, 2.4, 2.4)
-			drop.Color = if diamond then Color3.fromRGB(120, 230, 255) else Color3.fromRGB(255, 205, 50)
+			drop.Name = if big then "BigCoinDrop" else "CoinDrop"
+			drop.Shape = Enum.PartType.Cylinder
+			drop.Size = if big then Vector3.new(0.8, 4.4, 4.4) else Vector3.new(0.5, 2.4, 2.4)
+			drop.Color = if big then Color3.fromRGB(255, 170, 30) else Color3.fromRGB(255, 205, 50)
 			drop.Material = Enum.Material.Neon
 			drop.CFrame = CFrame.new(at) * CFrame.Angles(0, math.random() * 6, math.rad(90))
 			drop.Parent = folder
@@ -100,15 +100,8 @@ local function coinRain()
 				if player then
 					taken = true
 					drop:Destroy()
-					if diamond then
-						Economy.AddDiamonds(player, 1, "CoinRain")
-					else
-						Economy.AddCoins(
-							player,
-							math.max(1, math.round(Economy.BestBaseValue(player) * cfg.CoinJobs)),
-							"CoinRain"
-						)
-					end
+					local jobs = if big then cfg.BigCoinJobs else cfg.CoinJobs
+					Economy.AddCoins(player, math.max(1, math.round(Economy.BestBaseValue(player) * jobs)), "CoinRain")
 				end
 			end)
 			task.delay(25, function()
@@ -131,9 +124,7 @@ local function endMystery(delivered: Player?)
 		local cfg = Events.Mystery
 		local profile = DataService.Get(delivered)
 		if profile then
-			profile.Diamonds += cfg.Diamonds
 			Economy.AddCoins(delivered, Economy.BestBaseValue(delivered) * cfg.Jobs, "MysteryParcel")
-			Remotes.Notify:FireClient(delivered, "Diamonds", { Amount = cfg.Diamonds, Source = "MysteryParcel" })
 		end
 		toAll(
 			"EventWinner",
@@ -346,17 +337,14 @@ function EventService.OnMailed(player: Player, animalId: string)
 	if not running or running.Id ~= "RushOrder" or Workspace:GetAttribute("RushAnimal") ~= animalId then
 		return
 	end
-	if #rushWinners >= #Events.Rush.Diamonds or table.find(rushWinners, player) then
+	if #rushWinners >= #Events.Rush.Jobs or table.find(rushWinners, player) then
 		return
 	end
 	table.insert(rushWinners, player)
 	local place = #rushWinners
 	local profile = DataService.Get(player)
-	local diamonds = Events.Rush.Diamonds[place]
 	if profile then
-		profile.Diamonds += diamonds
 		Economy.AddCoins(player, Economy.BestBaseValue(player) * Events.Rush.Jobs[place], "RushOrder")
-		Remotes.Notify:FireClient(player, "Diamonds", { Amount = diamonds, Source = "RushOrder" })
 	end
 	local names = {}
 	for _, winner in rushWinners do

@@ -148,31 +148,46 @@ function Economy.ChuteRate(player: Player): number
 	return machines.ChuteRate(profile.Level) * machines.Rebirth.ChuteMult ^ profile.Rebirths * Economy.BoostMult(player)
 end
 
--- Diamond upgrades (Config/Diamonds.luau): your level in one, and its total bonus
+-- Rebirth Upgrades (Config/Upgrades.luau): your level in one, and its total bonus
 function Economy.UpgradeLevel(player: Player, upgradeId: string): number
 	local profile = DataService.Get(player)
 	return if profile then profile.Upgrades[upgradeId] or 0 else 0
 end
 
 function Economy.UpgradeBonus(player: Player, upgradeId: string): number
-	return Config.Diamonds.Bonus(Config.Diamonds.ById[upgradeId], Economy.UpgradeLevel(player, upgradeId))
+	return Config.Upgrades.Bonus(Config.Upgrades.ById[upgradeId], Economy.UpgradeLevel(player, upgradeId))
 end
 
--- source: where they came from, e.g. "LevelUp" or "DiamondsSmall" (for analytics)
-function Economy.AddDiamonds(player: Player, amount: number, source: string)
+-- A prize (a challenge, the boss, an event, an invite...): coins worth `minutes` of your chute's income, so
+-- it's always worth having at any level. Returns the coins paid. source: for analytics (e.g. "Boss")
+function Economy.PrizeCoins(player: Player, minutes: number): number
+	return math.max(1, math.floor(Economy.ChuteRate(player) * minutes))
+end
+
+function Economy.AddPrize(player: Player, minutes: number, source: string): number
+	if minutes <= 0 then
+		return 0
+	end
+	local coins = Economy.PrizeCoins(player, minutes)
+	Economy.AddCoins(player, coins, source)
+	Remotes.Notify:FireClient(player, "Prize", { Coins = coins, Source = source })
+	return coins
+end
+
+-- Rebirth Points (only from rebirthing, or the old diamond packs: MonetizationService)
+function Economy.AddRebirthPoints(player: Player, amount: number, source: string)
 	local profile = DataService.Get(player)
 	if profile and amount > 0 then
-		profile.Diamonds += amount
-		Analytics.Custom(player, `Diamonds_{source}`, amount)
-		Remotes.Notify:FireClient(player, "Diamonds", { Amount = amount, Source = source })
+		profile.RebirthPoints += amount
+		Analytics.Custom(player, `RebirthPoints_{source}`, amount)
 		Economy.Sync(player)
 	end
 end
 
--- Buys the next level of a diamond upgrade. Returns a message for the player.
+-- Buys the next level of a Rebirth Upgrade with Rebirth Points. Returns a message for the player.
 function Economy.BuyUpgrade(player: Player, upgradeId: string): (boolean, string)
 	local profile = DataService.Get(player)
-	local upgrade = Config.Diamonds.ById[upgradeId]
+	local upgrade = Config.Upgrades.ById[upgradeId]
 	if not profile or not upgrade then
 		return false, ""
 	end
@@ -180,15 +195,16 @@ function Economy.BuyUpgrade(player: Player, upgradeId: string): (boolean, string
 	if level >= upgrade.MaxLevel then
 		return false, `{upgrade.DisplayName} is maxed out.`
 	end
-	local cost = Config.Diamonds.Cost(upgrade, level)
-	if profile.Diamonds < cost then
-		return false, `{upgrade.DisplayName} costs {cost} 💎. You have {profile.Diamonds}.`
+	local cost = Config.Upgrades.Cost(upgrade, level)
+	if profile.RebirthPoints < cost then
+		return false,
+			`{upgrade.DisplayName} costs {cost} Rebirth Points. You have {profile.RebirthPoints}. Rebirth to earn more!`
 	end
-	profile.Diamonds -= cost
+	profile.RebirthPoints -= cost
 	profile.Upgrades[upgradeId] = level + 1
 	Analytics.Custom(player, `Upgrade_{upgradeId}`, level + 1)
 	Economy.Sync(player)
-	return true, `{upgrade.Emoji} {upgrade.DisplayName} Lv {level + 1}: {Config.Diamonds.Text(upgrade, level + 1)}!`
+	return true, `{upgrade.Emoji} {upgrade.DisplayName} Lv {level + 1}: {Config.Upgrades.Text(upgrade, level + 1)}!`
 end
 
 -- The server-wide 2x coins boost (bought in the Store). Workspace attribute BoostUntil = server time it ends.

@@ -182,8 +182,10 @@ function OrdersBoard.Start()
 					BackgroundColor3 = if entry.Done then Ui.GREEN else Color3.fromRGB(60, 170, 235),
 				}, back)
 				Ui.round(fill, 7)
+				-- (the same reward the server pays: jobs of the best animal your level allows)
+				local coins = Config.Machines.BestValueAt(Profile.Get().Level or 1) * challenge.Jobs
 				if entry.Done and entry.Claimed == false then
-					claimButton(card, `{if weekly then "W" else "D"}{index}`, `+{challenge.Diamonds} 💎`)
+					claimButton(card, `{if weekly then "W" else "D"}{index}`, Format.Short(coins))
 					return
 				end
 				Ui.label(card, {
@@ -195,7 +197,7 @@ function OrdersBoard.Start()
 					TextColor3 = if entry.Done then Ui.GREEN else Ui.BROWN,
 					Text = if entry.Done
 						then "CLAIMED ✓"
-						else `{entry.Progress}/{challenge.Count}   +{challenge.Diamonds} 💎`,
+						else `{entry.Progress}/{challenge.Count}   +{Format.Short(coins)}`,
 				})
 			end
 			for index, entry in state.Daily do

@@ -5,7 +5,7 @@
 --   Stamps   how many of each stamp you have, and which one your next job uses
 --   Tools    your tool levels and what they do right now
 --   Animals  your collection: every animal you've mailed, and how many (the rest are mystery silhouettes)
--- Buying happens in the Supply Shop; this is where you see and use what you have.
+-- Buying happens in Gruff's Shop and the Rebirth Market; this is where you see and use what you have.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -286,9 +286,7 @@ function Inventory.Start()
 				elseif (data.Level or 1) < troll.Level then
 					rowButton(card, `🔒 Level {troll.Level}`, Ui.GREY, nil)
 				else
-					rowButton(card, "Buy in Shop", Ui.ORANGE, function()
-						Menus.Open("Shop")
-					end)
+					rowButton(card, "Rebirth Beach", Ui.PURPLE, nil) -- (sold at the Rebirth Market)
 				end
 			end
 			Ui.label(list, {
@@ -346,9 +344,7 @@ function Inventory.Start()
 				local now = if level > 0 then `Now: {Config.Tools.EffectText(tool, level)}` else tool.Description
 				local card = row(index, `Tool_{tool.Id}`, `{tool.DisplayName}  (Lv {level}/{tool.MaxLevel})`, now)
 				if level < tool.MaxLevel then
-					rowButton(card, "Upgrade in Shop", Ui.ORANGE, function()
-						Menus.Open("Shop")
-					end)
+					rowButton(card, "Rebirth Beach", Ui.PURPLE, nil) -- (upgraded at the Rebirth Market)
 				else
 					rowButton(card, "MAXED", Ui.GREEN, nil)
 				end

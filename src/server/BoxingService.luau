@@ -62,6 +62,12 @@ local sessions: { [Player]: Session } = {} -- owner -> job
 local crewOf: { [Player]: Session } = {} -- crew member -> the job they're helping with
 local stunnedUntil: { [Player]: number } = {}
 local lastShove: { [Player]: number } = {}
+
+-- The Invincibility Shield (Robux, MonetizationService): no vine boom, and Chaos attacks skip you
+local function invincible(player: Player): boolean
+	local untilTime = player:GetAttribute("InvincibleUntil")
+	return typeof(untilTime) == "number" and untilTime > os.time()
+end
 local map: MapBuilder.Map
 local boxesFolder: Folder
 
@@ -440,7 +446,7 @@ local function startBox(s: Session)
 	angerMult *= 1 + (hard.AngerRateMult - 1) * s.Difficulty -- an animal above your level is a handful
 	s.Box = {
 		Start = Workspace:GetServerTimeNow(),
-		Anger = math.max( -- PRIORITY starts high; the Calm Hands diamond upgrade takes some off
+		Anger = math.max( -- PRIORITY starts high; the Calm Hands Rebirth Upgrade takes some off
 			0,
 			(if stamp and stamp.StartAnger then stamp.StartAnger else box.StartAnger)
 				- Economy.UpgradeBonus(s.Player, "CalmHands")
@@ -921,8 +927,12 @@ local function updateBox(s: Session, now: number, dt: number)
 
 	s.MaxAnger = math.max(s.MaxAnger, state.Anger)
 	if state.Anger >= 100 then
-		launch(s)
-		return
+		if invincible(s.Player) then
+			state.Anger = 99 -- (shielded: it can rage, but it can't break out)
+		else
+			launch(s)
+			return
+		end
 	end
 	syncBox(s)
 	updateBoxVisual(s)
@@ -950,7 +960,7 @@ local function onShove(shover: Player)
 	for _, other in Players:GetPlayers() do
 		local job = jobOf(other)
 		local root = getCharacterParts(other)
-		if other ~= shover and job and job.Chaos and job ~= shoverJob and root then
+		if other ~= shover and job and job.Chaos and job ~= shoverJob and root and not invincible(other) then
 			local distance = (root.Position - shoverRoot.Position).Magnitude
 			if distance <= best then
 				target, targetRoot, best = other, root, distance
@@ -1216,10 +1226,10 @@ end
 ---------------------------------------------------------------------------------------------------
 -- For troll items (TrollService). They only ever touch Chaos Mode jobs, never anyone who didn't opt in.
 
--- Is this player on a Chaos Mode job (owner or crew)?
+-- Is this player on a Chaos Mode job (owner or crew)? (Shielded players count as out of it: trolls skip them)
 function BoxingService.InChaos(player: Player): boolean
 	local s = jobOf(player)
-	return s ~= nil and s.Chaos
+	return s ~= nil and s.Chaos and not invincible(player)
 end
 
 -- Spooks every Chaos animal within `radius` of `position` (except the troller's own)
@@ -1227,7 +1237,7 @@ function BoxingService.SpookNear(position: Vector3, radius: number, byPlayer: Pl
 	local count = 0
 	for _, s in sessions do
 		local critter = s.Critter
-		if s.Chaos and s.Stage == "Catch" and critter and jobOf(byPlayer) ~= s then
+		if s.Chaos and s.Stage == "Catch" and critter and jobOf(byPlayer) ~= s and not invincible(s.Player) then
 			if (critter.Position - position).Magnitude <= radius then
 				CatchAI.Spook(s, byPlayer)
 				count += 1
@@ -1243,7 +1253,7 @@ function BoxingService.AngerNearest(position: Vector3, radius: number, byPlayer:
 	local bestDistance = radius
 	for _, s in sessions do
 		local root = getCharacterParts(s.Player)
-		if s.Chaos and s.Box and root and jobOf(byPlayer) ~= s then
+		if s.Chaos and s.Box and root and jobOf(byPlayer) ~= s and not invincible(s.Player) then
 			local distance = (root.Position - position).Magnitude
 			if distance <= bestDistance then
 				best, bestDistance = s, distance

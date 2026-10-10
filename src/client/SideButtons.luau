@@ -218,11 +218,11 @@ function SideButtons.Start()
 		{ Label = "INVITE", Icon = "Button_Invite", Color = Ui.GREEN, LayoutOrder = 6 },
 		nil,
 		function()
-			-- Your UserId rides along with the invite, so you get paid diamonds when they join and play
+			-- Your UserId rides along with the invite, so you get paid when they join and play
 			-- (InviteService on the server)
 			local options = Instance.new("ExperienceInviteOptions")
 			options.PromptMessage =
-				`Invite friends: they get {Config.Social.Invites.NewPlayerGift} diamonds, you get {Config.Social.Invites.InviterReward} each!`
+				`Invite friends: they get {Config.Social.Invites.NewPlayerGift} coins, and you get a big coin bonus for each one!`
 			options.LaunchData = tostring(player.UserId)
 			pcall(SocialService.PromptGameInvite, SocialService, player, options)
 		end

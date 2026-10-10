@@ -38,7 +38,6 @@ export type Data = {
 	OrdersDone: number,
 	Species: { [string]: number },
 	Trolls: { [string]: boolean },
-	Diamonds: number,
 	FollowAsked: number?,
 	InviteRewards: number?,
 	Upgrades: { [string]: number },
@@ -75,7 +74,6 @@ local EMPTY: Data = {
 	OrdersDone = 0,
 	Species = {},
 	Trolls = {},
-	Diamonds = 0,
 	Upgrades = {},
 }
 
@@ -103,7 +101,7 @@ end
 function Profile.BagCapacity(data: Data): number
 	local mail = Config.Mail
 	local bigBag = if player:GetAttribute("Pass_BigBag") == true then Config.Monetization.BigBagSlots else 0
-	local pockets = Config.Diamonds.Bonus(Config.Diamonds.ById.DeepPockets, data.Upgrades.DeepPockets or 0)
+	local pockets = Config.Upgrades.Bonus(Config.Upgrades.ById.DeepPockets, data.Upgrades.DeepPockets or 0)
 	return mail.BagCapacity + (data.Tools.MailBag or 0) * Config.Tools.ById.MailBag.PerLevel + bigBag + pockets
 end
 

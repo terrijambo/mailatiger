@@ -55,7 +55,7 @@ function Orders.Refresh(profile: Profile, force: boolean?): boolean
 		return false
 	end
 
-	local busyDesk = Config.Diamonds.Bonus(Config.Diamonds.ById.BusyDesk, profile.Upgrades.BusyDesk or 0)
+	local busyDesk = Config.Upgrades.Bonus(Config.Upgrades.ById.BusyDesk, profile.Upgrades.BusyDesk or 0)
 	local slots = Tuning.Count + busyDesk - #kept
 	if slots <= 0 then
 		return false -- (all of them are waiting to be claimed)

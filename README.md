@@ -48,11 +48,13 @@ tests/      automatic config checks (lune run tests/run.luau)
 
 ## How to play
 1. **The map:** you start by the fountain in the town plaza. Gruff, his counter, the mail chute, the orders
-   board and the Post Office are to the east; the Supply Shop is northeast. The seven Post Office
-   **machines** stand round the plaza. Roads lead out to the islands.
+   board and his big Post Office are to the east: **talk to Gruff to shop** (machines, boxes, stamps). The
+   seven Post Office **machines** stand round the plaza. Roads lead out to the islands. **Rebirth Beach**
+   (over the bridge from the Backyard) has the **Rebirth Market**.
 2. **Islands open by level:** Backyard (level 1), Barn (4), Jungle (8), Ice Rink (12), Rooftop (18). A
-   locked island has a shimmering barrier with its level on it. **MENU → TRAVEL** teleports you to Gruff,
-   any island you've opened, or the boss arena.
+   locked island has a shimmering barrier with its level on it. There's no teleport menu: the **GRUFF/PEN**
+   button zips you between Gruff and your best island, and the boss banner's GO button takes you to the
+   boss. Everywhere else you walk (Sneakers make you faster).
 3. **GRAB:** every island has wild animals roaming. Each one has a level and a **rarity** (Common → Ethereal;
    Gruff is Secret) on its name tag. Walk up and **hold E**. Animals a bit above your level are allowed but
    make the BOX harder (orange tag, "HARD +N"); too far above (red tag) and you get VINE BOOM'd back to town.
@@ -70,18 +72,21 @@ tests/      automatic config checks (lune run tests/run.luau)
 6. **MAIL:** take your parcels to the chute next to Gruff and **hold E**. You get the XP and a 30% coin tip.
 7. **Level up:** XP raises your **chute level**, which is your level. It opens islands, unlocks machines,
    upgrades the chute's look, and raises the **coins per minute** the chute pays you.
-8. **Rebirth** (Shop → Rebirth) at chute level 20 + coins: resets level, machines, coins, animals, boxes and
-   stamps, for x1.5 coins per minute (stacking) and **Rebirth Points**, which buy **Tools** (Sneakers,
-   Gloves, Tape Gun, Net, Mail Bag) that you keep forever.
+8. **Rebirth** (Rebirth Market → Rebirth): needs a chute level (5 for the first, then 8, 12, 16, 20) and
+   coins (each one much more than the last). Resets level, machines, coins, animals, boxes and stamps, for
+   x1.5 coins per minute (stacking) and **Rebirth Points**, the rebirth currency (only from rebirthing).
+   They buy **Tools** (Sneakers, Gloves, Tape Gun, Net, Mail Bag) and **Rebirth Upgrades** (Golden Paws,
+   Quick Study...), all kept forever.
 
 **Also in the game**
 - **Eggs:** a stand on every island. Pay coins, it wobbles and cracks, and one of that island's animals
   hatches next to you (rarer ones less often). Good for hunting the animal an order needs.
-- **Shiny and Golden** animals (3x and 10x pay), with server-wide shout-outs. **Lures** (Shop → Lures, or
-  the Robux MEGA Lure) bring rarer animals to you for a few minutes.
+- **Shiny and Golden** animals (3x and 10x pay), with server-wide shout-outs. **Lures** (Rebirth Market →
+  Lures, or the Robux MEGA Lure) bring rarer animals to you for a few minutes.
 - **Gruff's quests** (banner at the top), **side orders** and **daily/weekly challenges** on the Orders
   board; finished ones wait for a **CLAIM** button (red ! on MENU and ORDERS).
-- **Diamonds** (from levels, quests, rebirths, invites) buy permanent **Upgrades**.
+- **Troll items** (Rebirth Market → Trolls, coins) and the **Invincibility Shield** (Store, Robux: a few
+  minutes of no vine boom, and Chaos shoves and troll items bounce off you).
 - **Events** every 10 minutes (Golden Hour, Double XP, Speed Tape, Rush Order, Coin Rain, Mystery Parcel,
   Stampede) and an **hourly boss**: everyone pins it with rope handles, then boxes it together on one giant box.
 - **Chaos Mode** (on by default, switch in Settings): +50% pay, but other players can spook your animal,
@@ -100,12 +105,12 @@ tests/      automatic config checks (lune run tests/run.luau)
 | Troll items | click the hotbar | **R1** pick / **R2** use | tap the hotbar |
 | Mail from anywhere (Rocket Launcher) | **M** | **Y** | Mail button |
 
-Left-side buttons: **SHOP** and **MENU** (Store, Orders, Bag, Upgrades, Travel, Settings, Invite). A third
-button shows only when it helps: **PEN** at Gruff's with an empty bag (to your best island), **GRUFF** when
-you're out with parcels (back to the chute). SHOP and MENU appear as the tutorial goes on. The green **+**
-next to your coins opens the Store. The rest of the screen only shows what matters right now: the bag while
-you carry parcels, diamonds for a moment when they change, the quest line when it moves, a small chip for a
-running event (tap it for details), and the troll hotbar while someone is on a Chaos Mode job.
+Left-side buttons: **GRUFF** (teleport to Gruff; it turns into **PEN** while you're at Gruff's, which takes
+you to your best island), **SHOP** (Gruff's Shop) and **MENU** (Store, Orders, Bag, Settings, Invite). SHOP
+and MENU appear as the tutorial goes on. The green **+** next to your coins opens the Store. The rest of the
+screen only shows what matters right now: the bag while you carry parcels, Rebirth Points for a moment when
+they change, the quest line when it moves, a small chip for a running event (tap it for details), the
+shield timer while it runs, and the troll hotbar while someone is on a Chaos Mode job.
 
 ### Studio-only test helpers (never in the live game)
 - Every animal is free and you start with 2,000,000 test coins while saving is off (`Config/init.luau` → `Dev`).

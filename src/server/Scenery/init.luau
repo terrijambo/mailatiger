@@ -150,7 +150,7 @@ function Scenery.Build(parent: Instance, layout: Layout)
 		if spec.Id == "Boss" then
 			title, subtitle, color = "⚔️ BOSS ARENA", "EVERY HOUR", Color3.fromRGB(200, 40, 40)
 		elseif spec.Id == "Beach" then
-			title, subtitle, color = "🏖️ BEACH", "", Color3.fromRGB(60, 170, 230)
+			title, subtitle, color = "♻️ REBIRTH BEACH", "MARKET", Color3.fromRGB(150, 90, 230)
 		elseif def and zone then
 			local level = Config.Levels.ZoneLevels[spec.Id] or 1
 			title, subtitle, color = `{zone.Icon} {string.upper(def.DisplayName)}`, `LEVEL {level}`, def.Color

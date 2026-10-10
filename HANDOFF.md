@@ -21,7 +21,8 @@ Drop parcels into your **Post Office machines** round the plaza (hold E, wait, c
 stamp multiplies that parcel's XP. **Mail** them at Gruff's chute for XP and a 30% coin tip. XP raises your
 **chute level**, which *is* your player level: it opens islands, unlocks machines, and sets the coins per
 minute the chute pays you. Rebirth at chute level 20. On top: rarities and eggs, Shiny/Golden variants,
-quests/orders/challenges, diamonds, events every 10 minutes and an hourly co-op boss, and opt-in Chaos Mode PvP.
+quests/orders/challenges, Rebirth Points and the Rebirth Market on Rebirth Beach, events every 10 minutes and
+an hourly co-op boss, and opt-in Chaos Mode PvP.
 
 ## The project
 - A Roblox game synced with **Rojo 7.7**. `src/` is the source of truth; Studio gets it through a live
@@ -49,12 +50,13 @@ quests/orders/challenges, diamonds, events every 10 minutes and an hourly co-op 
 | Parcels and mailing | `MailService`, `Economy` | `ChuteVisual` | `Mail` |
 | Machines, chute level, rebirth | `MachineService`, `ProgressionService` | `MachineStations` | `Machines`, `Levels`, `Tools` |
 | Eggs | `EggService` | (prompts on the stands) | `Eggs` |
-| Travel / zone locks | `Travel` | `TravelMenu`, `ZoneLocks` | `Arenas`, `Levels.ZoneLevels`, `World` |
+| Travel / zone locks (no Travel menu: GRUFF/PEN button only) | `Travel` | `SideButtons`, `ZoneLocks` | `Arenas`, `Levels.ZoneLevels`, `World` |
+| Gruff's Shop, Rebirth Market (Rebirth Beach), rebirth | `ShopService` | `Shop` | `Machines.Rebirth`, `Tools`, `Upgrades` |
 | Quests, orders, challenges | `Orders`, `ChallengeService`, `TutorialService` | `OrdersBoard`, `QuestText`, `Tutorial` | `Quests`, `Challenges` |
 | Events and the hourly boss | `EventService`, `BossService`, `BossArena` | `EventBanner`, `BossLook` | `Events` |
 | Dive | `DiveService` | `Dive` | `Dive` |
 | Chaos Mode, trolls, shove | `TrollService` | `TrollBar`, `Effects` | `Social`, `Trolls` |
-| Diamonds, Robux | `MonetizationService` | `DiamondUpgrades`, `Store` | `Diamonds`, `Monetization` |
+| Robux (incl. the Invincibility Shield) | `MonetizationService` | `Store` | `Monetization` |
 | Leaderboards, invites, badges, codes, paycheck, streaks | `LeaderboardService`, `InviteService`, `Badges`, `CodesService`, `PaycheckService`, `StreakService` | `Settings` | `Social`, `Badges`, `Codes`, `Progression` |
 | Studio-only filming panel | | `PromoKit` (F7 / F8) | |
 
@@ -133,7 +135,7 @@ Postmaster Gruff has one job for you: grab wild animals, stuff them in a box, an
 ⭐ Level up your chute to open new islands
 🥚 Hatch eggs for Rare, Mythic and Ethereal animals
 👑 Team up every hour to box a giant boss
-💎 Earn diamonds for permanent upgrades
+♻️ Rebirth for Rebirth Points: spend them on permanent upgrades at Rebirth Beach
 🔄 Rebirth for bigger payouts
 🔥 Chaos Mode: +50% pay, but other players can shove you, spook your animal, and hit you with banana peels
 
@@ -143,8 +145,13 @@ Can you mail a tiger? 🐯
 ```
 
 ## Rules to keep
-- No random crates or loot boxes for Robux. Eggs cost **coins only**. **Nothing sold for Robux, and no
-  diamond upgrade, helps in Chaos Mode fights** (shove, spook, speed, trolls). Troll items are coins-only.
+- No random crates or loot boxes for Robux. Eggs cost **coins only**. Troll items are coins-only.
+- The **Invincibility Shield** (Robux) is the one thing bought with Robux that helps in Chaos Mode (no vine
+  boom, shoves and troll items bounce off): the owner's call on 2026-10-10. Nothing else sold for Robux, and
+  no Rebirth Upgrade, may help in Chaos Mode fights.
+- **Rebirth Points only come from rebirthing.** Diamonds are retired (turned into Rebirth Points, save
+  EconomyVersion 2); old diamond pack receipts still pay Rebirth Points. Every other reward pays coins
+  (`Economy.AddPrize` = minutes of chute income).
 - Studio-only helpers must stay Studio-only: `Config.Dev.*` (free animals, 2M test coins), the Store's TEST
   buttons (`ShopAction "StudioBuy"`, checks `RunService:IsStudio()`), the Promo Kit (F7/F8), and the E2E
   scripts (only in a place with the `MailATigerTestPlace` attribute).

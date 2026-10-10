@@ -38,7 +38,8 @@ local icons: { [string]: Icon } = {
 	Hud_Level = icon("⭐"),
 	Hud_Quest = icon("❗"),
 	Hud_Lock = icon("🔒"),
-	Hud_Diamonds = icon("💎"),
+	Hud_RebirthPoints = icon("♻️"),
+	Hud_Diamonds = icon("💎"), -- (retired with diamonds; its picture is still on an icon sheet)
 	Hud_ServerBoost = icon("🚀"),
 
 	-- Mail boxes
@@ -74,6 +75,7 @@ local icons: { [string]: Icon } = {
 
 	-- Store (Robux)
 	Store_ServerBoost = icon("🚀"),
+	Store_Invincible = icon("🛡️"),
 	Store_DiamondsSmall = icon("💎"),
 	Store_DiamondsMedium = icon("💠"),
 	Store_DiamondsLarge = icon("👑"),
@@ -86,7 +88,7 @@ local icons: { [string]: Icon } = {
 	Store_PriorityStamps = icon("🔥"),
 	Store_GruffCoffee = icon("☕"),
 
-	-- Diamond upgrades
+	-- Rebirth Upgrades
 	Upgrade_GoldenPaws = icon("🐾"),
 	Upgrade_QuickStudy = icon("📚"),
 	Upgrade_DeepPockets = icon("👖"),

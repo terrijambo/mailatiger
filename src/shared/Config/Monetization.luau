@@ -6,8 +6,9 @@
 -- The Price here is only what the Store button shows. The real price is whatever you set on Roblox,
 -- so keep them the same.
 --
--- Rules (see ROADMAP -> Phase 7): no random crates, and nothing that makes you stronger against other
--- players in Chaos Mode. Passes save time or look cool.
+-- Rules (see ROADMAP -> Decisions): no random crates. The one Robux item that helps in Chaos Mode is the
+-- Invincibility Shield (the owner's call, 2026-10-10): for a few minutes shoves and troll items bounce off
+-- you, and your animal can't vine boom. Everything else saves time or looks cool.
 --
 -- TESTING IN STUDIO: items with Id 0 show a "TEST" button in the Store that gives you the item for free
 -- (Studio only, so you can try everything before creating it on Roblox). Once an item has a real Id,
@@ -27,6 +28,7 @@ export type Product = {
 	Price: number,
 	DisplayName: string,
 	Description: string,
+	Retired: boolean?, -- no longer sold (never shown in the Store), but an old purchase still gets delivered
 }
 
 local passes: { Pass } = {
@@ -59,21 +61,24 @@ local products: { Product } = {
 		Id = 3715699154,
 		Price = 49,
 		DisplayName = "Handful of Diamonds",
-		Description = "40 diamonds, for Diamond Upgrades.",
+		Description = "(Retired: Rebirth Points only come from rebirthing now.)",
+		Retired = true,
 	},
 	{
 		Key = "DiamondsMedium",
 		Id = 3715699204,
 		Price = 129,
 		DisplayName = "Pouch of Diamonds",
-		Description = "120 diamonds (+20% extra).",
+		Description = "(Retired)",
+		Retired = true,
 	},
 	{
 		Key = "DiamondsLarge",
 		Id = 3715699258,
 		Price = 349,
 		DisplayName = "Chest of Diamonds",
-		Description = "400 diamonds (+40% extra).",
+		Description = "(Retired)",
+		Retired = true,
 	},
 	{
 		Key = "CoinsSmall",
@@ -103,6 +108,14 @@ local products: { Product } = {
 		Price = 99,
 		DisplayName = "MEGA Lure",
 		Description = "10 minutes of rare animals turning up right next to you, with 8x Shiny & Golden odds.",
+	},
+	{
+		-- Create it on the Creator Dashboard (Developer Products) and paste its id here
+		Key = "Invincible",
+		Id = 0,
+		Price = 79,
+		DisplayName = "Invincibility Shield",
+		Description = "5 minutes: no vine boom, and Chaos shoves and troll items bounce off you. Stacks.",
 	},
 	{
 		Key = "PriorityStamps",
@@ -140,8 +153,12 @@ return {
 	BoostMult = 2,
 	BoostSeconds = 180,
 	BoostMaxSeconds = 3600,
-	-- Diamond packs: how many diamonds each gives
+	-- The old diamond packs (retired 2026-10-10): if a purchase still comes through, it gives this many
+	-- Rebirth Points (what the diamonds would have turned into)
 	DiamondPacks = { DiamondsSmall = 40, DiamondsMedium = 120, DiamondsLarge = 400 },
+	-- Invincibility Shield: seconds per purchase (buying more adds time), up to InvincibleMaxSeconds left
+	InvincibleSeconds = 300,
+	InvincibleMaxSeconds = 1800,
 	-- Roblox Premium members earn a little more (Roblox also pays you for Premium players' playtime)
 	PremiumPayoutMult = 1.1,
 	-- Join-the-group bonus. Create a group on Roblox, paste its id here (0 = off). Players in it earn more.

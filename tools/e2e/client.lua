@@ -264,14 +264,17 @@ local function run()
 		return (profile().Stamps.Fragile or 0) >= 1
 	end, 3), "bought a Fragile stamp")
 	task.wait(0.2)
+	-- Tools are sold only at the Rebirth Market, on Rebirth Beach
 	local pointsBefore = profile().RebirthPoints or 0
+	remotes.ShopAction:FireServer("Promo", "Points") -- (Studio only: +200 Rebirth Points)
+	log(waitFor(function()
+		return (profile().RebirthPoints or 0) >= pointsBefore + 200
+	end, 3), "got test Rebirth Points")
 	remotes.ShopAction:FireServer("UpgradeTool", "Sneakers")
 	task.wait(1)
-	log((profile().Tools.Sneakers or 0) == 0, "tools need Rebirth Points (none yet)")
-	remotes.ShopAction:FireServer("Promo", "Points") -- (Studio only: +50 Rebirth Points)
-	log(waitFor(function()
-		return (profile().RebirthPoints or 0) >= pointsBefore + 50
-	end, 3), "got test Rebirth Points")
+	log((profile().Tools.Sneakers or 0) == 0, "tools don't sell away from Rebirth Beach")
+	root.CFrame = map.MarketCounter.CFrame * CFrame.new(0, 2, -6)
+	task.wait(0.5)
 	remotes.ShopAction:FireServer("UpgradeTool", "Sneakers")
 	log(waitFor(function()
 		return (profile().Tools.Sneakers or 0) >= 1
@@ -312,18 +315,27 @@ local function run()
 		local untilTime = Workspace:GetAttribute("BoostUntil")
 		return type(untilTime) == "number" and untilTime > Workspace:GetServerTimeNow() + 100
 	end, 3), "server boost started (2x coins for everyone)")
-	local gems = profile().Diamonds or 0
+	-- (an old diamond pack that still comes through gives Rebirth Points instead)
+	local points = profile().RebirthPoints or 0
 	remotes.ShopAction:FireServer("StudioBuy", "DiamondsSmall")
 	log(waitFor(function()
-		return (profile().Diamonds or 0) >= gems + 40
-	end, 3), "bought 40 diamonds (Studio test)")
+		return (profile().RebirthPoints or 0) >= points + 40
+	end, 3), "an old diamond pack gives 40 Rebirth Points")
 	task.wait(0.3)
+	root.CFrame = map.MarketCounter.CFrame * CFrame.new(0, 2, -6)
+	task.wait(0.5)
 	remotes.ShopAction:FireServer("BuyUpgrade", "GoldenPaws")
 	log(waitFor(function()
 		return ((profile().Upgrades or {}).GoldenPaws or 0) == 1
-	end, 3), "bought Golden Paws with diamonds")
-	gui:WaitForChild("Upgrades", 3)
-	log(gui:FindFirstChild("Upgrades") ~= nil and gui:FindFirstChild("Store") ~= nil, "Upgrades and Store windows exist")
+	end, 3), "bought Golden Paws with Rebirth Points at the market")
+	remotes.ShopAction:FireServer("StudioBuy", "Invincible")
+	log(waitFor(function()
+		local untilTime = player:GetAttribute("InvincibleUntil")
+		return typeof(untilTime) == "number" and untilTime > Workspace:GetServerTimeNow() + 200
+	end, 3), "Invincibility Shield started (Studio test)")
+	remotes.ShopAction:FireServer("Promo", "NoShield") -- (later steps need vine booms to happen)
+	gui:WaitForChild("Market", 3)
+	log(gui:FindFirstChild("Market") ~= nil and gui:FindFirstChild("Store") ~= nil, "Market and Store windows exist")
 	remotes.Setting:FireServer("Music", false)
 	log(waitFor(function()
 		local settings = profile().Settings
@@ -521,11 +533,15 @@ local function run()
 	log((events.Launch or 0) > launchesBefore, "a wild Skunk's spray VINE BOOMs you away")
 	remotes.ShopAction:FireServer("Promo", "WildCalm")
 	task.wait(2.5)
+	local lureFrom = root.CFrame
+	root.CFrame = map.MarketCounter.CFrame * CFrame.new(0, 2, -6)
+	task.wait(0.5)
 	remotes.ShopAction:FireServer("BuyLure")
 	log(waitFor(function()
 		local untilTime = player:GetAttribute("LureUntil")
 		return typeof(untilTime) == "number" and untilTime > Workspace:GetServerTimeNow()
 	end, 3), "bought an Animal Lure")
+	root.CFrame = lureFrom
 	goTo(map.OrdersBoard)
 	holdPrompt(map.OrdersBoard:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
@@ -709,11 +725,16 @@ local function run()
 	log(waitFor(function()
 		return (profile().Level or 1) >= 25
 	end, 3), "test player set to level 25")
+	local trollFrom = root.CFrame
+	root.CFrame = map.MarketCounter.CFrame * CFrame.new(0, 2, -6)
+	task.wait(0.5)
 	remotes.ShopAction:FireServer("BuyTroll", "BananaPeel")
 	log(waitFor(function()
 		return (profile().Trolls or {}).BananaPeel == true
 	end, 3), "bought a Banana Peel")
-	log(gui:WaitForChild("TrollBar", 3) ~= nil and gui.TrollBar.Enabled, "troll hotbar shows up")
+	root.CFrame = trollFrom
+	-- (the hotbar itself only shows while someone is on a Chaos Mode job)
+	log(gui:WaitForChild("TrollBar", 3) ~= nil, "troll hotbar is built")
 	local used = events.TrollUsed or 0
 	remotes.Troll:FireServer("BananaPeel")
 	log(waitFor(function()

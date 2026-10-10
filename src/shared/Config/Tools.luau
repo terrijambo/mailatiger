@@ -1,5 +1,5 @@
 --!strict
--- Tools you upgrade at the Supply Shop. Each level costs more than the last.
+-- Tools you upgrade at the Rebirth Market (Rebirth Beach), with Rebirth Points. Each level costs more than the last.
 --   MaxLevel     : highest level
 --   BasePrice    : cost of level 1
 --   PriceGrowth  : each level costs this many times the previous one
@@ -29,7 +29,7 @@ local List: { Tool } = {
 		BasePrice = 200,
 		PriceGrowth = 3,
 		PerLevel = 0.15,
-		RPPerLevel = 1,
+		RPPerLevel = 10,
 		Effect = "grab {}% faster",
 		Percent = true,
 	},
@@ -42,7 +42,7 @@ local List: { Tool } = {
 		BasePrice = 150,
 		PriceGrowth = 1.9,
 		PerLevel = 4,
-		RPPerLevel = 0.5,
+		RPPerLevel = 5,
 		Effect = "+{} speed",
 	},
 	{
@@ -53,7 +53,7 @@ local List: { Tool } = {
 		BasePrice = 400,
 		PriceGrowth = 3,
 		PerLevel = 0.15,
-		RPPerLevel = 1,
+		RPPerLevel = 10,
 		Effect = "tape annoys {}% less",
 		Percent = true,
 	},
@@ -65,7 +65,7 @@ local List: { Tool } = {
 		BasePrice = 1000,
 		PriceGrowth = 4,
 		PerLevel = 2,
-		RPPerLevel = 1.5,
+		RPPerLevel = 15,
 		Effect = "+{} studs of reach",
 	},
 	{
@@ -76,7 +76,7 @@ local List: { Tool } = {
 		BasePrice = 500,
 		PriceGrowth = 3,
 		PerLevel = 2,
-		RPPerLevel = 1,
+		RPPerLevel = 10,
 		Effect = "+{} bag slots",
 	},
 }

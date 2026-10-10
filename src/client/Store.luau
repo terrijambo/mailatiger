@@ -1,5 +1,5 @@
 --!strict
--- The Robux Store (the STORE side button): the 2x Coins Server Boost, diamond packs, passes and goodies.
+-- The Robux Store (the STORE side button): the 2x Coins Server Boost, passes and goodies (incl. the Invincibility Shield).
 -- Buying opens Roblox's own purchase popup; the server gives you what you bought (MonetizationService).
 --
 -- Items whose Id in src/shared/Config/Monetization.luau is still 0 (not created on Roblox yet):
@@ -13,7 +13,6 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
-local Format = require(ReplicatedStorage.Shared.Format)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
@@ -21,7 +20,6 @@ local Ui = require(script.Parent.Ui)
 local Money = Config.Monetization
 local player = Players.LocalPlayer
 
-local DIAMOND_BLUE = Color3.fromRGB(60, 170, 235)
 local TEST_PURPLE = Color3.fromRGB(140, 90, 220)
 
 local Store = {}
@@ -135,8 +133,6 @@ function Store.Start()
 			order += 1
 			return order
 		end
-		local data = Profile.Get()
-
 		-- Featured: the Server Boost, a big gold card
 		local boost = Money.ProductByKey.ServerBoost
 		local featured = Ui.card(list, {
@@ -168,23 +164,6 @@ function Store.Start()
 		})
 		boostButton = buyButton(featured, boost, false, Ui.ORANGE, UDim2.fromOffset(180, 60))
 
-		-- Diamonds
-		header(nextOrder(), `💎 Diamonds  (you have {Format.Short(data.Diamonds or 0)})`)
-		for _, key in { "DiamondsSmall", "DiamondsMedium", "DiamondsLarge" } do
-			local product = Money.ProductByKey[key]
-			row(nextOrder(), product, product.DisplayName, product.Description, false, DIAMOND_BLUE)
-		end
-		local spend = Ui.button(list, {
-			LayoutOrder = nextOrder(),
-			Size = UDim2.new(1, -12, 0, 40),
-			BackgroundColor3 = DIAMOND_BLUE,
-			TextSize = 18,
-			Text = "Spend diamonds on DIAMOND UPGRADES →",
-		})
-		spend.Activated:Connect(function()
-			Menus.Open("Upgrades")
-		end)
-
 		-- Passes
 		header(nextOrder(), "Passes (yours forever)")
 		for _, pass in Money.Passes do
@@ -194,7 +173,7 @@ function Store.Start()
 		-- Goodies
 		header(nextOrder(), "Goodies")
 		for _, product in Money.Products do
-			local skip = product.Key == "ServerBoost" or Money.DiamondPacks[product.Key] ~= nil
+			local skip = product.Key == "ServerBoost" or product.Retired == true
 			if not skip then
 				row(nextOrder(), product, product.DisplayName, product.Description, false, Ui.BLUE)
 			end

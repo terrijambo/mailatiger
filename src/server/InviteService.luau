@@ -1,5 +1,5 @@
 --!strict
--- Inviting friends pays diamonds (Config/Social.luau Invites).
+-- Inviting friends pays coins (Config/Social.luau Invites).
 -- The INVITE button sends Roblox's invite with your UserId tucked inside ("launch data"). A brand-new player who
 -- joins from it gets a welcome gift, and once they've mailed a few animals, you get paid: right away if you're
 -- in their server, otherwise it waits in a small DataStore until you next join.
@@ -9,6 +9,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
@@ -40,14 +41,16 @@ local function payInviter(player: Player, count: number, friendName: string?)
 		return
 	end
 	profile.InviteRewards += allowed
-	Economy.AddDiamonds(player, Invites.InviterReward * allowed, "Invite")
+	local coins = Economy.AddPrize(player, Invites.InviterRewardMinutes * allowed, "Invite")
 	Analytics.Custom(player, "InvitePaid", allowed)
 	if friendName then
-		say(player, `{friendName} joined from your invite and got going. Here's {Invites.InviterReward} diamonds!`)
+		say(player, `{friendName} joined from your invite and got going. Here's {Format.Short(coins)} coins!`)
 	else
 		say(
 			player,
-			`{allowed} friend{if allowed == 1 then "" else "s"} you invited got going while you were away. Here's your diamonds!`
+			`{allowed} friend{if allowed == 1 then "" else "s"} you invited got going while you were away. Here's {Format.Short(
+				coins
+			)} coins!`
 		)
 	end
 end
@@ -89,7 +92,7 @@ local function checkJoin(player: Player)
 	if not inviterId or inviterId <= 0 or inviterId == player.UserId or inviterId % 1 ~= 0 then
 		return
 	end
-	-- Invites only go to friends; checking stops someone sharing a link around for free diamonds
+	-- Invites only go to friends; checking stops someone sharing a link around for free coins
 	local friendsOk, friends = pcall(player.IsFriendsWithAsync, player, inviterId)
 	if not friendsOk or friends ~= true then
 		return
@@ -99,12 +102,12 @@ local function checkJoin(player: Player)
 		return
 	end
 	profile.InvitedBy = inviterId
-	Economy.AddDiamonds(player, Invites.NewPlayerGift, "InviteGift")
+	Economy.AddCoins(player, Invites.NewPlayerGift, "InviteGift")
 	Analytics.Custom(player, "JoinedFromInvite")
 	local inviter = Players:GetPlayerByUserId(inviterId)
 	say(
 		player,
-		`Welcome! Your friend{if inviter then " " .. inviter.DisplayName else ""} invited you, so here's {Invites.NewPlayerGift} diamonds to start.`
+		`Welcome! Your friend{if inviter then " " .. inviter.DisplayName else ""} invited you, so here's {Invites.NewPlayerGift} coins to start.`
 	)
 end
 

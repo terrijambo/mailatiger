@@ -3,7 +3,7 @@
 --   * one objective line across the top ("Box your hamster!"); your quest's progress swaps in for a few
 --     seconds whenever it moves, and a status line shows under it only when there's something to say
 --   * bottom-left: your level and coins. Next to the coins: a + (opens the Store), your coin boost when you
---     have one, and your delivery streak. Diamonds pop up for a moment when they change.
+--     have one, and your delivery streak. Rebirth Points pop up for a moment when they change.
 --   * bottom-right: your bag, only while you're carrying parcels (it pulses when it's nearly full)
 --   Everything shrinks a little on small screens (Ui.autoScale), so phones keep the same layout.
 --   * popups from Gruff and the chute (receipts get a red star-rating stamp), queued so none get lost
@@ -29,7 +29,7 @@ local Hud = {}
 local COIN_GREEN = Color3.fromRGB(110, 255, 110)
 local BAG_TAN = Color3.fromRGB(255, 205, 120)
 local BOOST_ORANGE = Color3.fromRGB(255, 170, 60)
-local DIAMOND_BLUE = Color3.fromRGB(120, 230, 255)
+local REBIRTH_PURPLE = Color3.fromRGB(210, 160, 255)
 
 -- 185 -> "3:05"
 local function clock(seconds: number): string
@@ -210,29 +210,19 @@ function Hud.Start()
 	end
 	player:GetAttributeChangedSignal("Streak"):Connect(refreshStreak)
 	refreshStreak()
-	-- Diamonds: pop up for a few seconds when they change (tap to open Diamond Upgrades). The Store and
-	-- Diamond Upgrades show your total too.
-	local diamondRow, diamondLabel = statRow(stack, 4, "Hud_Diamonds", DIAMOND_BLUE)
-	diamondRow.Visible = false
-	diamondRow.Size = UDim2.fromOffset(260, 38)
-	diamondLabel.TextSize = 30
-	local diamondButton = Ui.make("TextButton", {
-		Size = UDim2.fromScale(1, 1),
-		BackgroundTransparency = 1,
-		Text = "",
-		ZIndex = 5,
-	}, diamondRow)
-	diamondButton.Activated:Connect(function()
-		Menus.Open("Upgrades")
-	end)
-	local knownDiamonds: number? = nil
+	-- Rebirth Points: pop up for a few seconds when they change (they're spent at the Rebirth Market)
+	local pointsRow, pointsLabel = statRow(stack, 4, "Hud_RebirthPoints", REBIRTH_PURPLE)
+	pointsRow.Visible = false
+	pointsRow.Size = UDim2.fromOffset(260, 38)
+	pointsLabel.TextSize = 30
+	local knownPoints: number? = nil
 	Profile.Watch(function()
-		local diamonds = Profile.Get().Diamonds or 0
-		diamondLabel.Text = Format.Short(diamonds)
-		if knownDiamonds and diamonds ~= knownDiamonds and not Profile.Learning() then
-			flash(diamondRow, 4)
+		local points = Profile.Get().RebirthPoints or 0
+		pointsLabel.Text = `{Format.Short(points)} RP`
+		if knownPoints and points ~= knownPoints and not Profile.Learning() then
+			flash(pointsRow, 4)
 		end
-		knownDiamonds = diamonds
+		knownPoints = points
 	end)
 
 	-- Level + XP bar (top of the stack)
@@ -455,8 +445,8 @@ function Hud.Start()
 		-- (the same math as Economy.PayoutMult on the server)
 		local money = Config.Monetization
 		local mult = 1 + profile.Rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
-		local paws = Config.Diamonds.ById.GoldenPaws
-		mult *= 1 + Config.Diamonds.Bonus(paws, profile.Upgrades.GoldenPaws or 0) / 100
+		local paws = Config.Upgrades.ById.GoldenPaws
+		mult *= 1 + Config.Upgrades.Bonus(paws, profile.Upgrades.GoldenPaws or 0) / 100
 		if boostLeft() > 0 then
 			mult *= money.BoostMult
 		end
@@ -544,9 +534,33 @@ function Hud.Start()
 			then UDim2.new(1, -Ui.margin(), 0, 64)
 			else UDim2.fromOffset(Ui.margin() + 4, 64)
 	end)
+	-- Your Invincibility Shield (Store): "🛡️ 4:12", under the lure, only while it runs
+	local shieldLabel = Ui.outlined(gui, {
+		Size = UDim2.fromOffset(230, 30),
+		TextSize = 22,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		TextColor3 = Color3.fromRGB(120, 220, 255),
+		Text = "",
+		Visible = false,
+	})
+	Ui.autoScale(shieldLabel)
+	Ui.onResize(function()
+		local compact = Ui.compact()
+		shieldLabel.AnchorPoint = Vector2.new(if compact then 1 else 0, 0)
+		shieldLabel.TextXAlignment = if compact then Enum.TextXAlignment.Right else Enum.TextXAlignment.Left
+		shieldLabel.Position = if compact
+			then UDim2.new(1, -Ui.margin(), 0, 94)
+			else UDim2.fromOffset(Ui.margin() + 4, 94)
+	end)
 	local wasBoosted = false
 	task.spawn(function()
 		while gui.Parent do
+			local shieldUntil = player:GetAttribute("InvincibleUntil")
+			local shieldLeft = if typeof(shieldUntil) == "number" then shieldUntil - Workspace:GetServerTimeNow() else 0
+			shieldLabel.Visible = shieldLeft > 0
+			if shieldLeft > 0 then
+				shieldLabel.Text = `🛡️ Invincible {clock(shieldLeft)}`
+			end
 			local lureUntil = player:GetAttribute("LureUntil")
 			local lureLeft = if typeof(lureUntil) == "number" then lureUntil - Workspace:GetServerTimeNow() else 0
 			lureLabel.Visible = lureLeft > 0
@@ -618,7 +632,7 @@ function Hud.Start()
 		DisplayOrder = 6,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	}, gui.Parent)
-	-- Coins (or diamonds) burst out from the middle of the screen and fly into their counter
+	-- Coins burst out from the middle of the screen and fly into their counter
 	local function flyInto(iconKey: string, count: number, target: GuiObject)
 		local view = popupLayer.AbsoluteSize
 		local from = Vector2.new(view.X / 2, view.Y * 0.45)
@@ -840,7 +854,7 @@ function Hud.Start()
 		DisplayOrder = 7,
 		ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
 	}, gui.Parent)
-	local function showLevelUp(level: number, coins: number, diamonds: number, unlocks: { string })
+	local function showLevelUp(level: number, coins: number, unlocks: { string })
 		local card = Ui.make("Frame", {
 			AnchorPoint = Vector2.new(0.5, 0.5),
 			Position = UDim2.fromScale(0.5, 0.4),
@@ -858,7 +872,7 @@ function Hud.Start()
 			Position = UDim2.fromOffset(0, 66),
 			Size = UDim2.new(1, 0, 0, 40),
 			TextSize = 36,
-			Text = `Level {level}   +{Format.Short(coins)} coins   +{diamonds} 💎`,
+			Text = `Level {level}   +{Format.Short(coins)} coins`,
 		})
 		for index, unlock in unlocks do
 			Ui.outlined(card, {
@@ -959,29 +973,9 @@ function Hud.Start()
 				float:Destroy()
 			end)
 		elseif kind == "LevelUp" then
-			showLevelUp(data.Level, data.Coins, data.Diamonds or 0, data.Unlocks or {})
-		elseif kind == "Diamonds" then
-			flyInto("Hud_Diamonds", math.clamp(data.Amount, 3, 14), diamondRow)
-			-- A floating "+40 💎" by the diamond counter
-			local float = Ui.outlined(diamondRow, {
-				Position = UDim2.fromOffset(120, -4),
-				Size = UDim2.fromOffset(140, 30),
-				TextSize = 28,
-				TextXAlignment = Enum.TextXAlignment.Left,
-				TextColor3 = DIAMOND_BLUE,
-				Text = `+{Format.Short(data.Amount)} 💎`,
-				ZIndex = 4,
-			})
-			local stroke = float:FindFirstChildOfClass("UIStroke")
-			TweenService
-				:Create(float, TweenInfo.new(1.4), { Position = UDim2.fromOffset(120, -56), TextTransparency = 1 })
-				:Play()
-			if stroke then
-				TweenService:Create(stroke, TweenInfo.new(1.4), { Transparency = 1 }):Play()
-			end
-			task.delay(1.5, function()
-				float:Destroy()
-			end)
+			showLevelUp(data.Level, data.Coins, data.Unlocks or {})
+		elseif kind == "Prize" then
+			flyInto("Hud_Coins", 12, coinRow) -- (the coin counter shows the "+123" itself)
 		elseif kind == "ServerBoost" then
 			showToast(
 				`🚀 {data.Mult}x coins for everyone!`,
@@ -992,13 +986,7 @@ function Hud.Start()
 			)
 		elseif kind == "QuestDone" then
 			local nextText = if data.Next then `Next: {data.Next}` else "That was the last one. Legend."
-			showToast(
-				"✅ Quest done!",
-				nextText,
-				`+{Format.Short(data.Coins)} coins  +{data.Diamonds or 0} 💎`,
-				nil,
-				Ui.GREEN
-			)
+			showToast("✅ Quest done!", nextText, `+{Format.Short(data.Coins)} coins`, nil, Ui.GREEN)
 		elseif kind == "EventStart" then
 			local event = Config.Events.ById[data.Id]
 			if event then
@@ -1027,7 +1015,7 @@ function Hud.Start()
 			showToast(
 				if data.Top then "👑 Top helper!" else "⚔️ Boss reward!",
 				"Your next animal is a guaranteed Shiny.",
-				`+{data.Diamonds} 💎  +{Format.Short(data.Coins)} coins`,
+				`+{Format.Short(data.Coins)} coins`,
 				nil,
 				Ui.GOLD
 			)
@@ -1059,7 +1047,7 @@ function Hud.Start()
 			showToast(
 				"✅ Challenge done!",
 				"Claim it in MENU, then ORDERS.",
-				`+{data.Diamonds} 💎  +{Format.Short(data.Coins)} coins`,
+				`+{Format.Short(data.Coins)} coins`,
 				nil,
 				Ui.GREEN
 			)
@@ -1067,7 +1055,7 @@ function Hud.Start()
 			showToast(
 				"🏆 All dailies done!",
 				`{data.Streak} day{if data.Streak == 1 then "" else "s"} in a row!`,
-				`+{data.Diamonds} 💎`,
+				`+{Format.Short(data.Coins)} coins`,
 				nil,
 				Ui.GOLD
 			)

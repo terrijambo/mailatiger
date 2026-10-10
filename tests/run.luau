@@ -96,7 +96,10 @@ for _, animal in Config.Animals.List do
 	check(not seenIds[animal.Id], `animal id {animal.Id} is used twice`)
 	seenIds[animal.Id] = true
 	check(Config.Animals.ById[animal.Id] == animal, `{animal.Id} missing from Animals.ById`)
-	check(animal.Tier >= lastTier, `{animal.Id} is out of tier order in the list (the Pen and "Skip the Wait" rely on it)`)
+	check(
+		animal.Tier >= lastTier,
+		`{animal.Id} is out of tier order in the list (the Pen and "Skip the Wait" rely on it)`
+	)
 	lastTier = animal.Tier
 	check(Config.Arenas.ByTier[animal.Tier] ~= nil, `no arena for {animal.Id}'s tier {animal.Tier}`)
 	check(animal.BaseValue > 0, `{animal.Id} pays nothing`)
@@ -104,7 +107,10 @@ for _, animal in Config.Animals.List do
 	check(animal.Carriers >= 1 and animal.Carriers <= 4, `{animal.Id} needs {animal.Carriers} carriers`)
 	check(artColors[animal.Id], `{animal.Id} has no ArtColors/{animal.Id}.json (its model would stay grey)`)
 end
-check(Config.Animals.ById.Hamster and Config.Animals.ById.Hamster.Price == 0, "the Hamster (starter animal) should be free")
+check(
+	Config.Animals.ById.Hamster and Config.Animals.ById.Hamster.Price == 0,
+	"the Hamster (starter animal) should be free"
+)
 check(Config.Animals.ById.Tiger ~= nil, "no Tiger! The game is called Mail a Tiger")
 
 section("Twists")
@@ -159,7 +165,15 @@ for _, machine in Machines.List do
 	check(machine.Level > lastMachineLevel, `{machine.Id} unlocks no later than the machine before it`)
 	check(price > lastMachinePrice, `{machine.Id} isn't pricier than the machine before it`)
 	check(machine.XPMult > 1, `{machine.Id} XPMult should be above 1`)
-	print(string.format("    %-20s Lv %2d  x%.1f XP  costs %s", machine.DisplayName, machine.Level, machine.XPMult, tostring(price)))
+	print(
+		string.format(
+			"    %-20s Lv %2d  x%.1f XP  costs %s",
+			machine.DisplayName,
+			machine.Level,
+			machine.XPMult,
+			tostring(price)
+		)
+	)
 	lastMachineLevel, lastMachinePrice = machine.Level, price
 end
 local lastRate = 0
@@ -172,7 +186,9 @@ for level = 1, Config.Levels.MaxLevel do
 	end
 end
 for rebirths = 0, 3 do
-	print(`    rebirth #{rebirths + 1}: costs {Machines.RebirthCost(rebirths)}, pays {Machines.RebirthPoints(rebirths + 1)} RP`)
+	print(
+		`    rebirth #{rebirths + 1}: costs {Machines.RebirthCost(rebirths)}, pays {Machines.RebirthPoints(rebirths + 1)} RP`
+	)
 end
 check(Machines.ById.Rocket ~= nil, "the Rocket Launcher gives mail-anywhere, so it must exist")
 
@@ -217,9 +233,18 @@ end
 
 section("Icon sheets")
 for key, cell in Config.IconAtlas.Cells do
-	check(Config.Icons[key] ~= nil, `art/ui_icons/{key}.png isn't an icon key in Config/Icons.luau (typo in the file name?)`)
-	check(cell.Sheet >= 1 and cell.Sheet <= Config.IconAtlas.SheetCount, `{key} is on sheet {cell.Sheet}, which doesn't exist`)
-	check(cell.X + Config.IconAtlas.Size <= 1024 and cell.Y + Config.IconAtlas.Size <= 1024, `{key} sits outside its sheet`)
+	check(
+		Config.Icons[key] ~= nil,
+		`art/ui_icons/{key}.png isn't an icon key in Config/Icons.luau (typo in the file name?)`
+	)
+	check(
+		cell.Sheet >= 1 and cell.Sheet <= Config.IconAtlas.SheetCount,
+		`{key} is on sheet {cell.Sheet}, which doesn't exist`
+	)
+	check(
+		cell.X + Config.IconAtlas.Size <= 1024 and cell.Y + Config.IconAtlas.Size <= 1024,
+		`{key} sits outside its sheet`
+	)
 end
 check(#Config.IconSheets >= Config.IconAtlas.SheetCount, "IconSheets.luau needs one line per sheet")
 
@@ -243,8 +268,11 @@ local Challenges = Config.Challenges
 for _, list in { Challenges.Daily, Challenges.Weekly } do
 	for _, challenge in list do
 		check(Challenges.ById[challenge.Id] == challenge, `challenge {challenge.Id} ById`)
-		check(table.find({ "Box", "Mail", "Order", "Streak", "Troll" }, challenge.Kind) ~= nil, `{challenge.Id} kind {challenge.Kind}`)
-		check(challenge.Count > 0 and challenge.Diamonds > 0, `{challenge.Id} count and reward`)
+		check(
+			table.find({ "Box", "Mail", "Order", "Streak", "Troll" }, challenge.Kind) ~= nil,
+			`{challenge.Id} kind {challenge.Kind}`
+		)
+		check(challenge.Count > 0 and challenge.Jobs > 0, `{challenge.Id} count and reward`)
 		check(not string.find(Challenges.Text(challenge), "{", 1, true), `{challenge.Id} text keeps a placeholder`)
 	end
 end
@@ -255,30 +283,51 @@ for _, challenge in Challenges.Daily do
 	end
 end
 check(easy >= Challenges.DailyCount, "a brand-new player can always get a full set of dailies")
-check(Challenges.Week(4 * 86400) == Challenges.Week(10 * 86400) and Challenges.Week(10 * 86400) ~= Challenges.Week(11 * 86400), "weeks start on Monday")
+check(
+	Challenges.Week(4 * 86400) == Challenges.Week(10 * 86400)
+		and Challenges.Week(10 * 86400) ~= Challenges.Week(11 * 86400),
+	"weeks start on Monday"
+)
 local streak = Config.Progression.Streak
 check(streak.Max > 1 and streak.PerStep > 0, "the delivery streak pays more")
 
-section("Diamonds")
-local Diamonds = Config.Diamonds
-for _, upgrade in Diamonds.List do
-	check(Diamonds.ById[upgrade.Id] == upgrade, `diamond upgrade {upgrade.Id} ById`)
-	check(Config.Icons[`Upgrade_{upgrade.Id}`] ~= nil, `diamond upgrade {upgrade.Id} has no icon`)
+section("Rebirth Upgrades")
+local Upgrades = Config.Upgrades
+for _, upgrade in Upgrades.List do
+	check(Upgrades.ById[upgrade.Id] == upgrade, `upgrade {upgrade.Id} ById`)
+	check(Config.Icons[`Upgrade_{upgrade.Id}`] ~= nil, `upgrade {upgrade.Id} has no icon`)
 	check(string.find(upgrade.Description, "{n}", 1, true) ~= nil, `{upgrade.Id} description needs a {"{n}"}`)
 	local last = 0
 	for level = 0, upgrade.MaxLevel - 1 do
-		local cost = Diamonds.Cost(upgrade, level)
+		local cost = Upgrades.Cost(upgrade, level)
 		check(cost > 0 and cost >= last, `{upgrade.Id} level {level + 1} cost {cost} should be positive and rising`)
 		last = cost
 	end
-	check(not string.find(Diamonds.Text(upgrade, 2), "{", 1, true), `{upgrade.Id} text keeps a placeholder`)
+	check(not string.find(Upgrades.Text(upgrade, 2), "{", 1, true), `{upgrade.Id} text keeps a placeholder`)
 end
-check(Diamonds.ForLevel(4) == Diamonds.PerLevelUp, "a normal level gives PerLevelUp diamonds")
-check(Diamonds.ForLevel(5) == Diamonds.PerLevelUp + Diamonds.MilestoneBonus, "every 5th level gives the milestone bonus")
+-- Rebirths: quick at first, then each one needs a higher (or equal) level, costs more and pays more points
+do
+	local Machines = Config.Machines
+	check(Machines.RebirthLevel(0) <= 5, "the first rebirth comes early")
+	for rebirths = 1, 8 do
+		check(
+			Machines.RebirthLevel(rebirths) >= Machines.RebirthLevel(rebirths - 1),
+			`rebirth #{rebirths + 1} level never drops`
+		)
+		check(Machines.RebirthCost(rebirths) > Machines.RebirthCost(rebirths - 1), `rebirth #{rebirths + 1} costs more`)
+		check(
+			Machines.RebirthPoints(rebirths + 1) > Machines.RebirthPoints(rebirths),
+			`rebirth #{rebirths + 1} pays more points`
+		)
+	end
+end
 
 section("Reward codes")
 for name, code in Config.Codes do
-	check(name == string.upper(name) and not string.find(name, "%s"), `code "{name}" must be UPPERCASE with no spaces (players' typing is uppercased)`)
+	check(
+		name == string.upper(name) and not string.find(name, "%s"),
+		`code "{name}" must be UPPERCASE with no spaces (players' typing is uppercased)`
+	)
 	check(code.Jobs ~= nil or code.Stamps ~= nil, `code {name} gives nothing`)
 	for stampId in code.Stamps or {} do
 		check(Config.Stamps.ById[stampId] ~= nil, `code {name} gives "{stampId}" stamps, which don't exist`)
@@ -294,7 +343,10 @@ end
 section("Sounds")
 for name, sound in Config.Sounds do
 	check(type(sound.Id) == "string", `sound {name} has no Id string`)
-	check(sound.Id == "" or string.match(sound.Id, "^rbxassetid://%d+$") ~= nil, `sound {name}: "{sound.Id}" should look like rbxassetid://123`)
+	check(
+		sound.Id == "" or string.match(sound.Id, "^rbxassetid://%d+$") ~= nil,
+		`sound {name}: "{sound.Id}" should look like rbxassetid://123`
+	)
 	check(type(sound.Volume) == "number" and sound.Volume >= 0 and sound.Volume <= 10, `sound {name} volume`)
 end
 
@@ -322,7 +374,10 @@ for index, seam in BoxMath.Seams(5) do
 		table.insert(backwards, path[i])
 	end
 	check(BoxMath.IsTapeStroke(seam, backwards), `a backwards stroke along seam {index} should count`)
-	check(not BoxMath.IsTapeStroke(seam, { seam.A, seam.A }), `a stroke that never leaves the start (seam {index}) shouldn't count`)
+	check(
+		not BoxMath.IsTapeStroke(seam, { seam.A, seam.A }),
+		`a stroke that never leaves the start (seam {index}) shouldn't count`
+	)
 	local wobbly = table.clone(path)
 	wobbly[6] = wobbly[6] + roblox.Vector2.new(0.2, 0.2)
 	check(not BoxMath.IsTapeStroke(seam, wobbly), `a stroke that wanders off seam {index} shouldn't count`)
@@ -330,15 +385,29 @@ end
 local spot = { Kind = "Sweet", X = 0.5, Y = 0.3, Radius = 0.1, Drift = 0.15, Speed = 0.3, Phase = 1 }
 for t = 0, 20, 0.25 do
 	local p = BoxMath.SpotPosition(spot, 0, t)
-	check(p.X >= 0 and p.X <= 1 and p.Y >= 0 and p.Y <= BoxMath.VISIBLE_HEIGHT, `a drifting spot left the picture at t={t}`)
+	check(
+		p.X >= 0 and p.X <= 1 and p.Y >= 0 and p.Y <= BoxMath.VISIBLE_HEIGHT,
+		`a drifting spot left the picture at t={t}`
+	)
 end
 
 section("Number formatting")
 local Format = load(node(ROOT .. "/Format"))
-for input, expected in {
-	[5] = "5", [999] = "999", [1000] = "1k", [1500] = "1.5k", [12500] = "12.5k", [150000] = "150k",
-	[1000000] = "1M", [2500000] = "2.5M", [999999] = "999k", [1e9] = "1B", [3.2e12] = "3.2T",
-} do
+for input, expected in
+	{
+		[5] = "5",
+		[999] = "999",
+		[1000] = "1k",
+		[1500] = "1.5k",
+		[12500] = "12.5k",
+		[150000] = "150k",
+		[1000000] = "1M",
+		[2500000] = "2.5M",
+		[999999] = "999k",
+		[1e9] = "1B",
+		[3.2e12] = "3.2T",
+	}
+do
 	check(Format.Short(input) == expected, `Format.Short({input}) = {Format.Short(input)}, expected {expected}`)
 end
 

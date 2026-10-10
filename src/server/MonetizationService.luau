@@ -76,10 +76,14 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 		startBoost(player)
 		return true
 	elseif diamonds then
-		profile.Diamonds += diamonds
-		Analytics.Custom(player, `Diamonds_{key}`, diamonds)
-		Remotes.Notify:FireClient(player, "Diamonds", { Amount = diamonds, Source = key })
-		say(player, `{diamonds} diamonds! Spend them on DIAMOND UPGRADES. They last forever.`)
+		-- (retired diamond packs: an old purchase still arriving gives Rebirth Points instead)
+		profile.RebirthPoints += diamonds
+		Analytics.Custom(player, `RebirthPoints_{key}`, diamonds)
+		say(player, `{diamonds} Rebirth Points! Spend them at the Rebirth Market on Rebirth Beach.`)
+		return true
+	elseif key == "Invincible" then
+		MonetizationService.AddInvincible(player, profile, Money.InvincibleSeconds)
+		say(player, "🛡️ INVINCIBLE! No vine boom, and Chaos attacks bounce off you. Go wild.")
 		return true
 	elseif jobs then
 		local coins = Economy.BestBaseValue(player) * jobs -- scales with your best animal
@@ -105,6 +109,20 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 		return true
 	end
 	return false
+end
+
+-- The Invincibility Shield: adds time (up to InvincibleMaxSeconds left). Saved in your profile so a rejoin
+-- keeps it; the "InvincibleUntil" attribute (server time) is what the rest of the game checks.
+function MonetizationService.AddInvincible(player: Player, profile: DataService.Profile, seconds: number)
+	local now = os.time()
+	local untilTime = math.min(math.max(profile.InvincibleUntil or 0, now) + seconds, now + Money.InvincibleMaxSeconds)
+	profile.InvincibleUntil = untilTime
+	player:SetAttribute("InvincibleUntil", untilTime)
+end
+
+function MonetizationService.IsInvincible(player: Player): boolean
+	local untilTime = player:GetAttribute("InvincibleUntil")
+	return typeof(untilTime) == "number" and untilTime > os.time()
 end
 
 -- Can "Skip the Wait" give this animal? Not owned yet, tier 4 or lower, and its zone is open for you
@@ -253,6 +271,13 @@ function MonetizationService.Start()
 	end)
 	task.defer(countFriends)
 	MarketplaceService.ProcessReceipt = processReceipt
+	-- A shield bought before a rejoin keeps running
+	DataService.Loaded:Connect(function(player: Player)
+		local profile = DataService.Get(player)
+		if profile and (profile.InvincibleUntil or 0) > os.time() then
+			player:SetAttribute("InvincibleUntil", profile.InvincibleUntil)
+		end
+	end)
 	Players.PlayerMembershipChanged:Connect(checkPerks) -- bought Premium mid-game
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, passId: number, bought: boolean)
 		if not bought then

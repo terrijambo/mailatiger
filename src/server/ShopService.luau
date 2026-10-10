@@ -1,9 +1,10 @@
 --!strict
--- The Supply Shop (boxes, tools, stamps, chutes, rebirth) and Gruff's orders board.
+-- Gruff's shop (machines, boxes, stamps), the Rebirth Market on Rebirth Beach (rebirth, tools, Rebirth Upgrades,
+-- troll items, lures) and Gruff's orders board.
 -- Clients send ShopAction(action, id). The server checks coins, distance and ownership before changing anything.
 --   BuyBox / EquipBox (box id)   UpgradeTool (tool id, paid in Rebirth Points)
 --   BuyStamp / SelectStamp (stamp id, "" = none)   BuyMachine (machine id)   Rebirth   BuyTroll (troll id)
---   BuyUpgrade (diamond upgrade id)   StudioBuy (Robux item key, Studio testing only)
+--   BuyUpgrade (Rebirth Upgrade id)   StudioBuy (Robux item key, Studio testing only)
 --   Claim ("O2" / "D1" / "W1" / "All")   Promo (Promo Kit shot setup, Studio only)
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -36,7 +37,7 @@ local ShopService = {}
 local map: MapBuilder.Map
 
 local function reply(player: Player, text: string)
-	Remotes.Notify:FireClient(player, "Message", { Speaker = "Supply Shop", Text = text })
+	Remotes.Notify:FireClient(player, "Message", { Speaker = "Shop", Text = text })
 end
 
 -- Promo Kit (client/PromoKit.luau): set up shots for promo videos. Studio only, so it can't be used live.
@@ -77,8 +78,11 @@ local function promo(player: Player, profile: DataService.Profile, id: string)
 			UnderPar = false,
 		})
 	elseif id == "Points" then
-		profile.RebirthPoints += 50 -- (Studio testing: tool upgrades)
+		profile.RebirthPoints += 200 -- (Studio testing: tools and Rebirth Upgrades)
 		Economy.Sync(player)
+	elseif id == "NoShield" then
+		profile.InvincibleUntil = 0 -- (Studio testing: the later steps need vine booms to happen)
+		player:SetAttribute("InvincibleUntil", nil)
 	elseif id == "AllMachines" then
 		for _, machine in Config.Machines.List do
 			profile.Machines[machine.Id] = true
@@ -141,6 +145,19 @@ local function claim(player: Player, profile: DataService.Profile, id: string)
 	Economy.Sync(player)
 end
 
+-- The Rebirth Market's items only sell on Rebirth Beach (the walk there is part of the fun: Sneakers help)
+local MARKET_ACTIONS = { BuyTroll = true, BuyUpgrade = true, BuyLure = true, UpgradeTool = true, Rebirth = true }
+local function onRebirthBeach(player: Player): boolean
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local beach = Config.World.ById.Beach
+	if not root then
+		return false
+	end
+	local offset = root.Position - beach.Center
+	return Vector3.new(offset.X, 0, offset.Z).Magnitude < beach.Radius + 12
+end
+
 local function onShopAction(player: Player, action: unknown, id: unknown)
 	local profile = DataService.Get(player)
 	if not profile or typeof(action) ~= "string" then
@@ -148,8 +165,12 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	end
 	local itemId = if typeof(id) == "string" then id else ""
 
-	-- (The shop works from anywhere: the SHOP button opens it, and the map is too big to walk back each time.
-	-- Coins and everything else are still checked below.)
+	-- Gruff's shop (machines, boxes, stamps) works from anywhere: the SHOP button opens it. The Rebirth Market
+	-- only on Rebirth Beach. Coins and everything else are still checked below.
+	if MARKET_ACTIONS[action] and not onRebirthBeach(player) then
+		reply(player, "That's sold at the Rebirth Market, on Rebirth Beach (cross the Backyard to get there).")
+		return
+	end
 	if action == "BuyTroll" then
 		TrollService.Buy(player, itemId)
 		return
@@ -159,7 +180,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	elseif action == "BuyUpgrade" then
 		local ok, text = Economy.BuyUpgrade(player, itemId)
 		if text ~= "" then
-			Remotes.Notify:FireClient(player, "Message", { Speaker = "Diamond Upgrades", Text = text })
+			Remotes.Notify:FireClient(player, "Message", { Speaker = "Rebirth Market", Text = text })
 		end
 		if ok then
 			Remotes.Notify:FireClient(player, "UpgradeBought", { Id = itemId })
@@ -283,8 +304,12 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		end
 	elseif action == "Rebirth" then
 		local rebirth = Config.Machines.Rebirth
-		if profile.Level < rebirth.MinLevel then
-			reply(player, `Rebirth needs a Level {rebirth.MinLevel} chute. You're Level {profile.Level}.`)
+		local needLevel = Config.Machines.RebirthLevel(profile.Rebirths)
+		if profile.Level < needLevel then
+			reply(
+				player,
+				`Rebirth #{profile.Rebirths + 1} needs a Level {needLevel} chute. You're Level {profile.Level}.`
+			)
 			return
 		end
 		local cost = Economy.RebirthCost(profile.Rebirths)
@@ -306,7 +331,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		profile.Level = 1
 		profile.XP = 0
 		profile.Machines = {}
-		-- Head Start (diamond upgrade): keep your first few machines
+		-- Head Start (Rebirth Upgrade): keep your first few machines
 		local keep = Economy.UpgradeBonus(player, "RebirthKit")
 		for index, machine in Config.Machines.List do
 			if index <= keep then
@@ -316,12 +341,11 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		profile.Rebirths += 1
 		local points = Config.Machines.RebirthPoints(profile.Rebirths)
 		profile.RebirthPoints += points
-		profile.Diamonds += Config.Diamonds.PerRebirth
 		Orders.Refresh(profile, true)
 		local mult = rebirth.ChuteMult ^ profile.Rebirths
 		reply(
 			player,
-			`REBIRTH #{profile.Rebirths}! Your chute now pays x{string.format("%g", math.round(mult * 100) / 100)} coins per minute, forever. +{points} Rebirth Points (spend them on tools) and +{Config.Diamonds.PerRebirth} 💎`
+			`REBIRTH #{profile.Rebirths}! Your chute now pays x{string.format("%g", math.round(mult * 100) / 100)} coins per minute, forever. +{points} Rebirth Points: spend them at the Rebirth Market!`
 		)
 		Remotes.Notify:FireClient(player, "Rebirthed", { Rebirths = profile.Rebirths, Points = points })
 	end
@@ -334,6 +358,9 @@ function ShopService.Start(builtMap: MapBuilder.Map)
 
 	map.ShopPrompt.Triggered:Connect(function(player: Player)
 		Remotes.Notify:FireClient(player, "OpenShop", {})
+	end)
+	map.MarketPrompt.Triggered:Connect(function(player: Player)
+		Remotes.Notify:FireClient(player, "OpenMarket", {})
 	end)
 
 	map.OrdersPrompt.Triggered:Connect(function(player: Player)

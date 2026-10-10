@@ -56,7 +56,10 @@ export type Profile = {
 	Machines: { [string]: boolean }, -- Post Office machines you own (Config/Machines.luau; reset by rebirth)
 	Processing: { [string]: { Parcels: { Parcel }, ReadyAt: number } }, -- parcels inside a machine (os.time ready)
 	RebirthPoints: number, -- from rebirthing; buy tool upgrades with them (kept through rebirths)
-	EconomyVersion: number, -- 1 = saved after machines came in (older saves get their chute refunded once)
+	-- 1 = saved after machines came in (older saves get their chute refunded once)
+	-- 2 = after diamonds merged into Rebirth Points (2026-10-10): old Rebirth Points x10 (tool prices went up
+	--     10x to match), plus every diamond turned into a Rebirth Point
+	EconomyVersion: number,
 	Owned: { [string]: boolean }, -- animals
 	Boxes: { [string]: boolean },
 	EquippedBox: string,
@@ -85,9 +88,8 @@ export type Profile = {
 	OrdersDone: number, -- total side orders completed
 	Species: { [string]: number }, -- animal id -> how many you've mailed (the collection)
 	Trolls: { [string]: boolean }, -- troll items you own
-	-- Diamonds (kept through rebirths)
-	Diamonds: number,
-	Upgrades: { [string]: number }, -- diamond upgrade id -> level (Config/Diamonds.luau)
+	Diamonds: number, -- (retired: turned into Rebirth Points, see EconomyVersion 2; always 0 now)
+	Upgrades: { [string]: number }, -- Rebirth Upgrade id -> level (Config/Upgrades.luau)
 	-- Shiny and Golden animals mailed, by animal id (the collection), and the all-time Golden count
 	Shinies: { [string]: number },
 	Goldens: { [string]: number },
@@ -98,6 +100,7 @@ export type Profile = {
 	BossWins: number, -- hourly bosses beaten
 	BossKills: { [string]: number }, -- by boss animal id (the boss collection in the Bag)
 	LuckyNext: boolean, -- the next job is a guaranteed Shiny (a boss reward)
+	InvincibleUntil: number, -- the Invincibility Shield (Robux) runs until this time (os.time), 0 = none
 	-- Invites (Config/Social.luau Invites)
 	InvitedBy: number, -- the friend whose invite you joined from (0 = none)
 	InvitePaid: boolean, -- that friend has been paid for you
@@ -126,7 +129,7 @@ local function newProfile(): Profile
 		Machines = {},
 		Processing = {},
 		RebirthPoints = 0,
-		EconomyVersion = 1,
+		EconomyVersion = 2,
 		Owned = { Hamster = true },
 		Boxes = { Cardboard = true },
 		EquippedBox = "Cardboard",
@@ -163,6 +166,7 @@ local function newProfile(): Profile
 		BossWins = 0,
 		BossKills = {},
 		LuckyNext = false,
+		InvincibleUntil = 0,
 		InvitedBy = 0,
 		InvitePaid = false,
 		InviteRewards = 0,
@@ -214,6 +218,13 @@ local function reconcile(saved: any): Profile
 			profile.Coins += Config.Mail.OldPrices[saved.ChuteTier or "Basic"] or 0
 			profile.ChuteTier = "Basic"
 			profile.EconomyVersion = 1
+		end
+		-- Saves from before diamonds merged into Rebirth Points: nothing is lost (tools cost 10x the points
+		-- now, so old points are worth 10x; each diamond becomes a point, and upgrades cost the same number)
+		if profile.EconomyVersion < 2 then
+			profile.RebirthPoints = (profile.RebirthPoints or 0) * 10 + (profile.Diamonds or 0)
+			profile.Diamonds = 0
+			profile.EconomyVersion = 2
 		end
 		-- Saves from before the tutorial existed: anyone who has mailed something already knows how to play
 		if saved.TutorialDone == nil and type(saved.Mailed) == "number" and saved.Mailed > 0 then

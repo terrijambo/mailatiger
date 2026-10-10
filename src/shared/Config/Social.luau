@@ -39,8 +39,8 @@ return {
 	-- you get paid once they've mailed a few animals (so it's a real player, not a quick alt account).
 	-- If you're not in their server then, it waits and is paid the next time you join.
 	Invites = {
-		NewPlayerGift = 5, -- diamonds for the friend who joined from an invite
-		InviterReward = 15, -- diamonds for you, per friend
+		NewPlayerGift = 500, -- coins for the friend who joined from an invite (a nice head start)
+		InviterRewardMinutes = 30, -- for you, per friend: coins worth this many minutes of your chute's income
 		PayAfterMails = 3, -- the friend must mail this many animals first
 		MaxRewards = 20, -- the most friends you can be paid for, ever
 		StoreName = "Referrals_launch1", -- (rewards waiting for inviters who weren't online)

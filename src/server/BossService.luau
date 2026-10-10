@@ -360,10 +360,7 @@ local function finish(won: boolean, mailed: boolean?)
 			local share = if top > 0 then work / top else 0
 			if won then
 				local bonus = if mailed then Boss.MailBonus else 1 -- mailed it in time: more!
-				local diamonds =
-					math.round((Boss.Diamonds.Min + (Boss.Diamonds.Max - Boss.Diamonds.Min) * share) * bonus)
 				local coins = math.round(Economy.BestBaseValue(player) * Boss.Jobs * (0.5 + 0.5 * share) * bonus)
-				profile.Diamonds += diamonds
 				profile.BossWins += 1
 				profile.BossKills[f.AnimalId] = (profile.BossKills[f.AnimalId] or 0) + 1
 				local week = Config.Challenges.Week(os.time())
@@ -373,18 +370,14 @@ local function finish(won: boolean, mailed: boolean?)
 				profile.WeekStats.BossWins = (profile.WeekStats.BossWins or 0) + 1
 				profile.LuckyNext = true -- their next job is a Shiny
 				Economy.AddCoins(player, coins, "Boss")
-				Remotes.Notify:FireClient(player, "Diamonds", { Amount = diamonds, Source = "Boss" })
 				Remotes.Notify:FireClient(player, "BossReward", {
-					Diamonds = diamonds,
 					Coins = coins,
 					Top = player == topPlayer,
 					Mailed = mailed == true,
 				})
 				Badges.Award(player, "BossHunter")
 			else
-				profile.Diamonds += Boss.LoseDiamonds
-				Remotes.Notify:FireClient(player, "Diamonds", { Amount = Boss.LoseDiamonds, Source = "BossLose" })
-				Economy.Sync(player)
+				Economy.AddPrize(player, Boss.LosePrizeMinutes, "BossLose") -- (a little something for trying)
 			end
 			Analytics.Custom(player, if won then "BossWon" else "BossLost")
 		end

@@ -61,6 +61,9 @@ export type Map = {
 	ShopCounter: BasePart, -- Gruff's counter
 	OrdersPrompt: ProximityPrompt,
 	OrdersBoard: BasePart,
+	-- The Rebirth Market on Rebirth Beach: rebirth, tools, upgrades, trolls and lures (they only sell there)
+	MarketPrompt: ProximityPrompt,
+	MarketCounter: BasePart,
 	Leaderboards: { [string]: BasePart }, -- board id -> the part whose +X (Right) face shows the board
 	-- The Post Office machines, in a ring round the plaza: machine id -> its station (an invisible box over
 	-- the spot; each client draws the machine, client/Machines.luau)
@@ -77,6 +80,7 @@ local COLORS = {
 	Yellow = Color3.fromRGB(255, 220, 90),
 	PostRed = Color3.fromRGB(226, 72, 66),
 	PostBlue = Color3.fromRGB(70, 120, 225),
+	MarketPurple = Color3.fromRGB(150, 90, 230),
 	Chute = Color3.fromRGB(60, 62, 75),
 	Walrus = Color3.fromRGB(150, 125, 110),
 	Hay = Color3.fromRGB(252, 214, 104),
@@ -778,6 +782,46 @@ function MapBuilder.Build(): Map
 	-- (The Animal Pen stand, the Supply Shop stall, its tool table and the props around them were removed on
 	-- 2026-10-10 to clear the plaza: PEN is the side button, and you shop by talking to Gruff.)
 
+	-- The Rebirth Market: a big purple stall in the middle of Rebirth Beach, facing the bridge you arrive on
+	local beach = World.ById.Beach
+	local fromIsland = World.ById[beach.BridgeFrom or ""]
+	local marketFacing = if fromIsland
+		then Vector3.new(fromIsland.Center.X - beach.Center.X, 0, fromIsland.Center.Z - beach.Center.Z).Unit
+		else Vector3.zAxis
+	local marketAt = beach.Center
+	local marketCounter =
+		facingBox(map, "MarketCounter", marketAt, marketFacing, Vector3.new(16, 3.5, 3), COLORS.MarketPurple)
+	do
+		local cf = marketCounter.CFrame * CFrame.new(0, -1.75, 0) -- (at the counter's foot)
+		for _, x in { -7.5, 7.5 } do
+			for _, z in { -1, 5 } do
+				part(map, {
+					Name = "MarketPost",
+					Size = Vector3.new(0.8, 10, 0.8),
+					CFrame = cf * CFrame.new(x, 5, z),
+					Color = COLORS.Wood,
+				})
+			end
+		end
+		for i = 0, 5 do -- a striped awning
+			part(map, {
+				Name = "MarketAwning",
+				Size = Vector3.new(17.6 / 6, 0.6, 8.4),
+				CFrame = cf * CFrame.new(-8.8 + (i + 0.5) * 17.6 / 6, 10.2, 2) * CFrame.Angles(math.rad(-10), 0, 0),
+				Color = if i % 2 == 0 then COLORS.MarketPurple else Color3.new(1, 1, 1),
+			})
+		end
+		part(map, {
+			Name = "MarketBack",
+			Size = Vector3.new(16, 7, 0.6),
+			CFrame = cf * CFrame.new(0, 3.5, 5.4),
+			Color = COLORS.Wood,
+		})
+	end
+	MapBuilder.Label(marketCounter, "♻️ REBIRTH MARKET", 11, Color3.fromRGB(215, 170, 255), 16)
+	local marketPrompt = prompt(marketCounter, "Shop", "Rebirth Market", 0.2)
+	marketPrompt.MaxActivationDistance = 14
+
 	-- Zones
 	local arenaFolder = Instance.new("Folder")
 	arenaFolder.Name = "Arenas"
@@ -955,6 +999,8 @@ function MapBuilder.Build(): Map
 		ShopCounter = postCounter,
 		OrdersPrompt = ordersPrompt,
 		OrdersBoard = board,
+		MarketPrompt = marketPrompt,
+		MarketCounter = marketCounter,
 		Machines = stations,
 	}
 end

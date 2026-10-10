@@ -75,7 +75,7 @@ function ProgressionService.AddXP(player: Player, amount: number, reason: string
 	local eventMult = Workspace:GetAttribute("XPMult") -- Double XP event
 	amount = math.floor(
 		amount
-			* (1 + Economy.UpgradeBonus(player, "QuickStudy") / 100) -- diamond upgrade
+			* (1 + Economy.UpgradeBonus(player, "QuickStudy") / 100) -- Rebirth Upgrade
 			* (if typeof(eventMult) == "number" then eventMult else 1)
 	)
 	profile.XP += amount
@@ -87,13 +87,10 @@ function ProgressionService.AddXP(player: Player, amount: number, reason: string
 		leveled = true
 		local coins = Economy.BestBaseValue(player) * Levels.LevelUpJobs * profile.Level
 		profile.Coins += coins
-		local diamonds = Config.Diamonds.ForLevel(profile.Level)
-		profile.Diamonds += diamonds
 		Analytics.Custom(player, "LevelUp", profile.Level)
 		notify(player, "LevelUp", {
 			Level = profile.Level,
 			Coins = coins,
-			Diamonds = diamonds,
 			Unlocks = unlocksAt(profile.Level),
 		})
 	end
@@ -142,7 +139,6 @@ checkQuest = function(player: Player)
 		end
 		local coins = Economy.BestBaseValue(player) * quest.Jobs
 		profile.Coins += coins
-		profile.Diamonds += Config.Diamonds.PerQuest
 		profile.Quest += 1
 		profile.QuestProgress = 0
 		Analytics.Custom(player, "QuestDone", profile.Quest - 1)
@@ -151,7 +147,6 @@ checkQuest = function(player: Player)
 			Text = quest.Text,
 			XP = quest.XP,
 			Coins = coins,
-			Diamonds = Config.Diamonds.PerQuest,
 			Next = if nextQuest then nextQuest.Text else nil,
 		})
 		ProgressionService.AddXP(player, quest.XP, "Quest")

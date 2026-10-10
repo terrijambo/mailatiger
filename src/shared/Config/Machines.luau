@@ -7,9 +7,11 @@
 --   2. XP levels up your CHUTE. Your chute level is your level: it opens zones, and it sets how many coins
 --      the chute pays you every minute (ChuteRate below). Mailing a parcel also pays a small tip at once.
 --   3. Machines unlock at a chute level, then you buy them with coins.
---   4. REBIRTH (needs Rebirth.MinLevel and coins) resets your coins, machines and chute level, but every
---      rebirth multiplies your coins per minute and pays Rebirth Points, which buy tool upgrades (Sneakers,
---      Grabbing Gloves...) that you keep forever.
+--   4. REBIRTH (at the Rebirth Market on Rebirth Beach; needs a chute level and coins) resets your coins,
+--      machines and chute level, but every rebirth multiplies your coins per minute and pays Rebirth Points,
+--      the rebirth currency: they buy tools (Sneakers, Grabbing Gloves...) and Rebirth Upgrades
+--      (Config/Upgrades.luau), kept forever. Rebirthing is the ONLY way to earn them. The first rebirths are
+--      quick; each one after needs a higher level and costs a lot more (and pays more points).
 --
 -- Machine fields:
 --   Level   : the chute level it unlocks at
@@ -128,12 +130,12 @@ local Machines = {
 	MailTip = 0.3,
 
 	Rebirth = {
-		MinLevel = 20, -- chute level needed to rebirth
-		CostMinutes = 120, -- costs this many minutes of chute income at MinLevel...
+		Levels = { 5, 8, 12, 16, 20 }, -- chute level needed for rebirth #1, #2, ... (then the last one, forever)
+		CostMinutes = 15, -- costs this many minutes of chute income at that level...
 		CostGrowth = 2.5, -- ...times this for every rebirth you've already done
 		ChuteMult = 1.5, -- every rebirth multiplies coins per minute by this (they stack)
-		PointsBase = 5, -- Rebirth Points for your first rebirth...
-		PointsStep = 2, -- ...and this many more for each one after
+		PointsBase = 40, -- Rebirth Points for your first rebirth...
+		PointsGrowth = 1.35, -- ...and each one after pays this many times more
 	},
 }
 
@@ -186,9 +188,16 @@ function Machines.ExpectedMult(level: number): number
 	return mult
 end
 
+-- The chute level you need for your next rebirth, when you've done `rebirths` so far
+function Machines.RebirthLevel(rebirths: number): number
+	local levels = Machines.Rebirth.Levels
+	return levels[math.min(rebirths + 1, #levels)]
+end
+
 function Machines.RebirthCost(rebirths: number): number
 	local rebirth = Machines.Rebirth
-	local raw = Machines.ChuteRate(rebirth.MinLevel) * rebirth.CostMinutes * rebirth.CostGrowth ^ rebirths
+	local level = Machines.RebirthLevel(rebirths)
+	local raw = Machines.ChuteRate(level) * rebirth.CostMinutes * rebirth.CostGrowth ^ rebirths
 	local digits = math.max(0, math.floor(math.log10(math.max(raw, 1))) - 1)
 	local unit = 10 ^ digits
 	return math.round(raw / unit) * unit
@@ -196,7 +205,7 @@ end
 
 -- Rebirth Points for the rebirth that takes you to `rebirths` rebirths in total
 function Machines.RebirthPoints(rebirths: number): number
-	return Machines.Rebirth.PointsBase + Machines.Rebirth.PointsStep * (rebirths - 1)
+	return math.round(Machines.Rebirth.PointsBase * Machines.Rebirth.PointsGrowth ^ (rebirths - 1))
 end
 
 return Machines

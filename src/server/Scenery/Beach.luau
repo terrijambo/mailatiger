@@ -1,5 +1,6 @@
 --!strict
--- The beach island (just for fun, reached from the Backyard): sand sloping into turquoise shallows, palm
+-- Rebirth Beach (reached from the Backyard): the Rebirth Market stands in the middle (MapBuilder builds it,
+-- so it's kept clear here). Around it: sand sloping into turquoise shallows, palm
 -- trees, a red-and-white lighthouse on a rocky point, a tiki hut, umbrellas and towels, a pier out to sea, a
 -- sandcastle, and an old shipwreck run aground in the shallows.
 
@@ -182,7 +183,10 @@ function Beach.Build(island: Islands.Island, bridgeEnd: Vector3)
 		-- (keep the walkway from the bridge clear)
 		local along = offset:Dot(toBridge)
 		local across = math.abs(offset:Dot(side))
-		return island.OnLand(p, pad + 2) and not (along > 0 and across < World.BridgeWidth / 2 + 4 + pad)
+		-- (and the middle, where the Rebirth Market stands)
+		return island.OnLand(p, pad + 2)
+			and offset.Magnitude > 16 + pad
+			and not (along > 0 and across < World.BridgeWidth / 2 + 4 + pad)
 	end
 
 	-- The lighthouse on the far point
@@ -295,7 +299,7 @@ function Beach.Build(island: Islands.Island, bridgeEnd: Vector3)
 			Color3.fromRGB(255, 80, 80)
 		)
 	end
-	Kit.ball(f, "BeachBall", center + side * 10 - away * 6 + Vector3.new(0, 1.2, 0), 2.4, Color3.fromRGB(255, 220, 80))
+	Kit.ball(f, "BeachBall", center + side * 20 - away * 4 + Vector3.new(0, 1.2, 0), 2.4, Color3.fromRGB(255, 220, 80))
 	for _ = 1, 8 do
 		local a = random:NextNumber(0, math.pi * 2)
 		local p = center + Vector3.new(math.cos(a), 0, math.sin(a)) * (island.Outline(a) - random:NextNumber(2, 6))

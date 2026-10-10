@@ -26,7 +26,7 @@ return {
 	IconAtlas = require(script.IconAtlas),
 	IconSheets = require(script.IconSheets),
 	UiSkin = require(script.UiSkin),
-	Diamonds = require(script.Diamonds),
+	Upgrades = require(script.Upgrades),
 	Variants = require(script.Variants),
 	Challenges = require(script.Challenges),
 	Events = require(script.Events),

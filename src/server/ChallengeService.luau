@@ -103,7 +103,6 @@ local function finished(player: Player, entry: DataService.ChallengeProgress, ch
 		Text = Challenges.Text(challenge),
 		Weekly = weekly,
 		Coins = Economy.BestBaseValue(player) * challenge.Jobs,
-		Diamonds = challenge.Diamonds,
 	})
 end
 
@@ -119,7 +118,6 @@ function ChallengeService.Claim(player: Player, weekly: boolean, index: number):
 	entry.Claimed = true
 	local coins = Economy.BestBaseValue(player) * challenge.Jobs
 	Economy.AddCoins(player, coins, "Challenge")
-	Economy.AddDiamonds(player, challenge.Diamonds, "Challenge")
 	return true
 end
 
@@ -136,11 +134,10 @@ local function checkAllDailies(player: Player, profile: Profile)
 	end
 	state.Streak = if state.LastAllDay == state.Day - 1 then state.Streak + 1 else 1
 	state.LastAllDay = state.Day
-	local diamonds = Challenges.AllDailiesDiamonds
-		+ Challenges.StreakDiamonds * math.min(state.Streak, Challenges.MaxStreak)
-	profile.Diamonds += diamonds
-	Remotes.Notify:FireClient(player, "AllDailies", { Streak = state.Streak, Diamonds = diamonds })
-	Remotes.Notify:FireClient(player, "Diamonds", { Amount = diamonds, Source = "AllDailies" })
+	local minutes = Challenges.AllDailiesMinutes
+		+ Challenges.StreakMinutes * math.min(state.Streak, Challenges.MaxStreak)
+	local coins = Economy.AddPrize(player, minutes, "AllDailies")
+	Remotes.Notify:FireClient(player, "AllDailies", { Streak = state.Streak, Coins = coins })
 end
 
 function ChallengeService.Track(player: Player, kind: string, data: { [string]: any }?)

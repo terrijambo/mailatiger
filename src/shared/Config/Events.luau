@@ -85,18 +85,17 @@ return {
 
 	Rush = {
 		Animals = { "Hamster", "Bunny", "Goldfish", "Hedgehog", "Parrot" }, -- ones nearly everyone owns
-		Diamonds = { 5, 3, 2 }, -- 1st, 2nd, 3rd
-		Jobs = { 10, 6, 4 }, -- coins worth this many jobs of your best animal
+		Jobs = { 10, 6, 4 }, -- 1st, 2nd, 3rd: coins worth this many jobs of your best animal
 	},
 	CoinRain = {
 		Center = Vector3.zero, -- the round plaza in town
 		Radius = 56,
 		Drops = 160,
-		DiamondChance = 0.06,
 		CoinJobs = 0.5, -- each coin = half a job of your best animal
+		BigCoinChance = 0.06, -- some are big coins...
+		BigCoinJobs = 5, -- ...worth this many jobs
 	},
 	Mystery = {
-		Diamonds = 8,
 		Jobs = 15,
 		-- Where it can land: around the plaza and out on the town island's green (x, z)
 		Spots = {
@@ -151,9 +150,8 @@ return {
 		StartAnger = 15,
 		RageAnger = 15, -- at 50% and 80% taped it rages
 		-- Rewards, scaled by how much you helped (0..1 share of the top helper's work)
-		Diamonds = { Min = 10, Max = 30 },
 		Jobs = 20,
-		LoseDiamonds = 3,
+		LosePrizeMinutes = 3, -- lost: coins worth this many minutes of your chute's income, for trying
 		-- MAIL IT (after it's boxed): push the box into the giant chute in time for a bonus
 		MailSeconds = 60,
 		MailSpeedPerPusher = 4, -- studs/second for each player pushing...

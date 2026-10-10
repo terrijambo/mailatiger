@@ -1,13 +1,10 @@
 --!strict
--- Diamonds 💎: the rare currency. You earn them slowly by playing (level-ups, Gruff's quests, rebirths) or
--- buy them in the Store with Robux. They're spent on DIAMOND UPGRADES: permanent boosts that are kept
--- through rebirths, so they're the long-term goal once coins stop being scarce.
---
--- Upgrades never touch Chaos Mode fights (no shove, spook, speed or troll bonuses), so buying diamonds
--- can't make you stronger against other players.
+-- REBIRTH UPGRADES ♻️: permanent boosts bought with Rebirth Points at the Rebirth Market (Rebirth Beach),
+-- kept through every rebirth. Rebirth Points only come from rebirthing (Config/Machines.luau), so these are
+-- the long-term goal. (They replaced Diamond Upgrades on 2026-10-10: diamonds became Rebirth Points 1 for 1.)
 --
 --   MaxLevel    how many times you can buy it
---   BaseCost    diamonds for the first level
+--   BaseCost    Rebirth Points for the first level
 --   CostGrowth  each level costs this much more than the last (1.3 = +30%)
 --   PerLevel    how much each level adds (meaning depends on the upgrade, see Description)
 
@@ -100,36 +97,24 @@ for _, upgrade in list do
 	byId[upgrade.Id] = upgrade
 end
 
-local Diamonds = {
+local Upgrades = {
 	List = list,
 	ById = byId,
-
-	-- EARNING (free players)
-	PerLevelUp = 3, -- every level-up
-	MilestoneEvery = 5, -- every 5th level (5, 10, 15...) also gives
-	MilestoneBonus = 10,
-	PerQuest = 2, -- finishing one of Gruff's main quests
-	PerRebirth = 25,
 }
 
--- Diamonds for the next level of an upgrade you have at `level`
-function Diamonds.Cost(upgrade: Upgrade, level: number): number
+-- Rebirth Points for the next level of an upgrade you have at `level`
+function Upgrades.Cost(upgrade: Upgrade, level: number): number
 	return math.round(upgrade.BaseCost * upgrade.CostGrowth ^ level)
 end
 
 -- The total bonus at a level (e.g. Golden Paws level 3 -> 30)
-function Diamonds.Bonus(upgrade: Upgrade, level: number): number
+function Upgrades.Bonus(upgrade: Upgrade, level: number): number
 	return upgrade.PerLevel * level
 end
 
 -- Description with the number filled in
-function Diamonds.Text(upgrade: Upgrade, level: number): string
-	return (string.gsub(upgrade.Description, "{n}", tostring(Diamonds.Bonus(upgrade, level))))
+function Upgrades.Text(upgrade: Upgrade, level: number): string
+	return (string.gsub(upgrade.Description, "{n}", tostring(Upgrades.Bonus(upgrade, level))))
 end
 
--- Diamonds earned for reaching `level`
-function Diamonds.ForLevel(level: number): number
-	return Diamonds.PerLevelUp + (if level % Diamonds.MilestoneEvery == 0 then Diamonds.MilestoneBonus else 0)
-end
-
-return Diamonds
+return Upgrades
