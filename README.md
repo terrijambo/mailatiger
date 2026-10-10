@@ -29,8 +29,8 @@ On a new computer: install Rokit, then run `rokit install` in this folder.
 6. The map is built by code each time the game starts. Your Blender models live in the place file, so save
    it with `Ctrl+S` after importing any.
 
-> The `.rbxl` isn't tracked by Git (it's binary and huge), and this Git repo has no online copy. Back up the
-> whole folder yourself, and keep the game published to Roblox. If you ever lose the `.rbxl`,
+> The code is backed up on GitHub: https://github.com/terrijambo/mailatiger. The `.rbxl` isn't tracked by Git
+> (it's binary and huge), so back that file up yourself, and keep the game published to Roblox. If you ever lose the `.rbxl`,
 > `rojo build -o MailATiger.rbxl` rebuilds the code part (but not your imported models).
 
 ## Where things go

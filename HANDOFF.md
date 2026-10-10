@@ -38,7 +38,8 @@ quests/orders/challenges, diamonds, events every 10 minutes and an hourly co-op 
 - `DataService.Loaded` hands handlers a **copy** (BindableEvent). Use `DataService.Get(player)` to change a save.
 - The map is built by code (`server/MapBuilder.luau`, scenery in `server/Scenery/`); Blender models from
   the owner's place file are laid over the grey blocks. Models live only in `MailATiger.rbxl` (untracked).
-- No git remote: the repo is local only. Commit after each working piece.
+- Code is on GitHub: https://github.com/terrijambo/mailatiger (branch `main`, pushed 2026-10-10). Commit after
+  each working piece and push to `main`.
 
 ### Where the main systems live
 | System | Server | Client | Config |
