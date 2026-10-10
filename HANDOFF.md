@@ -52,7 +52,7 @@ an hourly co-op boss, and opt-in Chaos Mode PvP.
 | Eggs | `EggService` | (prompts on the stands) | `Eggs` |
 | Travel / zone locks (no Travel menu: GRUFF/PEN button only) | `Travel` | `SideButtons`, `ZoneLocks` | `Arenas`, `Levels.ZoneLevels`, `World` |
 | Gruff's Shop, Rebirth Market (Rebirth Beach), rebirth | `ShopService` | `Shop` | `Machines.Rebirth`, `Tools`, `Upgrades` |
-| Quests, orders, challenges | `Orders`, `ChallengeService`, `TutorialService` | `OrdersBoard`, `QuestText`, `Tutorial` | `Quests`, `Challenges` |
+| Quests, orders, challenges (the TASKS panel) | `Orders`, `ChallengeService`, `TutorialService` | `OrdersBoard`, `QuestText`, `Tutorial` | `Quests`, `Challenges` |
 | Events and the hourly boss | `EventService`, `BossService`, `BossArena` | `EventBanner`, `BossLook` | `Events` |
 | Dive | `DiveService` | `Dive` | `Dive` |
 | Chaos Mode, trolls, shove | `TrollService` | `TrollBar`, `Effects` | `Social`, `Trolls` |

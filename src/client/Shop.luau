@@ -38,8 +38,8 @@ local function onRebirthBeach(): boolean
 	return Vector3.new(offset.X, 0, offset.Z).Magnitude < beach.Radius + 12
 end
 
--- Builds one shop window with its tabs. Returns its ScreenGui.
-local function build(menuName: string, windowTitle: string, windowColor: Color3, tabs: { string }): ScreenGui
+-- Builds one shop window with its tabs. Returns its ScreenGui and window frame.
+local function build(menuName: string, windowTitle: string, windowColor: Color3, tabs: { string }): (ScreenGui, Frame)
 	local remotes = ReplicatedStorage:WaitForChild("Remotes")
 	local shopAction = remotes:WaitForChild("ShopAction") :: RemoteEvent
 
@@ -388,13 +388,17 @@ local function build(menuName: string, windowTitle: string, windowColor: Color3,
 	end)
 
 	Menus.Register(menuName, gui, redraw)
-	return gui
+	return gui, window
 end
 
 function Shop.Start()
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 	-- Gruff's Shop: the SHOP side button, or talking to Gruff
-	build("Shop", "Gruff's Shop", Ui.ORANGE, SHOP_TABS)
+	local _, shopWindow = build("Shop", "Gruff's Shop", Ui.ORANGE, SHOP_TABS)
+	-- PREMIUM flips to the Robux Store (and its SHOP button flips back: Store.luau)
+	Ui.windowSwitch(shopWindow, "💎 PREMIUM", Ui.GOLD, function()
+		Menus.Open("Store")
+	end)
 	-- The Rebirth Market: its stall on Rebirth Beach
 	local market = build("Market", "Rebirth Market", Ui.PURPLE, MARKET_TABS)
 	notify.OnClientEvent:Connect(function(kind: string)

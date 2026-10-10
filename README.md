@@ -106,11 +106,14 @@ tests/      automatic config checks (lune run tests/run.luau)
 | Mail from anywhere (Rocket Launcher) | **M** | **Y** | Mail button |
 
 Left-side buttons: **GRUFF** (teleport to Gruff; it turns into **PEN** while you're at Gruff's, which takes
-you to your best island), **SHOP** (Gruff's Shop) and **MENU** (Store, Orders, Bag, Settings, Invite). SHOP
-and MENU appear as the tutorial goes on. The green **+** next to your coins opens the Store. The rest of the
-screen only shows what matters right now: the bag while you carry parcels, Rebirth Points for a moment when
-they change, the quest line when it moves, a small chip for a running event (tap it for details), the
-shield timer while it runs, and the troll hotbar while someone is on a Chaos Mode job.
+you to your best island), **SHOP** (Gruff's Shop; its **PREMIUM** button flips to the Robux Store and back)
+and **MENU** (Collection, Settings; **Invite friends** is in Settings). SHOP and MENU appear as the tutorial
+goes on. Bottom-left: your level (with small coin-boost and streak badges after the XP bar), then your coins,
+a green **+** (opens the Premium Store) and your **Rebirth Points**. On the right, the see-through **TASKS**
+panel lists Gruff's quest, your daily/weekly challenges and side orders with CLAIM buttons; tap its header
+to fold it away. The rest only shows when it matters: the bag while you carry parcels, a small chip for a
+running event (tap it for details), the shield timer while it runs, and the troll hotbar while someone is
+on a Chaos Mode job.
 
 ### Studio-only test helpers (never in the live game)
 - Every animal is free and you start with 2,000,000 test coins while saving is off (`Config/init.luau` → `Dev`).

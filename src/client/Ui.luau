@@ -367,6 +367,28 @@ function Ui.window(
 	return gui, frame
 end
 
+-- A button in a window's title bar, left of the X: flips to a sister window (Shop <-> Premium Store)
+function Ui.windowSwitch(frame: Frame, text: string, color: Color3, onClick: () -> ()): TextButton
+	local bar = frame:FindFirstChild("TitleBar")
+	local title = bar and bar:FindFirstChild("Title")
+	if title and title:IsA("TextLabel") then
+		title.Size = UDim2.new(1, -230, title.Size.Y.Scale, title.Size.Y.Offset) -- (room for the button)
+	end
+	local button = Ui.button(frame, {
+		Name = "Switch",
+		AnchorPoint = Vector2.new(1, 0.5),
+		Position = UDim2.new(1, -54, 0, 20),
+		Size = UDim2.fromOffset(150, 38),
+		BackgroundColor3 = color,
+		Font = Ui.TITLE_FONT,
+		TextSize = 20,
+		Text = text,
+		ZIndex = 5,
+	})
+	button.Activated:Connect(onClick)
+	return button
+end
+
 -- Buttons grow a little when you hover and squish while you press them
 function Ui.press(button: GuiButton)
 	local scale = Ui.make("UIScale", { Scale = 1 }, button)
@@ -624,6 +646,7 @@ function Ui.card(parent: Instance, props: { [string]: any }): Frame
 	local card = Ui.make("Frame", base, parent)
 	Ui.round(card, 12)
 	Ui.border(card, 2.5)
+	Ui.skin(card, "Button", true) -- (painted: the same glossy plate as the buttons, tinted to its color)
 	return card
 end
 

@@ -1,12 +1,14 @@
 --!strict
--- The Settings window (SETTINGS side button): music, sound effects, and camera shake/zoom on or off, plus
--- the reward-code box.
+-- The Settings window (MENU > SETTINGS): music, sound effects, camera shake/zoom and Chaos Mode on or off,
+-- the reward-code box, and INVITE FRIENDS.
 -- Choices are saved with your progress. Other scripts read them from attributes this sets on you:
 -- MusicOff, SfxOff, MotionOff.
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SocialService = game:GetService("SocialService")
 
+local Config = require(ReplicatedStorage.Shared.Config)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
@@ -28,8 +30,8 @@ local OPTIONS = {
 function Settings.Start()
 	local playerGui = player:WaitForChild("PlayerGui")
 	local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Setting") :: RemoteEvent
-	-- A small window: three switches and the code box
-	local gui, window = Ui.window(playerGui, "Settings", "Settings", Ui.GREY, Vector2.new(440, 390))
+	-- A small window: the switches, the code box and the invite button
+	local gui, window = Ui.window(playerGui, "Settings", "Settings", Ui.GREY, Vector2.new(440, 440))
 
 	-- What you just clicked, until the server's saved copy catches up
 	local pending: { [string]: boolean } = {}
@@ -101,6 +103,28 @@ function Settings.Start()
 		end
 	end)
 
+	-- Invite friends: your UserId rides along with the invite, so you get paid when they join and play
+	-- (InviteService on the server). Only shown where Roblox allows invites.
+	local invite = Ui.button(window, {
+		Position = UDim2.fromOffset(24, codeY + 56),
+		Size = UDim2.new(1, -48, 0, 44),
+		BackgroundColor3 = Ui.GREEN,
+		TextSize = 20,
+		Text = "👋 INVITE FRIENDS (you both get coins!)",
+		Visible = false,
+	})
+	invite.Activated:Connect(function()
+		local options = Instance.new("ExperienceInviteOptions")
+		options.PromptMessage =
+			`Invite friends: they get {Config.Social.Invites.NewPlayerGift} coins, and you get a big coin bonus for each one!`
+		options.LaunchData = tostring(player.UserId)
+		pcall(SocialService.PromptGameInvite, SocialService, player, options)
+	end)
+	task.spawn(function()
+		local ok, allowed = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)
+		invite.Visible = ok and allowed == true
+	end)
+
 	function Settings.Apply()
 		for _, option in OPTIONS do
 			local on = isOn(option.Key)
@@ -120,7 +144,7 @@ function Settings.Start()
 		Settings.Apply()
 	end)
 
-	-- Opened by the SETTINGS side button (SideButtons.luau)
+	-- Opened from MENU > SETTINGS (SideButtons.luau)
 	Menus.Register("Settings", gui)
 end
 

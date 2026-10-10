@@ -1,5 +1,6 @@
 --!strict
--- The Robux Store (the STORE side button): the 2x Coins Server Boost, passes and goodies (incl. the Invincibility Shield).
+-- The Premium (Robux) Store: opened from Gruff's Shop (PREMIUM) or the + by your coins. The 2x Coins Server
+-- Boost, passes and goodies (incl. the Invincibility Shield). Its SHOP button flips back to Gruff's Shop.
 -- Buying opens Roblox's own purchase popup; the server gives you what you bought (MonetizationService).
 --
 -- Items whose Id in src/shared/Config/Monetization.luau is still 0 (not created on Roblox yet):
@@ -32,7 +33,11 @@ end
 function Store.Start()
 	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
 	local playerGui = player:WaitForChild("PlayerGui")
-	local gui, window = Ui.window(playerGui, "Store", "Store", Ui.GOLD)
+	local gui, window = Ui.window(playerGui, "Store", "Premium", Ui.GOLD)
+	-- SHOP flips back to Gruff's Shop (its PREMIUM button opens this)
+	Ui.windowSwitch(window, "🛒 SHOP", Ui.ORANGE, function()
+		Menus.Open("Shop")
+	end)
 	local studio = RunService:IsStudio()
 
 	local list = Ui.make("ScrollingFrame", {

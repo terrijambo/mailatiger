@@ -1,5 +1,5 @@
 --!strict
--- Your inventory (the BAG side button): everything you own, in tabs.
+-- Your Collection (MENU > COLLECTION): everything you own, in tabs.
 --   Trolls   your troll items and their hotbar keys (locked ones show the level they unlock at)
 --   Boxes    your mail boxes: equip one for your next job
 --   Stamps   how many of each stamp you have, and which one your next job uses
@@ -25,7 +25,7 @@ local TABS = { "Parcels", "Trolls", "Boxes", "Stamps", "Tools", "Animals", "Boss
 
 function Inventory.Start()
 	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
-	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "Inventory", "Your Bag", Ui.PINK)
+	local gui, window = Ui.window(player:WaitForChild("PlayerGui"), "Inventory", "Your Collection", Ui.PINK)
 
 	local tabBar = Ui.make("Frame", {
 		Position = UDim2.fromOffset(20, 60),

@@ -1,9 +1,9 @@
 --!strict
 -- The on-screen HUD, kept clean: only what matters right now is on screen.
---   * one objective line across the top ("Box your hamster!"); your quest's progress swaps in for a few
---     seconds whenever it moves, and a status line shows under it only when there's something to say
---   * bottom-left: your level and coins. Next to the coins: a + (opens the Store), your coin boost when you
---     have one, and your delivery streak. Rebirth Points pop up for a moment when they change.
+--   * one objective line across the top ("Box your hamster!"), and a status line under it only when
+--     there's something to say (Gruff's quest is in the TASKS panel on the right: OrdersBoard.luau)
+--   * bottom-left: your level (with small coin-boost and streak badges after the XP bar), and your coins
+--     with a + (opens the Premium Store) and your Rebirth Points beside them
 --   * bottom-right: your bag, only while you're carrying parcels (it pulses when it's nearly full)
 --   Everything shrinks a little on small screens (Ui.autoScale), so phones keep the same layout.
 --   * popups from Gruff and the chute (receipts get a red star-rating stamp), queued so none get lost
@@ -19,7 +19,6 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
-local QuestText = require(script.Parent.QuestText)
 local Ui = require(script.Parent.Ui)
 
 local player = Players.LocalPlayer
@@ -41,19 +40,6 @@ end
 local function boostLeft(): number
 	local untilTime = Workspace:GetAttribute("BoostUntil")
 	return if typeof(untilTime) == "number" then math.max(0, untilTime - Workspace:GetServerTimeNow()) else 0
-end
-
--- Shows `object` for `seconds`, then hides it again (showing it again restarts the clock)
-local function flash(object: GuiObject, seconds: number)
-	object.Visible = true
-	local last = object:GetAttribute("FlashToken")
-	local token = (if typeof(last) == "number" then last else 0) + 1
-	object:SetAttribute("FlashToken", token)
-	task.delay(seconds, function()
-		if object:GetAttribute("FlashToken") == token then
-			object.Visible = false
-		end
-	end)
 end
 
 -- Short numbers (1k, 12.5k, 1M): see src/shared/Format.luau
@@ -136,7 +122,7 @@ function Hud.Start()
 	end)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
 
-	-- Next to the coins, left to right: a + (opens the Store), your coin boost, your delivery streak
+	-- Next to the coins, left to right: a + (opens the Premium Store), then your Rebirth Points
 	local coinExtras = Ui.make("Frame", {
 		Size = UDim2.fromOffset(240, 44),
 		BackgroundTransparency = 1,
@@ -165,12 +151,52 @@ function Hud.Start()
 	storePlus.Activated:Connect(function()
 		Menus.Toggle("Store")
 	end)
-	-- Your total coin boost, as a small glowing chip ("⚡+20%")
-	local boostLabel = Ui.outlined(coinExtras, {
+	-- Rebirth Points (spent at the Rebirth Market): always shown; the number pops when it changes
+	local pointsIcon = Ui.icon(coinExtras, "Hud_RebirthPoints", {
 		LayoutOrder = 2,
-		Size = UDim2.fromOffset(0, 30),
+		Size = UDim2.fromOffset(36, 36),
+	})
+	local pointsLabel = Ui.outlined(coinExtras, {
+		Name = "RebirthPoints",
+		LayoutOrder = 3,
+		Size = UDim2.fromOffset(0, 40),
 		AutomaticSize = Enum.AutomaticSize.X,
-		TextSize = 24,
+		TextSize = 32,
+		TextColor3 = REBIRTH_PURPLE,
+		Text = "",
+	})
+	local pointsPop = Ui.make("UIScale", { Scale = 1 }, pointsLabel)
+	local knownPoints: number? = nil
+	Profile.Watch(function()
+		local points = Profile.Get().RebirthPoints or 0
+		pointsLabel.Text = Format.Short(points)
+		if knownPoints and points ~= knownPoints then
+			pointsPop.Scale = 1.5
+			TweenService:Create(pointsPop, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Scale = 1,
+			}):Play()
+		end
+		knownPoints = points
+	end)
+
+	-- Small badges after the XP bar: your total coin boost ("⚡+40%", glowing) and delivery streak ("🔥x5")
+	local levelExtras = Ui.make("Frame", {
+		Position = UDim2.fromOffset(294, 0),
+		Size = UDim2.fromOffset(160, 44),
+		BackgroundTransparency = 1,
+	})
+	Ui.make("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 6),
+	}, levelExtras)
+	local boostLabel = Ui.outlined(levelExtras, {
+		LayoutOrder = 1,
+		Size = UDim2.fromOffset(0, 24),
+		AutomaticSize = Enum.AutomaticSize.X,
+		Font = Ui.FONT,
+		TextSize = 18,
 		TextColor3 = BOOST_ORANGE,
 		Text = "",
 		Visible = false,
@@ -184,13 +210,12 @@ function Hud.Start()
 			task.wait(0.05)
 		end
 	end)
-
-	-- Delivery streak: a flame next to your coins ("🔥x5") that pops each time it grows
-	local streakLabel = Ui.outlined(coinExtras, {
-		LayoutOrder = 3,
-		Size = UDim2.fromOffset(0, 40),
+	-- Delivery streak: pops each time it grows
+	local streakLabel = Ui.outlined(levelExtras, {
+		LayoutOrder = 2,
+		Size = UDim2.fromOffset(0, 26),
 		AutomaticSize = Enum.AutomaticSize.X,
-		TextSize = 30,
+		TextSize = 20,
 		TextColor3 = Color3.fromRGB(255, 150, 40),
 		Text = "",
 		Visible = false,
@@ -210,24 +235,11 @@ function Hud.Start()
 	end
 	player:GetAttributeChangedSignal("Streak"):Connect(refreshStreak)
 	refreshStreak()
-	-- Rebirth Points: pop up for a few seconds when they change (they're spent at the Rebirth Market)
-	local pointsRow, pointsLabel = statRow(stack, 4, "Hud_RebirthPoints", REBIRTH_PURPLE)
-	pointsRow.Visible = false
-	pointsRow.Size = UDim2.fromOffset(260, 38)
-	pointsLabel.TextSize = 30
-	local knownPoints: number? = nil
-	Profile.Watch(function()
-		local points = Profile.Get().RebirthPoints or 0
-		pointsLabel.Text = `{Format.Short(points)} RP`
-		if knownPoints and points ~= knownPoints and not Profile.Learning() then
-			flash(pointsRow, 4)
-		end
-		knownPoints = points
-	end)
 
 	-- Level + XP bar (top of the stack)
 	local levelRow, levelLabel = statRow(stack, 0, "Hud_Level", Ui.GOLD)
 	levelLabel.Size = UDim2.fromOffset(90, 44)
+	levelExtras.Parent = levelRow
 	local xpBack = Ui.make("Frame", {
 		Position = UDim2.fromOffset(136, 12),
 		Size = UDim2.fromOffset(150, 20),
@@ -250,11 +262,13 @@ function Hud.Start()
 		ZIndex = 3,
 	})
 	stack.Size = UDim2.fromOffset(300, 140)
-	-- Simple start: during the walkthrough it's just your coins. Your level and the + to the Store pop in
-	-- when it's done.
+	-- Simple start: during the walkthrough it's just your coins. Your level, Rebirth Points and the + to the
+	-- Store pop in when it's done.
 	Profile.Watch(function()
 		local learning = Profile.Learning()
 		storePlus.Visible = not learning
+		pointsIcon.Visible = not learning
+		pointsLabel.Visible = not learning
 		if levelRow.Visible == learning then
 			levelRow.Visible = not learning
 			if not learning then
@@ -373,57 +387,10 @@ function Hud.Start()
 		Text = "",
 	})
 	Ui.make("UITextSizeConstraint", { MaxTextSize = 28 }, objective)
-	-- Quest tracker: Gruff's current main quest, under the objective. It only pops in for a few seconds when
-	-- the quest moves (the Orders board always has it).
-	local questPill = Ui.make("Frame", {
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 52),
-		Visible = false,
-		Size = UDim2.fromOffset(460, 30),
-		BackgroundColor3 = Color3.fromRGB(40, 30, 20),
-		BackgroundTransparency = 0.3,
-	}, gui)
-	Ui.round(questPill, 15)
-	Ui.autoScale(questPill)
-	local questFill = Ui.make("Frame", {
-		Size = UDim2.fromScale(0, 1),
-		BackgroundColor3 = Color3.fromRGB(255, 190, 60),
-		BackgroundTransparency = 0.55,
-	}, questPill)
-	Ui.round(questFill, 15)
-	Ui.icon(questPill, "Hud_Quest", { Position = UDim2.fromOffset(6, 2), Size = UDim2.fromOffset(26, 26), ZIndex = 2 })
-	local questLabel = Ui.outlined(questPill, {
-		Position = UDim2.fromOffset(38, 0),
-		Size = UDim2.new(1, -46, 1, 0),
-		Font = Ui.FONT,
-		TextSize = 17,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		Text = "",
-		ZIndex = 2,
-	})
-	local shownQuest: string? = nil
-	local function refreshQuest()
-		local quest = QuestText.Current()
-		local text = if quest.Done
-			then quest.Text
-			else `QUEST: {quest.Text}{if quest.Progress ~= "" then "  ·  " .. quest.Progress else ""}`
-		questLabel.Text = text
-		questFill.Size = UDim2.fromScale(quest.Fraction, 1)
-		-- (simple start: during the walkthrough, Gruff's panel is the only instruction)
-		local allowed = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()
-		if not allowed then
-			questPill.Visible = false
-		elseif shownQuest ~= nil and text ~= shownQuest then
-			flash(questPill, 5)
-		end
-		shownQuest = text
-	end
-	Profile.Watch(refreshQuest)
-	player:GetAttributeChangedSignal("Stage"):Connect(refreshQuest)
 
 	local status = Ui.outlined(gui, {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 86),
+		Position = UDim2.new(0.5, 0, 0, 52),
 		Size = UDim2.fromOffset(640, 22),
 		Font = Ui.FONT,
 		TextSize = 17,
@@ -1046,7 +1013,7 @@ function Hud.Start()
 		elseif kind == "ChallengeDone" then
 			showToast(
 				"✅ Challenge done!",
-				"Claim it in MENU, then ORDERS.",
+				"Claim it in the TASKS panel on the right.",
 				`+{Format.Short(data.Coins)} coins`,
 				nil,
 				Ui.GREEN
@@ -1062,7 +1029,7 @@ function Hud.Start()
 		elseif kind == "NewSpecies" then
 			showToast(
 				`📚 New animal: {data.Animal}!`,
-				"Added to your collection in the BAG.",
+				"Added to your COLLECTION (in MENU).",
 				`+{Format.Short(data.XP)} XP`,
 				nil,
 				Ui.PURPLE

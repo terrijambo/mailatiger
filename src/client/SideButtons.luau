@@ -1,22 +1,22 @@
 --!strict
 -- The big square buttons on the left side of the screen. Kept to a minimum so the screen stays clean:
 --   GRUFF (teleport back to Gruff; it turns into PEN while you're at Gruff's, which zips you to your best
---   zone), SHOP, and MENU (it pops out everything else: STORE, ORDERS, BAG, SETTINGS, INVITE; picking one,
---   pressing MENU again, or opening any window folds it away).
+--   zone), SHOP (Gruff's Shop; its PREMIUM button flips to the Robux Store), and MENU (it pops out
+--   COLLECTION and SETTINGS; picking one, pressing MENU again, or opening any window folds it away).
+--   Orders and challenges live in the TASKS panel on the right (OrdersBoard.luau); Invite is in Settings.
 -- Big screens: one column down the middle of the left edge. Phones (Ui.compact): a grid under the stats in
 -- the top-left, so the thumbstick (bottom-left) stays clear.
--- Gamepad: d-pad left/up/right/down = quick teleport/SHOP/ORDERS/BAG; inside a window you can move to any button.
+-- Gamepad: d-pad left/up/right/down = quick teleport/SHOP/TASKS/COLLECTION; inside a window you can move to any button.
 -- They hide while the BOX screen is up so they don't get in the way.
 
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
-local SocialService = game:GetService("SocialService")
 local TweenService = game:GetService("TweenService")
 
-local Config = require(ReplicatedStorage.Shared.Config)
 local Menus = require(script.Parent.Menus)
+local OrdersBoard = require(script.Parent.OrdersBoard)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
@@ -177,57 +177,39 @@ function SideButtons.Start()
 			Menus.Toggle("Shop")
 		end
 	)
-	local storeButton = add(
-		popup,
-		{ Label = "STORE", Icon = "Button_Store", Color = Ui.GOLD, LayoutOrder = 0 },
-		nil,
-		function()
-			Menus.Toggle("Store")
-		end
-	)
 	local menuButton = add(
 		column,
 		{ Label = "MENU", Icon = "Button_Menu", Color = Ui.PURPLE, LayoutOrder = 4 },
 		nil,
 		function()
+			if not popup.Visible then
+				Menus.CloseAll() -- (the pop-out would sit behind an open window)
+			end
 			setMenu(not popup.Visible)
 		end
 	)
 
-	local ordersButton = add(
-		popup,
-		{ Label = "ORDERS", Icon = "Button_Orders", Color = Ui.PURPLE, LayoutOrder = 1 },
-		Enum.KeyCode.DPadRight,
-		function()
-			Menus.Toggle("Orders")
+	-- (the TASKS panel's shortcut on a gamepad)
+	ContextActionService:BindAction("Menu_TASKS", function(_name: string, state: Enum.UserInputState)
+		if Menus.AnyOpen() or not gui.Enabled then
+			return Enum.ContextActionResult.Pass
 		end
-	)
+		if state == Enum.UserInputState.Begin then
+			OrdersBoard.Toggle()
+		end
+		return Enum.ContextActionResult.Sink
+	end, false, Enum.KeyCode.DPadRight)
 	add(
 		popup,
-		{ Label = "BAG", Icon = "Button_Inventory", Color = Ui.PINK, LayoutOrder = 2 },
+		{ Label = "COLLECTION", Icon = "Button_Inventory", Color = Ui.PINK, LayoutOrder = 1 },
 		Enum.KeyCode.DPadDown,
 		function()
 			Menus.Toggle("Inventory")
 		end
 	)
-	add(popup, { Label = "SETTINGS", Icon = "Button_Settings", Color = Ui.GREY, LayoutOrder = 5 }, nil, function()
+	add(popup, { Label = "SETTINGS", Icon = "Button_Settings", Color = Ui.GREY, LayoutOrder = 2 }, nil, function()
 		Menus.Toggle("Settings")
 	end)
-	local invite = add(
-		popup,
-		{ Label = "INVITE", Icon = "Button_Invite", Color = Ui.GREEN, LayoutOrder = 6 },
-		nil,
-		function()
-			-- Your UserId rides along with the invite, so you get paid when they join and play
-			-- (InviteService on the server)
-			local options = Instance.new("ExperienceInviteOptions")
-			options.PromptMessage =
-				`Invite friends: they get {Config.Social.Invites.NewPlayerGift} coins, and you get a big coin bonus for each one!`
-			options.LaunchData = tostring(player.UserId)
-			pcall(SocialService.PromptGameInvite, SocialService, player, options)
-		end
-	)
-	invite.Visible = false
 
 	local function layout()
 		local compact = Ui.compact()
@@ -258,48 +240,28 @@ function SideButtons.Start()
 			end
 		end
 		local popRows = math.ceil(items / 3)
-		popup.Size = UDim2.fromOffset(3 * CELL + 2 * GAP_X + 24, popRows * (CELL + GAP_Y) - GAP_Y + 24 + 6)
+		local popColumns = math.clamp(items, 1, 3)
+		popup.Size = UDim2.fromOffset(
+			popColumns * CELL + (popColumns - 1) * GAP_X + 24,
+			popRows * (CELL + GAP_Y) - GAP_Y + 24 + 6
+		)
 		popup.AnchorPoint = Vector2.new(0, 1)
 		local menuBottom = menuButton.AbsolutePosition.Y + menuButton.AbsoluteSize.Y
 		local right = column.AbsolutePosition.X + column.AbsoluteSize.X + 12
 		popup.Position = UDim2.fromOffset(right, math.max(menuBottom, popup.Size.Y.Offset * scale + 8))
 	end
-	task.spawn(function()
-		-- Only where Roblox allows invites
-		local ok, allowed = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)
-		invite.Visible = ok and allowed == true
-		layout()
-	end)
 	Ui.onResize(function()
 		task.defer(layout) -- (after the column's own size and scale update)
 	end)
 	popup:GetPropertyChangedSignal("Visible"):Connect(layout)
 
-	-- Red "!" on MENU and ORDERS while a finished order or challenge is waiting for CLAIM
-	-- (MENU swaps to its "!" icon instead of getting a dot; ORDERS gets the dot)
-	local menuIcon = menuButton:FindFirstChild("Icon") :: GuiObject?
-	local menuNotifyIcon = Ui.icon(menuButton, "Button_MenuNotify", {
-		Name = "IconNotify",
-		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 5),
-		Size = UDim2.fromOffset(54, 50),
-		Visible = false,
-	})
-	local ordersDot = Ui.alertDot(ordersButton)
 	Profile.Watch(function()
 		local data = Profile.Get()
 		local learning = Profile.Learning()
-		local waiting = Profile.Claimable(data) > 0 and not learning
-		menuNotifyIcon.Visible = waiting
-		if menuIcon then
-			menuIcon.Visible = not waiting
-		end
-		ordersDot.Visible = waiting
-		-- Simple start: PEN first, SHOP once you've mailed something (Gruff sends you there), STORE and MENU
-		-- once the walkthrough is done
+		-- Simple start: PEN first, SHOP once you've mailed something (Gruff sends you there), MENU once the
+		-- walkthrough is done
 		local shopWas, menuWas = shopButton.Visible, menuButton.Visible
 		shopButton.Visible = not learning or (data.Mailed or 0) > 0
-		storeButton.Visible = not learning
 		menuButton.Visible = not learning
 		popIn(shopButton, shopWas)
 		popIn(menuButton, menuWas)

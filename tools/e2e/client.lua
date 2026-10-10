@@ -545,11 +545,10 @@ local function run()
 	goTo(map.OrdersBoard)
 	holdPrompt(map.OrdersBoard:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
-		return gui.OrdersBoard.Enabled
-	end, 3), "Orders prompt opens Gruff's Orders")
+		return gui.OrdersBoard.Dashboard.Body.Visible
+	end, 3), "Orders board in town opens the TASKS panel")
 	task.wait(0.4)
 	dumpUi("orders")
-	gui.OrdersBoard.Enabled = false
 	goTo(map.ShopCounter)
 	holdPrompt(map.ShopCounter:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
