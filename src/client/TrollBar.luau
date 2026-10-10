@@ -1,7 +1,8 @@
 --!strict
 -- The troll hotbar (bottom center): one slot per troll item you own, with its key (1-5) and a cooldown
 -- shade that drains as it recharges. Press the key or tap the slot to use it. The server checks everything
--- (TrollService.luau), and troll items only affect players in Chaos Mode.
+-- (TrollService.luau). Troll items only work on players boxing in Chaos Mode, so the bar only shows while
+-- someone (you or another player) is on a Chaos Mode job.
 -- Gamepad: R1 picks the next item (gold outline), R2 uses it. Touch: tap a slot.
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -44,6 +45,17 @@ function TrollBar.Start()
 	}, bar)
 
 	local slots: { [string]: { Button: TextButton, Shade: Frame } } = {}
+	-- Shown when you own an item, someone is on a Chaos Mode job (the only players items work on), and you're not boxing
+	local function refreshShown()
+		local chaos = false
+		for _, other in Players:GetPlayers() do
+			if other:GetAttribute("Chaos") then
+				chaos = true
+				break
+			end
+		end
+		gui.Enabled = next(slots) ~= nil and chaos and player:GetAttribute("Stage") ~= "Box"
+	end
 	local bound: { string } = {}
 	local ownedOrder: { string } = {} -- owned item ids, in hotbar order
 	local selected = 1 -- (gamepad) which slot R2 uses
@@ -149,7 +161,7 @@ function TrollBar.Start()
 				end
 			end
 		end
-		gui.Enabled = keyIndex > 0 and player:GetAttribute("Stage") ~= "Box"
+		refreshShown()
 		selected = math.clamp(selected, 1, math.max(1, #ownedOrder))
 		refreshPick()
 	end
@@ -187,8 +199,12 @@ function TrollBar.Start()
 			rebuild()
 		end
 	end)
-	player:GetAttributeChangedSignal("Stage"):Connect(function()
-		gui.Enabled = next(slots) ~= nil and player:GetAttribute("Stage") ~= "Box"
+	player:GetAttributeChangedSignal("Stage"):Connect(refreshShown)
+	task.spawn(function()
+		while gui.Parent do
+			refreshShown() -- (other players join and leave Chaos Mode)
+			task.wait(1)
+		end
 	end)
 
 	notify.OnClientEvent:Connect(function(kind: string, data: { [string]: any })

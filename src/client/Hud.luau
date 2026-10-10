@@ -1,7 +1,10 @@
 --!strict
--- The on-screen HUD, in the style of popular simulators:
---   * a big objective banner across the top ("Box your hamster!"), with a status line under it
---   * your coins, bag and boosts stacked in the bottom-left corner, with big outlined numbers
+-- The on-screen HUD, kept clean: only what matters right now is on screen.
+--   * one objective line across the top ("Box your hamster!"); your quest's progress swaps in for a few
+--     seconds whenever it moves, and a status line shows under it only when there's something to say
+--   * bottom-left: your level and coins. Next to the coins: a + (opens the Store), your coin boost when you
+--     have one, and your delivery streak. Diamonds pop up for a moment when they change.
+--   * bottom-right: your bag, only while you're carrying parcels (it pulses when it's nearly full)
 --   Everything shrinks a little on small screens (Ui.autoScale), so phones keep the same layout.
 --   * popups from Gruff and the chute (receipts get a red star-rating stamp), queued so none get lost
 --   * the giant RETURN TO SENDER stamp
@@ -38,6 +41,19 @@ end
 local function boostLeft(): number
 	local untilTime = Workspace:GetAttribute("BoostUntil")
 	return if typeof(untilTime) == "number" then math.max(0, untilTime - Workspace:GetServerTimeNow()) else 0
+end
+
+-- Shows `object` for `seconds`, then hides it again (showing it again restarts the clock)
+local function flash(object: GuiObject, seconds: number)
+	object.Visible = true
+	local last = object:GetAttribute("FlashToken")
+	local token = (if typeof(last) == "number" then last else 0) + 1
+	object:SetAttribute("FlashToken", token)
+	task.delay(seconds, function()
+		if object:GetAttribute("FlashToken") == token then
+			object.Visible = false
+		end
+	end)
 end
 
 -- Short numbers (1k, 12.5k, 1M): see src/shared/Format.luau
@@ -95,7 +111,7 @@ function Hud.Start()
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
 	}, stack)
-	-- The bag and your coin boost live in the bottom-right corner (top-right on phones)
+	-- The bag lives in the bottom-right corner (top-right on phones)
 	local rightStack = Ui.make("Frame", {
 		Size = UDim2.fromOffset(270, 100),
 		BackgroundTransparency = 1,
@@ -107,35 +123,77 @@ function Hud.Start()
 		HorizontalAlignment = Enum.HorizontalAlignment.Right,
 		VerticalAlignment = Enum.VerticalAlignment.Bottom,
 	}, rightStack)
-	local boostRow, boostLabel = statRow(rightStack, 1, "Hud_Boost", BOOST_ORANGE, true)
 	local bagRow, bagLabel = statRow(rightStack, 2, "Hud_Bag", BAG_TAN, true)
+	bagRow.Visible = false
+	local bagPulse = Ui.make("UIScale", { Scale = 1 }, bagRow)
+	task.spawn(function()
+		while bagRow.Parent do
+			bagPulse.Scale = if bagRow:GetAttribute("NearlyFull")
+				then 1 + 0.08 * math.abs(math.sin(os.clock() * 4))
+				else 1
+			task.wait(0.05)
+		end
+	end)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
-	-- Coins per minute from your chute (Config/Machines.luau), just under your coins
-	local rateLabel = Ui.outlined(stack, {
-		LayoutOrder = 4,
-		Size = UDim2.fromOffset(260, 22),
-		TextSize = 20,
-		TextXAlignment = Enum.TextXAlignment.Left,
-		TextColor3 = COIN_GREEN,
-		Text = "",
-	})
-	local function refreshRate()
-		local rate = player:GetAttribute("ChuteRate")
-		rateLabel.Text = if typeof(rate) == "number" and rate > 0 then `📮 +{Hud.Short(rate)}/min` else ""
+
+	-- Next to the coins, left to right: a + (opens the Store), your coin boost, your delivery streak
+	local coinExtras = Ui.make("Frame", {
+		Size = UDim2.fromOffset(240, 44),
+		BackgroundTransparency = 1,
+		ZIndex = 3,
+	}, coinRow)
+	Ui.make("UIListLayout", {
+		FillDirection = Enum.FillDirection.Horizontal,
+		VerticalAlignment = Enum.VerticalAlignment.Center,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		Padding = UDim.new(0, 8),
+	}, coinExtras)
+	local function placeExtras()
+		coinExtras.Position = UDim2.fromOffset(52 + coinsLabel.TextBounds.X + 8, 0)
 	end
-	player:GetAttributeChangedSignal("ChuteRate"):Connect(refreshRate)
-	refreshRate()
+	coinsLabel:GetPropertyChangedSignal("TextBounds"):Connect(placeExtras)
+	placeExtras()
+	local storePlus = Ui.button(coinExtras, {
+		Name = "StorePlus",
+		LayoutOrder = 1,
+		Size = UDim2.fromOffset(34, 34),
+		BackgroundColor3 = Ui.GREEN,
+		Font = Ui.TITLE_FONT,
+		TextSize = 28,
+		Text = "+",
+	})
+	storePlus.Activated:Connect(function()
+		Menus.Toggle("Store")
+	end)
+	-- Your total coin boost, as a small glowing chip ("⚡+20%")
+	local boostLabel = Ui.outlined(coinExtras, {
+		LayoutOrder = 2,
+		Size = UDim2.fromOffset(0, 30),
+		AutomaticSize = Enum.AutomaticSize.X,
+		TextSize = 24,
+		TextColor3 = BOOST_ORANGE,
+		Text = "",
+		Visible = false,
+	})
+	task.spawn(function()
+		while boostLabel.Parent do
+			if boostLabel.Visible then
+				local glow = 0.5 + 0.5 * math.sin(os.clock() * 3)
+				boostLabel.TextColor3 = BOOST_ORANGE:Lerp(Ui.GOLD, glow)
+			end
+			task.wait(0.05)
+		end
+	end)
 
 	-- Delivery streak: a flame next to your coins ("🔥x5") that pops each time it grows
-	local streakLabel = Ui.outlined(coinRow, {
-		Position = UDim2.fromOffset(178, 2),
-		Size = UDim2.fromOffset(120, 40),
+	local streakLabel = Ui.outlined(coinExtras, {
+		LayoutOrder = 3,
+		Size = UDim2.fromOffset(0, 40),
+		AutomaticSize = Enum.AutomaticSize.X,
 		TextSize = 30,
-		TextXAlignment = Enum.TextXAlignment.Left,
 		TextColor3 = Color3.fromRGB(255, 150, 40),
 		Text = "",
 		Visible = false,
-		ZIndex = 3,
 	})
 	local streakPop = Ui.make("UIScale", { Scale = 1 }, streakLabel)
 	local function refreshStreak()
@@ -152,8 +210,10 @@ function Hud.Start()
 	end
 	player:GetAttributeChangedSignal("Streak"):Connect(refreshStreak)
 	refreshStreak()
-	-- Diamonds (tap to open Diamond Upgrades)
+	-- Diamonds: pop up for a few seconds when they change (tap to open Diamond Upgrades). The Store and
+	-- Diamond Upgrades show your total too.
 	local diamondRow, diamondLabel = statRow(stack, 4, "Hud_Diamonds", DIAMOND_BLUE)
+	diamondRow.Visible = false
 	diamondRow.Size = UDim2.fromOffset(260, 38)
 	diamondLabel.TextSize = 30
 	local diamondButton = Ui.make("TextButton", {
@@ -165,10 +225,14 @@ function Hud.Start()
 	diamondButton.Activated:Connect(function()
 		Menus.Open("Upgrades")
 	end)
+	local knownDiamonds: number? = nil
 	Profile.Watch(function()
 		local diamonds = Profile.Get().Diamonds or 0
 		diamondLabel.Text = Format.Short(diamonds)
-		diamondRow.Visible = diamonds > 0 and not Profile.Learning() -- (simple start)
+		if knownDiamonds and diamonds ~= knownDiamonds and not Profile.Learning() then
+			flash(diamondRow, 4)
+		end
+		knownDiamonds = diamonds
 	end)
 
 	-- Level + XP bar (top of the stack)
@@ -196,6 +260,22 @@ function Hud.Start()
 		ZIndex = 3,
 	})
 	stack.Size = UDim2.fromOffset(300, 140)
+	-- Simple start: during the walkthrough it's just your coins. Your level and the + to the Store pop in
+	-- when it's done.
+	Profile.Watch(function()
+		local learning = Profile.Learning()
+		storePlus.Visible = not learning
+		if levelRow.Visible == learning then
+			levelRow.Visible = not learning
+			if not learning then
+				local pop = levelRow:FindFirstChildOfClass("UIScale") or Ui.make("UIScale", {}, levelRow)
+				pop.Scale = 0.3
+				TweenService:Create(pop, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+					Scale = 1,
+				}):Play()
+			end
+		end
+	end)
 	-- Big screens: bottom-left. Phones: top-left, so the thumbstick (bottom-left) is free; the side buttons
 	-- go under it (SideButtons.luau)
 	Ui.onResize(function()
@@ -277,11 +357,11 @@ function Hud.Start()
 	end
 
 	---------------------------------------------------------------------------------------------------
-	-- Objective banner (top center) + a status line under it
+	-- Objective line (top center) + a status line under it
 	local banner = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 4),
-		Size = UDim2.new(0.62, 0, 0, 58),
+		Size = UDim2.new(0.56, 0, 0, 44),
 		BackgroundColor3 = Color3.fromRGB(15, 15, 25),
 		BackgroundTransparency = 0.35,
 	}, gui)
@@ -298,15 +378,17 @@ function Hud.Start()
 	local objective = Ui.outlined(banner, {
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Position = UDim2.fromScale(0.5, 0.5),
-		Size = UDim2.new(0.8, 0, 0, 44),
+		Size = UDim2.new(0.84, 0, 0, 32),
 		TextScaled = true,
 		Text = "",
 	})
-	Ui.make("UITextSizeConstraint", { MaxTextSize = 38 }, objective)
-	-- Quest tracker: Gruff's current main quest, under the banner
+	Ui.make("UITextSizeConstraint", { MaxTextSize = 28 }, objective)
+	-- Quest tracker: Gruff's current main quest, under the objective. It only pops in for a few seconds when
+	-- the quest moves (the Orders board always has it).
 	local questPill = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 64),
+		Position = UDim2.new(0.5, 0, 0, 52),
+		Visible = false,
 		Size = UDim2.fromOffset(460, 30),
 		BackgroundColor3 = Color3.fromRGB(40, 30, 20),
 		BackgroundTransparency = 0.3,
@@ -329,21 +411,29 @@ function Hud.Start()
 		Text = "",
 		ZIndex = 2,
 	})
+	local shownQuest: string? = nil
 	local function refreshQuest()
 		local quest = QuestText.Current()
-		questLabel.Text = if quest.Done
+		local text = if quest.Done
 			then quest.Text
 			else `QUEST: {quest.Text}{if quest.Progress ~= "" then "  ·  " .. quest.Progress else ""}`
+		questLabel.Text = text
 		questFill.Size = UDim2.fromScale(quest.Fraction, 1)
 		-- (simple start: during the walkthrough, Gruff's panel is the only instruction)
-		questPill.Visible = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()
+		local allowed = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()
+		if not allowed then
+			questPill.Visible = false
+		elseif shownQuest ~= nil and text ~= shownQuest then
+			flash(questPill, 5)
+		end
+		shownQuest = text
 	end
 	Profile.Watch(refreshQuest)
 	player:GetAttributeChangedSignal("Stage"):Connect(refreshQuest)
 
 	local status = Ui.outlined(gui, {
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 98),
+		Position = UDim2.new(0.5, 0, 0, 86),
 		Size = UDim2.fromOffset(640, 22),
 		Font = Ui.FONT,
 		TextSize = 17,
@@ -356,9 +446,10 @@ function Hud.Start()
 		showCoins(profile.Coins)
 		local capacity = Profile.BagCapacity(profile)
 		bagLabel.Text = `{#profile.Parcels} / {capacity}`
-		-- (simple start: the bag shows up once you've boxed something)
-		bagRow.Visible = not Profile.Learning() or #profile.Parcels > 0 or profile.Mailed > 0
+		-- Only while you're carrying parcels; it pulses once it's nearly full
+		bagRow.Visible = #profile.Parcels > 0
 		bagLabel.TextColor3 = if #profile.Parcels >= capacity then Color3.fromRGB(255, 100, 90) else BAG_TAN
+		bagRow:SetAttribute("NearlyFull", #profile.Parcels >= math.max(1, math.ceil(capacity * 0.8)))
 
 		-- Total coin boost from rebirths, Golden Paws, the server boost, Premium and the group
 		-- (the same math as Economy.PayoutMult on the server)
@@ -380,8 +471,8 @@ function Hud.Start()
 			local tuning = Config.Social.Friends
 			mult *= 1 + tuning.BonusPerFriend * math.min(friends, tuning.MaxFriends)
 		end
-		boostRow.Visible = mult > 1.001
-		boostLabel.Text = `+{math.round((mult - 1) * 100)}% coins`
+		boostLabel.Visible = mult > 1.001
+		boostLabel.Text = `⚡+{math.round((mult - 1) * 100)}%`
 
 		local parts = {}
 		if player:GetAttribute("Chaos") then
@@ -502,12 +593,12 @@ function Hud.Start()
 				waiting += 1
 			end
 			objective.Text = if stampable > 0
-				then `📮 Stamp your parcels at your machines (more XP), then mail them at Gruff's chute!`
+				then "📮 Stamp your parcels at your machines, then mail them!"
 				elseif
 					parcels > 0
-				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at Gruff's chute! (GRUFF = back to town)`
-				elseif waiting > 0 then "⏳ Your parcels are in the machines: collect them when they're ready!"
-				else "🐾 Grab a wild animal (HOLD E)! At Gruff's, PEN = teleport to your best zone"
+				then `📦 Mail your {parcels} parcel{if parcels == 1 then "" else "s"} at Gruff's chute!`
+				elseif waiting > 0 then "⏳ Collect your parcels from the machines"
+				else `🐾 Grab a wild animal: {Ui.hint("hold E", "hold X", "tap and hold")}`
 		end
 		-- (the BOX screen has its own instructions; during the walkthrough, Gruff's panel is the only one)
 		banner.Visible = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()
@@ -515,7 +606,7 @@ function Hud.Start()
 	Profile.Watch(refreshObjective)
 	player:GetAttributeChangedSignal("Tip"):Connect(refreshObjective)
 	player:GetAttributeChangedSignal("Stage"):Connect(refreshObjective)
-	refreshObjective()
+	Ui.onInputKind(refreshObjective) -- (hold E / hold X / tap and hold)
 
 	---------------------------------------------------------------------------------------------------
 	-- Popups (top center, under the banner): a colored header with who's talking, then the message

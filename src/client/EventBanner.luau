@@ -1,8 +1,9 @@
 --!strict
--- The event banner (top-right; top-center on phones): what's coming up next and what's running now, with a
--- countdown. It only reads Workspace attributes set by the server (EventService and BossService):
---   coming up    "Next: 🌟 GOLDEN HOUR in 0:24"   (the boss is announced 5 minutes early)
---   running      name, time left and what to do, plus live details:
+-- The event banner (top-right; top-center on phones): what's running now, with a countdown. It only reads
+-- Workspace attributes set by the server (EventService and BossService). To keep the screen clean:
+--   coming up    hidden, except the boss in its last GoSeconds (with GO / SKIP)
+--   running      a small "🚨 RUSH ORDER 2:21" chip; it opens for a few seconds when the event starts, and
+--                tapping it opens or closes it. Opened, it shows what to do plus live details:
 --                Rush Order: the animal to mail and the top 3 so far
 --                Boss: PIN IT (how many are holding on, and a pin bar) or BOX IT (seams done)
 -- While a boss is coming or on and you're not in the arena, the banner has GO (teleport straight there) and
@@ -83,6 +84,21 @@ function EventBanner.Start()
 	}, barBack)
 	Ui.round(barFill, 5)
 
+	-- Tap the chip to open or close it (behind the GO / SKIP buttons)
+	local toggle = Ui.make("TextButton", {
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Text = "",
+		Visible = false,
+	}, card)
+	local pinnedOpen = false
+	local openUntil = 0
+	local lastEvent: string? = nil
+	toggle.Activated:Connect(function()
+		pinnedOpen = not pinnedOpen
+		openUntil = 0
+	end)
+
 	-- GO / SKIP for the boss
 	local shopAction = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("ShopAction") :: RemoteEvent
 	local bossButtons = Ui.make("Frame", {
@@ -136,6 +152,12 @@ function EventBanner.Start()
 		local nextId = attr("EventNext")
 		local nextAt = attr("EventNextAt")
 		barBack.Visible = false
+		toggle.Visible = false
+		if running ~= lastEvent then
+			lastEvent = running
+			pinnedOpen = false
+			openUntil = if typeof(running) == "string" then os.clock() + 6 else 0
+		end
 		if Profile.Learning() then
 			card.Visible = false -- (simple start: events and the boss show up after Gruff's walkthrough)
 			return
@@ -213,11 +235,28 @@ function EventBanner.Start()
 						)
 				end
 				line.Text = text
+				-- A small chip unless it was just announced or you tapped it open
+				local open = pinnedOpen or os.clock() < openUntil
+				line.Visible = open
+				if not open and running == "RushOrder" then
+					-- Closed, the chip still says what to mail
+					local animalId = attr("RushAnimal")
+					local animal = if typeof(animalId) == "string" then Config.Animals.ById[animalId] else nil
+					title.Text = `{event.Emoji} Mail a {if animal then animal.DisplayName else "?"}!  {if typeof(
+							endsAt
+						) == "number"
+						then clock(endsAt - now)
+						else ""}`
+				end
+				card.Size = if open then UDim2.fromOffset(330, 92) else UDim2.fromOffset(250, 40)
+				title.TextSize = if open then 24 else 20
+				toggle.Visible = true
 				card.Visible = true
 			else
 				card.Visible = false
 			end
-		elseif typeof(nextId) == "string" and typeof(nextAt) == "number" and nextAt > now then
+		elseif not small and typeof(nextId) == "string" and typeof(nextAt) == "number" and nextAt > now then
+			-- (only the boss in its last GoSeconds gets here: anything coming up later stays hidden)
 			card.BackgroundColor3 = Color3.fromRGB(30, 40, 60)
 			if nextId == "Boss" then
 				title.Text = `⚔️ {attr("BossName") or "BOSS"} in {clock(nextAt - now)}`

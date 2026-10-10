@@ -69,7 +69,7 @@ tests/      automatic config checks (lune run tests/run.luau)
    **Bag → Parcels** shows each parcel's stamps.
 6. **MAIL:** take your parcels to the chute next to Gruff and **hold E**. You get the XP and a 30% coin tip.
 7. **Level up:** XP raises your **chute level**, which is your level. It opens islands, unlocks machines,
-   upgrades the chute's look, and raises the **coins per minute** the chute pays you (shown under your coins).
+   upgrades the chute's look, and raises the **coins per minute** the chute pays you.
 8. **Rebirth** (Shop → Rebirth) at chute level 20 + coins: resets level, machines, coins, animals, boxes and
    stamps, for x1.5 coins per minute (stacking) and **Rebirth Points**, which buy **Tools** (Sneakers,
    Gloves, Tape Gun, Net, Mail Bag) that you keep forever.
@@ -100,9 +100,12 @@ tests/      automatic config checks (lune run tests/run.luau)
 | Troll items | click the hotbar | **R1** pick / **R2** use | tap the hotbar |
 | Mail from anywhere (Rocket Launcher) | **M** | **Y** | Mail button |
 
-Left-side buttons: **GRUFF** (teleport to Gruff; shows **PEN** while you're there, which takes you to your
-best island), **SHOP**, **STORE** (Robux) and **MENU** (Orders, Bag, Upgrades, Travel, Settings, Invite).
-SHOP, STORE and MENU appear as the tutorial goes on.
+Left-side buttons: **SHOP** and **MENU** (Store, Orders, Bag, Upgrades, Travel, Settings, Invite). A third
+button shows only when it helps: **PEN** at Gruff's with an empty bag (to your best island), **GRUFF** when
+you're out with parcels (back to the chute). SHOP and MENU appear as the tutorial goes on. The green **+**
+next to your coins opens the Store. The rest of the screen only shows what matters right now: the bag while
+you carry parcels, diamonds for a moment when they change, the quest line when it moves, a small chip for a
+running event (tap it for details), and the troll hotbar while someone is on a Chaos Mode job.
 
 ### Studio-only test helpers (never in the live game)
 - Every animal is free and you start with 2,000,000 test coins while saving is off (`Config/init.luau` → `Dev`).

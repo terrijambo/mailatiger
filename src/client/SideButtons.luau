@@ -1,12 +1,12 @@
 --!strict
--- The big square buttons on the left side of the screen, like PETS / EGGS / SHOP in popular simulators.
--- Always there: PEN (pick an animal), SHOP (boxes, tools, stamps, chutes, trolls), STORE (Robux) and MENU.
--- PEN is a quick teleport between Gruff and your best zone.
--- MENU pops out the rest next to it: ORDERS, BAG, UPGRADES, TRAVEL (teleport to Gruff, a zone or the boss),
--- SETTINGS and INVITE. Picking one (or pressing MENU again, or opening any window) folds it away.
--- Big screens: one column down the middle of the left edge. Phones (Ui.compact): a 2x2 grid under the stats
--- in the top-left, so the thumbstick (bottom-left) stays clear.
--- Gamepad: d-pad left/up/right/down opens PEN/SHOP/ORDERS/BAG; inside a window you can move to any button.
+-- The big square buttons on the left side of the screen. Kept to a minimum so the screen stays clean:
+--   SHOP and MENU are always there (MENU pops out everything else: STORE, ORDERS, BAG, UPGRADES, TRAVEL,
+--   SETTINGS, INVITE; picking one, pressing MENU again, or opening any window folds it away).
+--   One quick-teleport button shows up only when it's useful: PEN when you're at Gruff's with nothing to
+--   mail (it zips you to your best zone), GRUFF when you're out with parcels in your bag (back to the chute).
+-- Big screens: one column down the middle of the left edge. Phones (Ui.compact): a grid under the stats in
+-- the top-left, so the thumbstick (bottom-left) stays clear.
+-- Gamepad: d-pad left/up/right/down = quick teleport/SHOP/ORDERS/BAG; inside a window you can move to any button.
 -- They hide while the BOX screen is up so they don't get in the way.
 
 local ContextActionService = game:GetService("ContextActionService")
@@ -123,8 +123,20 @@ function SideButtons.Start()
 			shopAction:FireServer("QuickTravel")
 		end
 	)
-	-- It shows where it'll take you: GRUFF (the default), or PEN when you're already at Gruff's (it then
-	-- zips you to your best zone). Same 45-stud range the server uses (Travel.Quick).
+	-- It only shows when it's useful, and says where it'll take you: PEN at Gruff's with an empty bag (to your
+	-- best zone), GRUFF when you're away with parcels to mail. Same 45-stud range the server uses (Travel.Quick).
+	local layout: () -> () -- (below)
+	quickButton.Visible = false
+	-- A little pop so a button that just appeared gets noticed
+	local function popIn(button: TextButton, was: boolean)
+		if button.Visible and not was then
+			local pop = button:FindFirstChildOfClass("UIScale") or Ui.make("UIScale", {}, button)
+			pop.Scale = 0.3
+			TweenService:Create(pop, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Scale = 1,
+			}):Play()
+		end
+	end
 	do
 		local showingPen = false
 		local function setLook(pen: boolean)
@@ -149,14 +161,22 @@ function SideButtons.Start()
 				end
 			end
 		end
-		task.spawn(function()
+		task.defer(function() -- (after layout below exists)
 			while quickButton.Parent do
 				local map = workspace:FindFirstChild("GrayboxMap")
 				local gruff = map and map:FindFirstChild("Gruff")
 				local character = player.Character
 				local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 				if gruff and gruff:IsA("BasePart") and root then
-					setLook((root.Position - gruff.Position).Magnitude < 45)
+					local atGruff = (root.Position - gruff.Position).Magnitude < 45
+					local parcels = #Profile.Get().Parcels
+					setLook(atGruff)
+					local was = quickButton.Visible
+					quickButton.Visible = (atGruff and parcels == 0) or (not atGruff and parcels > 0)
+					if quickButton.Visible ~= was then
+						popIn(quickButton, was)
+						layout()
+					end
 				end
 				task.wait(0.3)
 			end
@@ -171,8 +191,8 @@ function SideButtons.Start()
 		end
 	)
 	local storeButton = add(
-		column,
-		{ Label = "STORE", Icon = "Button_Store", Color = Ui.GOLD, LayoutOrder = 3 },
+		popup,
+		{ Label = "STORE", Icon = "Button_Store", Color = Ui.GOLD, LayoutOrder = 0 },
 		nil,
 		function()
 			Menus.Toggle("Store")
@@ -228,12 +248,18 @@ function SideButtons.Start()
 	)
 	invite.Visible = false
 
-	local function layout()
+	function layout()
 		local compact = Ui.compact()
 		local margin = Ui.margin()
 		local scale = Ui.screenScale()
-		local columns = if compact then 2 else 1
-		local rows = math.ceil(4 / columns)
+		local shown = 0
+		for _, child in column:GetChildren() do
+			if child:IsA("GuiButton") and child.Visible then
+				shown += 1
+			end
+		end
+		local columns = if compact then math.min(2, math.max(1, shown)) else 1
+		local rows = math.ceil(math.max(1, shown) / columns)
 		grid.FillDirectionMaxCells = columns
 		column.Size = UDim2.fromOffset(columns * CELL + (columns - 1) * GAP_X, rows * (CELL + GAP_Y))
 		if compact then
@@ -294,16 +320,6 @@ function SideButtons.Start()
 		shopButton.Visible = not learning or (data.Mailed or 0) > 0
 		storeButton.Visible = not learning
 		menuButton.Visible = not learning
-		local function popIn(button: TextButton, was: boolean)
-			if button.Visible and not was then
-				-- A little pop so the new button gets noticed
-				local pop = button:FindFirstChildOfClass("UIScale") or Ui.make("UIScale", {}, button)
-				pop.Scale = 0.3
-				TweenService:Create(pop, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-					Scale = 1,
-				}):Play()
-			end
-		end
 		popIn(shopButton, shopWas)
 		popIn(menuButton, menuWas)
 		if menuButton.Visible ~= menuWas or shopButton.Visible ~= shopWas then

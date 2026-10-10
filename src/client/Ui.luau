@@ -533,14 +533,15 @@ function Ui.sideButton(parent: Instance, spec: SideButtonSpec): TextButton
 		Position = UDim2.new(0.5, 0, 0, 5),
 		Size = UDim2.fromOffset(54, 50),
 	})
-	Ui.outlined(button, {
+	local label = Ui.outlined(button, {
 		AnchorPoint = Vector2.new(0.5, 1),
 		Position = UDim2.new(0.5, 0, 1, 6),
-		Size = UDim2.new(1, 12, 0, 26),
-		TextSize = 22,
+		Size = UDim2.new(1, 4, 0, 26),
+		TextScaled = true, -- (long words like UPGRADES shrink to fit)
 		Text = spec.Label,
 		ZIndex = 3,
 	})
+	Ui.make("UITextSizeConstraint", { MaxTextSize = 22 }, label)
 	return button
 end
 
