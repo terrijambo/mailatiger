@@ -25,6 +25,7 @@ return {
 	Icons = require(script.Icons),
 	IconAtlas = require(script.IconAtlas),
 	IconSheets = require(script.IconSheets),
+	UiSkin = require(script.UiSkin),
 	Diamonds = require(script.Diamonds),
 	Variants = require(script.Variants),
 	Challenges = require(script.Challenges),

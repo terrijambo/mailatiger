@@ -89,6 +89,65 @@ function Ui.gloss(target: Instance)
 	}, target)
 end
 
+-- Paints a part of the ForgeGUI skin sheet (Config/UiSkin.luau) behind a frame or button, and hides the
+-- frame's own flat background. tint: the painting follows BackgroundColor3 (white parts take the color).
+-- Returns nil while the sheet isn't uploaded yet, so callers keep the drawn look.
+function Ui.skin(target: GuiObject, partName: string, tint: boolean): ImageLabel?
+	local sheet = Config.UiSkin.Sheet
+	local part = Config.UiSkin.Parts[partName]
+	if sheet == "" or not part then
+		return nil
+	end
+	local image = Ui.make("ImageLabel", {
+		Name = "Skin",
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Image = sheet,
+		ImageRectOffset = part.Offset,
+		ImageRectSize = part.Size,
+		ZIndex = 0, -- under everything else inside the target
+	}, target)
+	local slice = part.Slice
+	if slice then
+		image.ScaleType = Enum.ScaleType.Slice
+		image.SliceCenter = Rect.new(slice[1], slice[2], slice[3], slice[4])
+		image.SliceScale = part.SliceScale or 1
+		if part.FitHeight then
+			local function fit()
+				image.SliceScale = math.max(target.AbsoluteSize.Y, 1) / part.Size.Y
+			end
+			target:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+			fit()
+		end
+	end
+	target.BackgroundTransparency = 1
+	-- Code that fades the background (e.g. a button greyed out while it waits) fades the painting instead
+	target:GetPropertyChangedSignal("BackgroundTransparency"):Connect(function()
+		if target.BackgroundTransparency < 1 then
+			image.ImageTransparency = target.BackgroundTransparency
+			target.BackgroundTransparency = 1
+		end
+	end)
+	if tint then
+		local function recolor()
+			image.ImageColor3 = target.BackgroundColor3
+		end
+		target:GetPropertyChangedSignal("BackgroundColor3"):Connect(recolor)
+		recolor()
+	end
+	-- The painting has its own outline and rounded corners
+	for _, child in target:GetChildren() do
+		if
+			child:IsA("UICorner")
+			or child:IsA("UIGradient")
+			or (child:IsA("UIStroke") and child.ApplyStrokeMode == Enum.ApplyStrokeMode.Border)
+		then
+			child:Destroy()
+		end
+	end
+	return image
+end
+
 -- Big white text with a dark outline, for the HUD
 function Ui.outlined(parent: Instance, props: { [string]: any }): TextLabel
 	local base: { [string]: any } = {
@@ -250,10 +309,23 @@ function Ui.window(
 		BackgroundColor3 = Ui.OUTLINE,
 		BorderSizePixel = 0,
 	}, bar)
+	-- With the painted skin: a cream paper card, and a glossy plaque for a title bar that sits over its top edge
+	local painted = Ui.skin(frame, "Panel", false) ~= nil
+	if painted then
+		bar.Position = UDim2.fromOffset(10, -10)
+		bar.Size = UDim2.new(1, -20, 0, 60)
+		filler:Destroy()
+		for _, child in bar:GetChildren() do
+			if child:IsA("Frame") then
+				child:Destroy() -- the dark line under the bar
+			end
+		end
+		Ui.skin(bar, "Ribbon", true)
+	end
 	Ui.outlined(bar, {
 		Name = "Title",
-		Position = UDim2.fromOffset(18, 4),
-		Size = UDim2.new(1, -90, 1, -6),
+		Position = UDim2.fromOffset(18, if painted then 2 else 4),
+		Size = UDim2.new(1, -90, 1, if painted then -14 else -6),
 		TextSize = 32,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = title,
@@ -274,6 +346,10 @@ function Ui.window(
 	Ui.border(close, 3)
 	Ui.gloss(close)
 	Ui.textOutline(close, 2)
+	if Ui.skin(close, "Close", false) then
+		close.Text = ""
+		close.Size = UDim2.fromOffset(54, 54)
+	end
 	close.Activated:Connect(function()
 		gui.Enabled = false
 	end)
@@ -393,8 +469,38 @@ function Ui.button(parent: Instance, props: { [string]: any }): TextButton
 	Ui.round(button, 10)
 	Ui.border(button, 3)
 	Ui.gloss(button)
-	Ui.textOutline(button, 2)
 	Ui.press(button)
+	if not Ui.skin(button, "Button", true) then
+		Ui.textOutline(button, 2)
+		return button
+	end
+	-- Painted: the button's own text would draw under the painting, so a label on top shows it instead
+	-- (button.Text etc. still work as usual: the label copies them). It sits a bit high, above the 3D lip.
+	button.TextTransparency = 1
+	local label = Ui.make("TextLabel", {
+		Name = "Label",
+		Size = UDim2.fromScale(1, 0.88),
+		BackgroundTransparency = 1,
+	}, button)
+	Ui.textOutline(label, 2)
+	local copied = {
+		"Text",
+		"TextColor3",
+		"TextSize",
+		"Font",
+		"TextScaled",
+		"TextWrapped",
+		"RichText",
+		"TextXAlignment",
+		"TextYAlignment",
+	}
+	for _, property in copied do
+		local function copy()
+			(label :: any)[property] = (button :: any)[property]
+		end
+		button:GetPropertyChangedSignal(property):Connect(copy)
+		copy()
+	end
 	return button
 end
 
@@ -420,6 +526,7 @@ function Ui.sideButton(parent: Instance, spec: SideButtonSpec): TextButton
 	Ui.border(button, 3)
 	Ui.gloss(button)
 	Ui.press(button)
+	Ui.skin(button, "Tile", true)
 	Ui.icon(button, spec.Icon, {
 		Name = "Icon",
 		AnchorPoint = Vector2.new(0.5, 0),
