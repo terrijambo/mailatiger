@@ -3,8 +3,7 @@
 
 return {
 	BagFull = "Your mail bag is stuffed! Mail those parcels at the chute first.",
-	AlreadyBoxing = "Finish the one you've got. Use the Pen counter twice within 5 seconds to give up on it.",
-	GaveUp = "Quitter. Fine. It's going back in the pen.",
+	AlreadyBoxing = "Finish the one you've got first.",
 	NotYours = "That's not YOUR animal. Hands off.",
 	TooPoor = "You can't afford that. Box more hamsters.",
 	NeedsCoop = "That one takes a whole crew to box. Not yet.",
@@ -59,7 +58,7 @@ return {
 		Box = "Now BOX it. Its anger climbs FAST: rub a ♥ to reset it to zero. DON'T touch the ✖ spots, and drag tape along every seam.",
 		Escaped = "You LOST it?! Catch it again (HOLD E). And rub the ♥ spots faster this time.",
 		Mail = "It's taped up and in your bag. Tap GRUFF to zip back to me, then HOLD E at the MAIL CHUTE by my counter.",
-		Shop = "Coins! Spend them at the SUPPLY SHOP on better tools. Level up and you can grab bigger animals. Now get back to work.",
+		Shop = "Coins! Talk to me to spend them: hold E at my counter, or tap SHOP. Level up and you can grab bigger animals. Now get back to work.",
 		Reward = "Here, a little signing bonus. Your MENU has orders, upgrades and more. Don't spend it all on tape.",
 	},
 }

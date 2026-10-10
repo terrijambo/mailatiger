@@ -61,7 +61,6 @@ BoxingService.OnEscape = nil :: ((string, string, Vector3, string?) -> ())?
 local sessions: { [Player]: Session } = {} -- owner -> job
 local crewOf: { [Player]: Session } = {} -- crew member -> the job they're helping with
 local stunnedUntil: { [Player]: number } = {}
-local lastPenUse: { [Player]: number } = {}
 local lastShove: { [Player]: number } = {}
 local map: MapBuilder.Map
 local boxesFolder: Folder
@@ -1178,28 +1177,6 @@ local function checkFalls(now: number)
 	end
 end
 
-local function onPenUsed(player: Player)
-	local s = jobOf(player)
-	if not s then
-		-- Animals roam wild in the zones now: the Pen counter sends you to your best zone
-		Travel.ToZone(player, Travel.BestZone(player))
-		return
-	end
-	-- Using the Pen twice within 5 seconds gives up on the current animal (or leaves the crew)
-	local last = lastPenUse[player]
-	lastPenUse[player] = os.clock()
-	if last and os.clock() - last < 5 then
-		if s.Player == player then
-			gruffSays(player, Gruff.GaveUp)
-			cancel(s)
-		else
-			leaveCrew(s, player)
-		end
-	else
-		gruffSays(player, Gruff.AlreadyBoxing)
-	end
-end
-
 -- A player left the game or died
 local function dropPlayer(player: Player)
 	local s = sessions[player]
@@ -1312,6 +1289,19 @@ function BoxingService.DropJob(player: Player)
 	end
 end
 
+-- Gives up the current job, even mid-BOX (Studio only: the automated tests use it to reset between steps)
+function BoxingService.GiveUp(player: Player)
+	local s = jobOf(player)
+	if not s then
+		return
+	end
+	if s.Player == player then
+		cancel(s)
+	else
+		leaveCrew(s, player)
+	end
+end
+
 -- A wild animal was grabbed (WildService has already checked the level and the bag). Normal animals go
 -- straight to the BOX screen; giants need a crew, so they stay put (as a job animal) for others to join.
 function BoxingService.StartWild(
@@ -1383,7 +1373,6 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 		Members = membersOf,
 	})
 
-	map.PenPrompt.Triggered:Connect(onPenUsed)
 	Remotes.Listen(Remotes.RequestAnimal, 4, onRequestAnimal)
 	Remotes.Listen(Remotes.Shove, 4, onShove)
 	-- Petting sends ~10 a second, so 30 leaves lots of room
@@ -1413,7 +1402,6 @@ function BoxingService.Start(builtMap: MapBuilder.Map)
 	Players.PlayerRemoving:Connect(function(player)
 		dropPlayer(player)
 		stunnedUntil[player] = nil
-		lastPenUse[player] = nil
 		lastShove[player] = nil
 	end)
 

@@ -7,9 +7,9 @@
 -- over it. The block stays, invisible, as the collider, the prompt holder and the name tag. Missing models
 -- just leave the grey block showing, so the game always works.
 --
--- Town (ground y = 0, the fountain at the very middle): the Post Office with Gruff, his counter, the Mail
--- Chute and the orders board on the north side; the Supply Shop east; the Animal Pen counter southwest; the
--- leaderboards west; the spawn south, facing the fountain.
+-- Town (ground y = 0, the fountain at the very middle): the big Post Office to the east with Gruff in front
+-- (talk to him to shop), his counter, the Mail Chute and the orders board; the machines in a ring round the
+-- plaza; the leaderboards west; the spawn between the fountain and Gruff.
 -- Zones: a fenced play area in the middle of each island, its gate on the side facing town (World.Gate).
 -- The Rooftop's play area is up on a 30-stud building, with an elevator pad at its foot.
 
@@ -48,8 +48,6 @@ export type Arena = {
 }
 
 export type Map = {
-	PenPrompt: ProximityPrompt,
-	PenCounter: BasePart,
 	Arenas: { [string]: Arena },
 	TownSpawn: CFrame,
 	TravelPads: { [string]: BasePart }, -- (none any more: MENU > TRAVEL)
@@ -59,8 +57,8 @@ export type Map = {
 	ChutePrompt: ProximityPrompt,
 	Gruff: BasePart, -- invisible when his Blender model is showing; holds his name tag
 	GruffHat: BasePart,
-	ShopPrompt: ProximityPrompt,
-	ShopCounter: BasePart,
+	ShopPrompt: ProximityPrompt, -- (on Gruff's counter: you shop by talking to him)
+	ShopCounter: BasePart, -- Gruff's counter
 	OrdersPrompt: ProximityPrompt,
 	OrdersBoard: BasePart,
 	Leaderboards: { [string]: BasePart }, -- board id -> the part whose +X (Right) face shows the board
@@ -645,9 +643,6 @@ local function buildGruff(map: Instance, floor: CFrame): (BasePart, BasePart)
 	return gruff, hat
 end
 
--- The tools you can buy, laid out on a table next to the shop (decoration only, if imported)
-local SHOP_DISPLAY = { "GrabbingGloves", "Sneakers", "TapeGun", "ButterflyNet", "TapeRoll", "RubberStamp" }
-
 -- Emoji on each zone's entrance arch
 local ZONE_ICONS: { [string]: string } = {
 	Backyard = "🏡",
@@ -697,11 +692,12 @@ function MapBuilder.Build(): Map
 	-- Town, from your sketch: you start by the fountain in the middle; Postmaster Gruff, his counter, the chute,
 	-- his orders board and the Post Office are to the EAST (facing west, toward you); the Post Office
 	-- machines stand in a ring round the plaza (machine 1 north, then round through west and south), with
-	-- gaps where the roads leave for the bridges; the Supply Shop is northeast.
+	-- gaps where the roads leave for the bridges. You shop by talking to Gruff.
+	-- His Post Office is big: it fills the space behind him, between the Jungle and Ice Rink roads.
 	local west = -Vector3.xAxis
-	local building = block(map, "PostOfficeBuilding", Vector3.new(55, 0, -10), Vector3.new(69, 12, 10), COLORS.PostRed)
-	local roof = block(map, "PostOfficeRoof", Vector3.new(54, 12, -11), Vector3.new(70, 13, 11), COLORS.PostBlue)
-	local office = dress(map, "PostOffice", spot(62, 0, 0, west), 18, { building, roof }, { Solid = true })
+	local building = block(map, "PostOfficeBuilding", Vector3.new(55, 0, -20), Vector3.new(83, 22, 20), COLORS.PostRed)
+	local roof = block(map, "PostOfficeRoof", Vector3.new(54, 22, -21), Vector3.new(84, 24, 21), COLORS.PostBlue)
+	local office = dress(map, "PostOffice", spot(69, 0, 0, west), 40, { building, roof }, { Solid = true })
 	if office then
 		ModelFit.Align(office, west, -55) -- its front door sits right behind Gruff
 	end
@@ -709,6 +705,9 @@ function MapBuilder.Build(): Map
 	local gruff, gruffHat = buildGruff(map, spot(51, 0.3, 0, west))
 	local postCounter = facingBox(map, "Counter", Vector3.new(46.5, 0.3, 0), west, Vector3.new(10, 3.5, 2), COLORS.Wood)
 	dress(map, "PostCounter", spot(46.5, 0.3, 0, west), 10.5, { postCounter })
+	-- Talk to Gruff to shop (machines, boxes, stamps)
+	local shopPrompt = prompt(postCounter, "Shop", "Postmaster Gruff", 0.2)
+	shopPrompt.UIOffset = Vector2.new(0, 40) -- (under the chute's and orders' prompts when they're all close)
 	local chute = facingBox(map, "MailChute", Vector3.new(47, 0.3, 10), west, Vector3.new(4, 4.7, 4), COLORS.Chute)
 	MapBuilder.Label(chute, "MAIL CHUTE", 3.5, COLORS.Yellow)
 	-- Hold E here to mail your bag. (Each player's client shortens the hold and swaps in their chute's model.)
@@ -776,48 +775,8 @@ function MapBuilder.Build(): Map
 		table.insert(machineKeep, { at.X, at.Z, 7 })
 	end
 
-	-- Animal Pen counter (beside the start): sends you to your best zone
-	local penAt = World.At(112, 30)
-	local penFacing = (Vector3.zero - penAt).Unit
-	local counter = facingBox(map, "PenCounter", penAt, penFacing, Vector3.new(8, 3, 2), COLORS.Wood)
-	MapBuilder.Label(counter, "ANIMAL PEN", 4, COLORS.Yellow)
-	local penPrompt = prompt(counter, "Go to the wild", "Animal Pen", 0.3)
-	dress(map, "PenCounter", spot(penAt.X, 0, penAt.Z, penFacing), 8.5, { counter })
-
-	-- Supply Shop (northeast, facing the fountain), with a table of the tools it sells beside it
-	local shopAt = World.At(62, 44)
-	local shopFacing = (Vector3.zero - shopAt).Unit
-	local shopCounter = facingBox(map, "ShopCounter", shopAt, shopFacing, Vector3.new(8, 3, 2), COLORS.PostBlue)
-	MapBuilder.Label(shopCounter, "SUPPLY SHOP", 4, COLORS.Yellow)
-	local shopPrompt = prompt(shopCounter, "Shop", "Machines, Boxes, Tools", 0.2)
-	dress(map, "ShopStall", spot(shopAt.X, 0, shopAt.Z, shopFacing), 9.5, { shopCounter }, { Solid = true })
-	local tableAt = World.At(48, 42)
-	local tableFacing = (Vector3.zero - tableAt).Unit
-	local displayTable = facingBox(map, "DisplayTable", tableAt, tableFacing, Vector3.new(8, 2.6, 2.6), COLORS.Wood)
-	local tableRight = displayTable.CFrame.RightVector
-	for index, name in SHOP_DISPLAY do
-		local along = -4 + (index - 0.5) * (8 / #SHOP_DISPLAY)
-		local itemAt = tableAt + tableRight * along + Vector3.new(0, 2.6, 0)
-		local item = ModelFit.Spawn("PropModels", name, CFrame.lookAt(itemAt, itemAt + tableFacing), 1.25, displayTable)
-		if item then
-			item:SetAttribute("Spin", true)
-		end
-	end
-
-	-- Scenery right around the counters (only if imported)
-	for _, at in { { 40, -19 }, { 37, 15 } } do -- (the second beside the planter, not in it)
-		-- (picked for the old counters: skip the one the Supply Shop now stands on)
-		if (Vector3.new(at[1], 0, at[2]) - Vector3.new(shopAt.X, 0, shopAt.Z)).Magnitude > 12 then
-			dress(map, "Lamppost", spot(at[1], 0, at[2]), 9, nil, { ByHeight = true, Solid = true })
-		end
-	end
-	dress(map, "Mailbox", spot(36, 0, 6, west), 3.5, nil, { ByHeight = true, Solid = true })
-	for _, at in { Vector3.new(42, 0, -20), Vector3.new(42, 0, 20) } do
-		-- (not where the Supply Shop stands now: it moved northeast and one planter ended up inside it)
-		if (at - Vector3.new(shopAt.X, 0, shopAt.Z)).Magnitude > 12 then
-			dress(map, "Planter", spot(at.X, 0, at.Z), 5, nil, { Solid = true })
-		end
-	end
+	-- (The Animal Pen stand, the Supply Shop stall, its tool table and the props around them were removed on
+	-- 2026-10-10 to clear the plaza: PEN is the side button, and you shop by talking to Gruff.)
 
 	-- Zones
 	local arenaFolder = Instance.new("Folder")
@@ -968,11 +927,12 @@ function MapBuilder.Build(): Map
 		Zones = zones,
 		-- Spots in town to keep clear of trees and props: { x, z, radius }
 		Keep = {
-			{ 60, 0, 20 }, -- the Post Office
+			{ 70, 0, 30 }, -- the Post Office
 			{ 46, 0, 17 }, -- Gruff, his counter, the chute and the orders board
-			{ penAt.X, penAt.Z, 7 },
-			{ shopAt.X, shopAt.Z, 9 }, -- the Supply Shop
-			{ tableAt.X, tableAt.Z, 6 }, -- and its table
+			-- (where the Pen stand and Supply Shop stood: kept empty, so the plaza stays open)
+			{ 27.8, 11.2, 7 },
+			{ 38.9, -20.7, 9 },
+			{ 31.2, -28.1, 6 },
 			{ -57, 0, 22 }, -- leaderboards
 			{ 24, 0, 7 }, -- spawn
 			table.unpack(machineKeep),
@@ -982,8 +942,6 @@ function MapBuilder.Build(): Map
 	local townSpot = Vector3.new(24, 3, 0)
 	return {
 		Leaderboards = leaderboards,
-		PenPrompt = penPrompt,
-		PenCounter = counter,
 		Arenas = arenas,
 		TownSpawn = CFrame.lookAt(townSpot, townSpot + Vector3.xAxis), -- (facing Gruff)
 		TravelPads = {},
@@ -994,7 +952,7 @@ function MapBuilder.Build(): Map
 		Gruff = gruff,
 		GruffHat = gruffHat,
 		ShopPrompt = shopPrompt,
-		ShopCounter = shopCounter,
+		ShopCounter = postCounter,
 		OrdersPrompt = ordersPrompt,
 		OrdersBoard = board,
 		Machines = stations,

@@ -141,7 +141,7 @@ local function run()
 	local map = Workspace:WaitForChild("GrayboxMap", 10)
 	log(map ~= nil, "map exists")
 	local gui = player:WaitForChild("PlayerGui")
-	for _, name in { "MailATigerHud", "Travel", "Shop", "Store", "Settings", "OrdersBoard" } do
+	for _, name in { "MailATigerHud", "Shop", "Store", "Settings", "OrdersBoard" } do
 		log(gui:WaitForChild(name, 5) ~= nil, "UI " .. name .. " built")
 	end
 	log(gui:WaitForChild("Tutorial", 8) ~= nil, "tutorial started for a new player")
@@ -159,7 +159,7 @@ local function run()
 	end, 10), "daily paycheck paid (streak day 1)")
 
 	-- 1. Pick a Hamster at the Pen
-	root.CFrame = map.PenCounter.CFrame * CFrame.new(0, 2, 5)
+	root.CFrame = map.ShopCounter.CFrame * CFrame.new(0, 2, 5)
 	task.wait(0.5)
 	remotes.RequestAnimal:FireServer("Hamster", false)
 	log(waitFor(function()
@@ -342,12 +342,12 @@ local function run()
 		root.CFrame = part.CFrame * CFrame.new(0, 2, 5)
 		task.wait(0.4)
 	end
-	goTo(map.PenCounter)
+	goTo(map.ShopCounter)
 	local penSpot = root.Position
-	holdPrompt(map.PenCounter:FindFirstChildOfClass("ProximityPrompt"))
+	remotes.ShopAction:FireServer("QuickTravel")
 	log(waitFor(function()
 		return (root.Position - penSpot).Magnitude > 40
-	end, 4), "Pen counter teleports you to your best zone")
+	end, 4), "PEN button at Gruff's teleports you to your best zone")
 
 	-- 7b. Wild animals: every zone has some roaming, grabbing one you can take goes straight to BOX, and one
 	-- that's too strong VINE BOOMs you back to town
@@ -388,12 +388,8 @@ local function run()
 	log(waitFor(function()
 		return player:GetAttribute("Stage") == "Box"
 	end, 4), "grabbed a wild Hamster: straight to the BOX screen")
-	-- (give it up: the Pen counter twice)
-	goTo(map.PenCounter)
-	local penPrompt = map.PenCounter:FindFirstChildOfClass("ProximityPrompt")
-	holdPrompt(penPrompt)
-	task.wait(0.3)
-	holdPrompt(penPrompt)
+	-- (give it up: Studio-only test action)
+	remotes.ShopAction:FireServer("GiveUp")
 	waitFor(function()
 		return player:GetAttribute("Stage") == ""
 	end, 3)
@@ -499,11 +495,7 @@ local function run()
 	log(waitFor(function()
 		return player:GetAttribute("Stage") == "Box"
 	end, 3), "diving into a wild Bunny grabs it")
-	goTo(map.PenCounter)
-	local penAgain = map.PenCounter:FindFirstChildOfClass("ProximityPrompt")
-	holdPrompt(penAgain)
-	task.wait(0.3)
-	holdPrompt(penAgain)
+	remotes.ShopAction:FireServer("GiveUp")
 	waitFor(function()
 		return player:GetAttribute("Stage") == ""
 	end, 3)
@@ -546,7 +538,7 @@ local function run()
 	holdPrompt(map.ShopCounter:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
 		return gui.Shop.Enabled
-	end, 3), "Shop counter opens the Supply Shop")
+	end, 3), "talking to Gruff opens the shop")
 	task.wait(0.4)
 	dumpUi("shop")
 	gui.Shop.Enabled = false
@@ -698,11 +690,7 @@ local function run()
 			waitFor(function()
 				return player:GetAttribute("Frozen") ~= true
 			end, 4)
-			goTo(map.PenCounter)
-			local pen = map.PenCounter:FindFirstChildOfClass("ProximityPrompt")
-			holdPrompt(pen)
-			task.wait(0.3)
-			holdPrompt(pen)
+			remotes.ShopAction:FireServer("GiveUp")
 			if waitFor(function()
 				return player:GetAttribute("Stage") == ""
 			end, 2) then
@@ -712,7 +700,7 @@ local function run()
 		return false
 	end
 	-- Zone locks: a low-level player can't take a Tiger yet
-	goTo(map.PenCounter)
+	goTo(map.ShopCounter)
 	remotes.RequestAnimal:FireServer("Tiger", false)
 	task.wait(1)
 	log(player:GetAttribute("Stage") == "" and string.find(lastMessage or "", "Level", 1, true) ~= nil, "Tiger refused while its zone is locked")
@@ -861,7 +849,7 @@ local function run()
 	log(waitFor(function()
 		return profile().SelectedStamp == "Fragile"
 	end, 3), "FRAGILE stamp selected for the next job")
-	goTo(map.PenCounter)
+	goTo(map.ShopCounter)
 	lastBoxStart = nil
 	remotes.RequestAnimal:FireServer("Hamster", false)
 	waitFor(function()

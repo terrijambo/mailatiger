@@ -1,9 +1,8 @@
 --!strict
 -- The big square buttons on the left side of the screen. Kept to a minimum so the screen stays clean:
---   SHOP and MENU are always there (MENU pops out everything else: STORE, ORDERS, BAG, UPGRADES, TRAVEL,
---   SETTINGS, INVITE; picking one, pressing MENU again, or opening any window folds it away).
---   One quick-teleport button shows up only when it's useful: PEN when you're at Gruff's with nothing to
---   mail (it zips you to your best zone), GRUFF when you're out with parcels in your bag (back to the chute).
+--   GRUFF (teleport back to Gruff; it turns into PEN while you're at Gruff's, which zips you to your best
+--   zone), SHOP, and MENU (it pops out everything else: STORE, ORDERS, BAG, SETTINGS, INVITE; picking one,
+--   pressing MENU again, or opening any window folds it away).
 -- Big screens: one column down the middle of the left edge. Phones (Ui.compact): a grid under the stats in
 -- the top-left, so the thumbstick (bottom-left) stays clear.
 -- Gamepad: d-pad left/up/right/down = quick teleport/SHOP/ORDERS/BAG; inside a window you can move to any button.
@@ -12,6 +11,7 @@
 local ContextActionService = game:GetService("ContextActionService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SocialService = game:GetService("SocialService")
 local TweenService = game:GetService("TweenService")
 
@@ -123,10 +123,8 @@ function SideButtons.Start()
 			shopAction:FireServer("QuickTravel")
 		end
 	)
-	-- It only shows when it's useful, and says where it'll take you: PEN at Gruff's with an empty bag (to your
-	-- best zone), GRUFF when you're away with parcels to mail. Same 45-stud range the server uses (Travel.Quick).
-	local layout: () -> () -- (below)
-	quickButton.Visible = false
+	-- It says where it'll take you: GRUFF, or PEN while you're at Gruff's. Checked every frame so it flips the
+	-- moment you arrive. Same 45-stud range the server uses (Travel.Quick).
 	-- A little pop so a button that just appeared gets noticed
 	local function popIn(button: TextButton, was: boolean)
 		if button.Visible and not was then
@@ -161,24 +159,13 @@ function SideButtons.Start()
 				end
 			end
 		end
-		task.defer(function() -- (after layout below exists)
-			while quickButton.Parent do
-				local map = workspace:FindFirstChild("GrayboxMap")
-				local gruff = map and map:FindFirstChild("Gruff")
-				local character = player.Character
-				local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-				if gruff and gruff:IsA("BasePart") and root then
-					local atGruff = (root.Position - gruff.Position).Magnitude < 45
-					local parcels = #Profile.Get().Parcels
-					setLook(atGruff)
-					local was = quickButton.Visible
-					quickButton.Visible = (atGruff and parcels == 0) or (not atGruff and parcels > 0)
-					if quickButton.Visible ~= was then
-						popIn(quickButton, was)
-						layout()
-					end
-				end
-				task.wait(0.3)
+		RunService.Heartbeat:Connect(function()
+			local map = workspace:FindFirstChild("GrayboxMap")
+			local gruff = map and map:FindFirstChild("Gruff")
+			local character = player.Character
+			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if gruff and gruff:IsA("BasePart") and root then
+				setLook((root.Position - gruff.Position).Magnitude < 45)
 			end
 		end)
 	end
@@ -223,12 +210,6 @@ function SideButtons.Start()
 			Menus.Toggle("Inventory")
 		end
 	)
-	add(popup, { Label = "UPGRADES", Icon = "Button_Upgrades", Color = Ui.BLUE, LayoutOrder = 3 }, nil, function()
-		Menus.Toggle("Upgrades")
-	end)
-	add(popup, { Label = "TRAVEL", Icon = "Button_Travel", Color = Ui.RED, LayoutOrder = 4 }, nil, function()
-		Menus.Toggle("Travel")
-	end)
 	add(popup, { Label = "SETTINGS", Icon = "Button_Settings", Color = Ui.GREY, LayoutOrder = 5 }, nil, function()
 		Menus.Toggle("Settings")
 	end)
@@ -248,7 +229,7 @@ function SideButtons.Start()
 	)
 	invite.Visible = false
 
-	function layout()
+	local function layout()
 		local compact = Ui.compact()
 		local margin = Ui.margin()
 		local scale = Ui.screenScale()

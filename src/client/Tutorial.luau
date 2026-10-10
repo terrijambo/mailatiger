@@ -242,7 +242,7 @@ function Tutorial.Start()
 	-- What the arrow points at right now (nil = no arrow, e.g. while the Box screen is up)
 	local function target(): BasePart?
 		if step == "Pen" then
-			return partNamed("PenCounter")
+			return nil -- (the PEN side button: Gruff's line points you to it)
 		elseif step == "Catch" or step == "Escaped" then
 			return myCritter()
 		elseif step == "Wild" then
@@ -250,7 +250,7 @@ function Tutorial.Start()
 		elseif step == "Mail" then
 			return partNamed("MailChute")
 		elseif step == "Shop" then
-			return partNamed("ShopCounter")
+			return partNamed("Counter") -- (you shop by talking to Gruff)
 		end
 		return nil
 	end

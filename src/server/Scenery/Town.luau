@@ -341,15 +341,16 @@ local function board(
 	return face
 end
 
+-- The signs turn to face the spawn pad, so you can read them the moment you arrive
+local SPAWN = Vector3.new(24, 0, 0)
+local function towardSpawn(at: Vector3): Vector3
+	local flat = SPAWN - at
+	return Vector3.new(flat.X, 0, flat.Z).Unit
+end
+
 local function infoBoards(folder: Instance)
-	local howTo = board(
-		folder,
-		"HowToPlayBoard",
-		Vector3.new(-22, 0, 50),
-		Vector3.new(0.3, 0, 1).Unit, -- (read from the south: the spawn faces north)
-		Vector2.new(18, 10),
-		C.Dark
-	)
+	local howToAt = Vector3.new(-22, 0, 50)
+	local howTo = board(folder, "HowToPlayBoard", howToAt, towardSpawn(howToAt), Vector2.new(18, 10), C.Dark)
 	do
 		local gui = Instance.new("SurfaceGui")
 		gui.Face = Enum.NormalId.Front
@@ -379,14 +380,14 @@ local function infoBoards(folder: Instance)
 		gui.Parent = howTo
 	end
 
-	local paycheck =
-		board(folder, "PaycheckBoard", Vector3.new(22, 0, 50), Vector3.new(-0.3, 0, 1).Unit, Vector2.new(14, 6), C.Dark)
+	local paycheckAt = Vector3.new(22, 0, 50)
+	local paycheck = board(folder, "PaycheckBoard", paycheckAt, towardSpawn(paycheckAt), Vector2.new(14, 6), C.Dark)
 	Kit.signText(
 		paycheck,
 		Enum.NormalId.Front,
-		"DAILY PAYCHECK",
+		"💵 DAILY PAYCHECK",
 		C.Gold,
-		"New paycheck in ...",
+		"Play every day for a bigger one!",
 		Color3.fromRGB(35, 70, 40)
 	)
 	task.spawn(function()
@@ -396,20 +397,21 @@ local function infoBoards(folder: Instance)
 		while paycheck.Parent do
 			local left = 86400 - os.time() % 86400
 			if sub then
-				sub.Text = string.format("Next one in %dh %02dm %02ds", left // 3600, (left % 3600) // 60, left % 60)
+				sub.Text =
+					string.format("Play daily for a bigger one! Next in %dh %02dm", left // 3600, (left % 3600) // 60)
 			end
 			task.wait(1)
 		end
 	end)
 
-	local group =
-		board(folder, "GroupBoard", Vector3.new(34, 0, 40), Vector3.new(-0.6, 0, 1).Unit, Vector2.new(12, 6), C.Dark)
+	local groupAt = Vector3.new(36, 0, 40)
+	local group = board(folder, "GroupBoard", groupAt, towardSpawn(groupAt), Vector2.new(12, 6), C.Dark)
 	Kit.signText(
 		group,
 		Enum.NormalId.Front,
-		"👍 LIKE THE GAME",
+		"⭐ JOIN THE GROUP",
 		Color3.fromRGB(120, 255, 140),
-		"⭐ Join the group: +10% coins",
+		"+10% coins forever! 👍 Like the game too",
 		Color3.fromRGB(40, 45, 80)
 	)
 end
@@ -486,12 +488,6 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 
 	fountain(folder)
 
-	-- Benches around the fountain, facing it
-	for i = 0, 3 do
-		local a = math.rad(45 + i * 90)
-		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
-		Kit.bench(folder, dir * 18 + Vector3.new(0, 0.25, 0), -dir)
-	end
 	-- Round flower beds on the mid ring (between the paths and the counters)
 	local flowerColors = {
 		Color3.fromRGB(255, 120, 150),

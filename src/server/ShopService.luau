@@ -15,6 +15,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Analytics = require(script.Parent.Analytics)
 local Badges = require(script.Parent.Badges)
 local BossService = require(script.Parent.BossService)
+local BoxingService = require(script.Parent.BoxingService)
 local ChallengeService = require(script.Parent.ChallengeService)
 local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
@@ -191,13 +192,21 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		BossService.TeleportIn(player)
 		return
 	elseif action == "Travel" then
-		-- MENU > TRAVEL
+		-- Studio only, for the automated tests (players have no Travel menu: walking pays off Sneakers)
+		if not RunService:IsStudio() then
+			return
+		end
 		if itemId == "Gruff" then
 			Travel.ToGruff(player)
 		elseif itemId == "Boss" then
 			BossService.TeleportIn(player)
 		else
 			Travel.ToZone(player, itemId)
+		end
+		return
+	elseif action == "GiveUp" then
+		if RunService:IsStudio() then
+			BoxingService.GiveUp(player) -- (the automated tests reset with it)
 		end
 		return
 	elseif action == "QuickTravel" then
