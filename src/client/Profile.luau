@@ -133,6 +133,12 @@ function Profile.Learning(): boolean
 	return Profile.Get().TutorialDone ~= true
 end
 
+-- A brand-new player before their first mail: the screen starts empty (no HUD, side buttons, banners or
+-- player list), with only Gruff's walkthrough panel. Everything comes in once they've mailed an animal.
+function Profile.Bare(): boolean
+	return Profile.Learning() and (Profile.Get().Mailed or 0) == 0
+end
+
 function Profile.Watch(callback: () -> ())
 	player:GetAttributeChangedSignal("Profile"):Connect(callback)
 	callback()

@@ -187,6 +187,7 @@ function Tutorial.Start()
 			return
 		end
 		finished = true
+		player:SetAttribute("TutorialStep", nil)
 		remote:FireServer(action)
 		gui:Destroy()
 		arrow.Beam:Destroy()
@@ -228,6 +229,7 @@ function Tutorial.Start()
 			Sfx.Play("Ding")
 		end
 		step = nextStep
+		player:SetAttribute("TutorialStep", step) -- (this screen only: SideButtons shows PEN when it's needed)
 		Track.Send("TutorialStep", step) -- (analytics: how long each step takes, and where people stop)
 		text.Text = (Lines :: any)[step] or ""
 		-- The BOX screen shows the same instructions itself, and on phones the panel would cover the box

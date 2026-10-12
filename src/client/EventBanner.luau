@@ -285,6 +285,7 @@ function EventBanner.Start()
 	task.spawn(function()
 		while gui.Parent do
 			refresh()
+			gui.Enabled = not Profile.Bare() -- (empty start: no event banners until the first mail)
 			task.wait(0.25)
 		end
 	end)

@@ -12,6 +12,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
@@ -262,6 +263,16 @@ function Hud.Start()
 		ZIndex = 3,
 	})
 	stack.Size = UDim2.fromOffset(300, 140)
+	-- Empty start: nothing at all until the first mail (Profile.Bare), the Roblox player list included
+	local wasBare: boolean? = nil
+	Profile.Watch(function()
+		local bare = Profile.Bare()
+		gui.Enabled = not bare
+		if bare ~= wasBare then
+			wasBare = bare
+			pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.PlayerList, not bare)
+		end
+	end)
 	-- Simple start: during the walkthrough it's just your coins. Your level, Rebirth Points and the + to the
 	-- Store pop in when it's done.
 	Profile.Watch(function()

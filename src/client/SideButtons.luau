@@ -277,13 +277,16 @@ function SideButtons.Start()
 
 	-- Step aside during the BOX screen
 	local function refresh()
+		-- (empty start: hidden until the first mail, except when the walkthrough points at PEN)
 		gui.Enabled = player:GetAttribute("Stage") ~= "Box"
+			and (not Profile.Bare() or player:GetAttribute("TutorialStep") == "Pen")
 		if not gui.Enabled then
 			setMenu(false)
 		end
 	end
 	player:GetAttributeChangedSignal("Stage"):Connect(refresh)
-	refresh()
+	player:GetAttributeChangedSignal("TutorialStep"):Connect(refresh)
+	Profile.Watch(refresh)
 end
 
 return SideButtons
