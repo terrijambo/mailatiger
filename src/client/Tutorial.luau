@@ -15,6 +15,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Profile = require(script.Parent.Profile)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
+local Track = require(script.Parent.Track)
 local Ui = require(script.Parent.Ui)
 
 local Lines = Config.Gruff.Tutorial
@@ -226,6 +227,7 @@ function Tutorial.Start()
 			Sfx.Play("Ding")
 		end
 		step = nextStep
+		Track.Send("TutorialStep", step) -- (analytics: how long each step takes, and where people stop)
 		text.Text = (Lines :: any)[step] or ""
 		-- The BOX screen shows the same instructions itself, and on phones the panel would cover the box
 		gui.Enabled = step ~= "Box"

@@ -254,6 +254,8 @@ local function enterArena(player: Player)
 		})
 		return
 	end
+	Analytics.Custom(player, "BossJoined", 1, Analytics.Segment(player))
+	Analytics.Milestone(player, "FirstBossJoin")
 	local across = Vector3.new(0, 1, 0):Cross(ENTRANCE)
 	teleport(player, center() + ENTRANCE * (Boss.ArenaSize / 2 - 16) + across * math.random(-10, 10))
 end

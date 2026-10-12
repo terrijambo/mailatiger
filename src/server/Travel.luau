@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Analytics = require(script.Parent.Analytics)
 local MapBuilder = require(script.Parent.MapBuilder)
 local ProgressionService = require(script.Parent.ProgressionService)
 local Remotes = require(script.Parent.Remotes)
@@ -59,6 +60,7 @@ local function onStep(pad: BasePart, go: (Player) -> ())
 end
 
 local function lockedMessage(player: Player, arenaId: string)
+	Analytics.Blocked(player, "ZoneLocked", arenaId)
 	local def = Config.Arenas.ById[arenaId]
 	Remotes.Notify:FireClient(player, "Message", {
 		Speaker = "Postmaster Gruff",
@@ -143,11 +145,30 @@ local function watchZones()
 					Speaker = "Postmaster Gruff",
 					Text = "SPLASH! I fished you out. Mind the edge next time.",
 				})
+				Analytics.Custom(player, "Fell", 1, "Sea", Analytics.Segment(player))
 				continue
 			end
 			if root then
+				-- Analytics: which part of the map they're in (an island, Rebirth Beach, the boss island, or town)
+				local p = root.Position
+				local here = "Town"
 				for arenaId, arena in map.Arenas do
-					local p = root.Position
+					if p.X > arena.Min.X and p.X < arena.Max.X and p.Z > arena.Min.Z and p.Z < arena.Max.Z then
+						here = arenaId
+					end
+				end
+				local beach = Config.World.ById.Beach
+				if
+					here == "Town"
+					and beach
+					and Vector3.new(p.X - beach.Center.X, 0, p.Z - beach.Center.Z).Magnitude < beach.Radius
+				then
+					here = "Beach"
+				elseif here == "Town" and (Vector3.new(p.X - bossCenter.X, 0, p.Z - bossCenter.Z)).Magnitude < 125 then
+					here = "Boss"
+				end
+				Analytics.Zone(player, here)
+				for arenaId, arena in map.Arenas do
 					local inside = p.X > arena.Min.X - 12
 						and p.X < arena.Max.X + 12
 						and p.Z > arena.Min.Z - 12

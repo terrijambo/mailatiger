@@ -40,6 +40,11 @@ export type Session = {
 	Bonus: number,
 	Variant: string?, -- "Shiny" or "Golden" (rolled when the job starts)
 	Difficulty: number, -- 0..1: how far above your level this animal is (wild grabs), see Boxing.Box.Hard
+	-- Analytics (Analytics.luau): this job's funnel id and what happened on the BOX screen
+	LoopId: string,
+	Hearts: number, -- hearts rubbed
+	Peels: number, -- seams that peeled back open (the Squeeze twist)
+	FirstTouch: number?, -- server time of the first rub or tape on the BOX screen
 
 	-- Locked in when the job starts, from the player's gear
 	BoxId: string, -- equipped box

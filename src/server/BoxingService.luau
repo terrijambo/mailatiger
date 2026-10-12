@@ -491,6 +491,58 @@ local function startBox(s: Session)
 	updateBoxVisual(s)
 end
 
+-- Analytics: what happened on the BOX screen, logged once when it ends. outcome: Taped, Launched or Cancelled.
+-- "_Idle" on the outcome = nobody rubbed or taped anything (didn't understand the screen, or walked off).
+local function logBox(s: Session, outcome: string)
+	local state = s.Box
+	if not state then
+		return -- (still in the catch stage: no BOX screen yet)
+	end
+	local player = s.Player
+	local seconds = math.floor(Workspace:GetServerTimeNow() - state.Start)
+	local taped = 0
+	for _, done in state.Taped do
+		if done then
+			taped += 1
+		end
+	end
+	local kind = Analytics.RarityOf(s.AnimalId) .. (if s.Difficulty > 0 then "_Hard" else "")
+	local device = Analytics.DeviceOf(player)
+	local result = outcome .. (if s.FirstTouch == nil then "_Idle" else "")
+	Analytics.Custom(player, "BoxEnd", seconds, result, kind, device)
+	-- One "BoxStat" per number (Field01 says which), so they all share one event name
+	local both = `{kind}|{device}`
+	Analytics.Custom(player, "BoxStat", taped, `SeamsOf{state.SeamCount}`, result, both, false)
+	Analytics.Custom(player, "BoxStat", s.Hearts, "Hearts", result, both, false)
+	Analytics.Custom(player, "BoxStat", s.AngryTouches, "RedSpots", result, both, false)
+	Analytics.Custom(player, "BoxStat", math.floor(s.MaxAnger), "MaxAnger", result, both, false)
+	if s.Peels > 0 then
+		Analytics.Custom(player, "BoxStat", s.Peels, "Peels", result, both, false)
+	end
+	local firstTouch = s.FirstTouch
+	if firstTouch then
+		-- Seconds before the first rub or tape (long = the screen is confusing)
+		Analytics.Custom(
+			player,
+			"BoxStat",
+			math.floor(firstTouch - state.Start),
+			"FirstTouchSeconds",
+			result,
+			both,
+			false
+		)
+	end
+	Analytics.Custom(
+		player,
+		"BoxAnimal",
+		seconds,
+		s.AnimalId,
+		result,
+		Analytics.LevelBand((DataService.Get(player) or { Level = 1 } :: any).Level),
+		false
+	)
+end
+
 local function endSession(s: Session)
 	CatchAI.Remove(s)
 	sessions[s.Player] = nil
@@ -547,7 +599,17 @@ local function escape(s: Session, how: string)
 		else map.Arenas[s.ArenaId].Center
 	s.Escapes += 1
 	notifyAll(s, "Break", {})
-	Analytics.Custom(s.Player, if how == "Launch" then "Launched" else "Escaped")
+	logBox(s, if how == "Launch" then "Launched" else "Escaped")
+	Analytics.Custom(
+		s.Player,
+		if how == "Launch" then "Launched" else "Escaped",
+		1,
+		s.AnimalId,
+		Analytics.RarityOf(s.AnimalId) .. (if s.Difficulty > 0 then "_Hard" else ""),
+		Analytics.Segment(s.Player)
+	)
+	Analytics.Did(s.Player, "VineBoomed")
+	Analytics.Milestone(s.Player, "FirstEscape")
 	if how == "Launch" and twistsFor(s.AnimalId).Breakout then
 		breakout(s, position)
 	else
@@ -662,6 +724,7 @@ local function finishJob(s: Session)
 		end)
 	end
 
+	logBox(s, "Taped")
 	local members = membersOf(s)
 	endSession(s)
 	local label = if stamp then stamp.DisplayName elseif s.Chaos then "CHAOS" else nil
@@ -671,6 +734,17 @@ local function finishJob(s: Session)
 		local coins =
 			math.max(1, math.round(animal.BaseValue * mult * streakMult * Economy.PayoutMult(member) + s.Bonus))
 		Analytics.Onboarding(member, "Taped")
+		local loopId = if member == s.Player then s.LoopId else Analytics.NewLoopId()
+		if member ~= s.Player then
+			Analytics.Loop(member, "CoreLoop", loopId, 1, "Grab") -- (a crew helper's own run)
+		end
+		Analytics.Loop(member, "CoreLoop", loopId, 2, "Boxed")
+		Analytics.Did(member, "Boxed")
+		Analytics.Milestone(member, "FirstBox")
+		if stars == 5 then
+			Analytics.Milestone(member, "FirstFiveStars")
+		end
+		Analytics.Custom(member, "BoxStat", stars, "Stars", "Taped", Analytics.Segment(member), false)
 		MailService.AddParcel(member, {
 			AnimalId = s.AnimalId,
 			Stars = stars,
@@ -680,6 +754,7 @@ local function finishJob(s: Session)
 			UnderPar = underPar,
 			Stamp = label,
 			Variant = s.Variant,
+			Loop = loopId,
 		})
 		ChallengeService.Track(member, "Box", { Stars = stars, Seconds = seconds, Chaos = s.Chaos })
 		notify(member, "BoxDone", {})
@@ -705,6 +780,7 @@ local function finishJob(s: Session)
 end
 
 local function cancel(s: Session)
+	logBox(s, "Cancelled")
 	destroyBox(s)
 	local members = membersOf(s)
 	endSession(s)
@@ -825,6 +901,9 @@ local function onPet(s: Session, player: Player, spotIndex: unknown)
 		return -- still recharging
 	end
 	-- Calm! Anger back to 0, and the heart hops somewhere new and recharges
+	s.Hearts += 1
+	s.FirstTouch = s.FirstTouch or Workspace:GetServerTimeNow()
+	Analytics.Onboarding(player, "FirstHeart")
 	state.Anger = 0
 	state.HeartReady[spotIndex] = now + state.HeartCooldown
 	local others = {}
@@ -851,6 +930,7 @@ local function onAngryTouch(s: Session, player: Player, spotIndex: unknown)
 		return
 	end
 	state.LastAngryTouch = now
+	s.FirstTouch = s.FirstTouch or Workspace:GetServerTimeNow()
 	state.Anger += Boxing.Box.AngrySpotAnger
 	s.AngryTouches += 1
 	notifyAll(s, "AngryTouch", {})
@@ -869,6 +949,8 @@ local function onTape(s: Session, player: Player, seamIndex: unknown)
 	end
 	state.LastSeam = now
 	state.Taped[seamIndex] = true
+	s.FirstTouch = s.FirstTouch or Workspace:GetServerTimeNow()
+	Analytics.Onboarding(player, "FirstTape")
 	state.Anger += Boxing.Box.TapeAnger * state.TapeAngerMult * state.AngerMult
 
 	local allTaped = true
@@ -921,6 +1003,7 @@ local function updateBox(s: Session, now: number, dt: number)
 		if #taped > 0 then
 			local seam = taped[math.random(1, #taped)]
 			state.Taped[seam] = false
+			s.Peels += 1
 			notifyAll(s, "Peel", { Seam = seam })
 		end
 	end
@@ -977,6 +1060,15 @@ local function onShove(shover: Player)
 	direction = if direction.Magnitude > 0.01 then direction.Unit else shoverRoot.CFrame.LookVector
 	notify(target, "Knockback", { Direction = direction, Strength = cfg.ShoveStrength })
 	say(target, "CHAOS", `{shover.DisplayName} shoved you!`)
+	Analytics.Custom(
+		target,
+		"Chaos",
+		1,
+		"Hit",
+		if jobOf(target) and (jobOf(target) :: Session).Box then "Shove_MidBox" else "Shove",
+		Analytics.Segment(target)
+	)
+	Analytics.Custom(shover, "Chaos", 1, "Attack", "Shove", Analytics.Segment(shover))
 
 	local job = jobOf(target)
 	if job and job.Box then
@@ -1108,6 +1200,9 @@ newSession = function(
 		Bonus = 0,
 		Variant = if variant then variant.Id else nil,
 		Difficulty = math.clamp(difficulty or 0, 0, 1),
+		LoopId = Analytics.NewLoopId(),
+		Hearts = 0,
+		Peels = 0,
 		BoxId = profile.EquippedBox,
 		StampId = stampId,
 		GrabHoldMult = 1 - Economy.ToolBonus(player, "Gloves"),
@@ -1117,6 +1212,15 @@ newSession = function(
 	}
 	sessions[player] = s
 	Analytics.Onboarding(player, "PickedAnimal")
+	Analytics.Loop(player, "CoreLoop", s.LoopId, 1, "Grab")
+	Analytics.Did(player, "Grabbed")
+	Analytics.Milestone(player, "FirstGrab")
+	if s.Variant then
+		Analytics.Custom(player, "VariantFound", 1, s.Variant, Analytics.RarityOf(animalId), Analytics.Segment(player))
+	end
+	if stampId then
+		Analytics.Custom(player, "StampUsed", 1, stampId, Analytics.Segment(player))
+	end
 	return s
 end
 
@@ -1177,6 +1281,7 @@ local function checkFalls(now: number)
 				and p.Z <= arena.Max.Z + 25
 			then
 				lastOnRoof[player] = nil
+				Analytics.Custom(player, "Fell", 1, "Roof", Analytics.Segment(player))
 				Travel.ToArena(player, arena.Id)
 				if jobOf(player) then
 					stun(player, Config.Arenas.FallBackStun)

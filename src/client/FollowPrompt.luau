@@ -15,6 +15,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
+local Track = require(script.Parent.Track)
 local Ui = require(script.Parent.Ui)
 
 local Follow = Config.Social.Follow
@@ -49,6 +50,7 @@ local function show(shopAction: RemoteEvent)
 	end
 	shown = true
 	shopAction:FireServer("FollowAsked")
+	Track.Send("FollowShown")
 
 	local canNotify = false
 	local ok, result = pcall(ExperienceNotificationService.CanPromptOptInAsync, ExperienceNotificationService)
@@ -118,6 +120,7 @@ local function show(shopAction: RemoteEvent)
 	})
 	buttons += 1
 	favorite.Activated:Connect(function()
+		Track.Send("FollowClicked", "Favorite")
 		pcall(AvatarEditorService.PromptSetFavorite, AvatarEditorService, game.PlaceId, Enum.AvatarItemType.Asset, true)
 		used(favorite)
 	end)
@@ -131,11 +134,13 @@ local function show(shopAction: RemoteEvent)
 		})
 		buttons += 1
 		updates.Activated:Connect(function()
+			Track.Send("FollowClicked", "Updates")
 			pcall(ExperienceNotificationService.PromptOptIn, ExperienceNotificationService)
 			used(updates)
 		end)
 	end
 	close.Activated:Connect(function()
+		Track.Send("FollowClicked", "Close")
 		dismiss()
 	end)
 
@@ -157,6 +162,12 @@ function FollowPrompt.Start()
 	local notify = remotes:WaitForChild("Notify") :: RemoteEvent
 
 	task.delay(Follow.AfterMinutes * 60, show, shopAction)
+	-- Analytics: whether the Favorite popup ended in a favorite
+	pcall(function()
+		AvatarEditorService.PromptSetFavoriteCompleted:Connect(function(result: Enum.AvatarPromptResult)
+			Track.Send("FavoriteResult", result.Name)
+		end)
+	end)
 	notify.OnClientEvent:Connect(function(kind: string)
 		if kind == "BossWin" then
 			task.delay(15, show, shopAction) -- (after the victory screen)

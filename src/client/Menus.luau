@@ -8,6 +8,8 @@ local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
 local UserInputService = game:GetService("UserInputService")
 
+local Track = require(script.Parent.Track)
+
 local Menus = {}
 
 type Menu = { Gui: ScreenGui, OnOpen: (() -> ())? }
@@ -46,6 +48,10 @@ end
 function Menus.Register(name: string, gui: ScreenGui, onOpen: (() -> ())?)
 	menus[name] = { Gui = gui, OnOpen = onOpen }
 	gui:GetPropertyChangedSignal("Enabled"):Connect(refreshGamepad)
+	-- Analytics: which windows get opened, and for how long
+	gui:GetPropertyChangedSignal("Enabled"):Connect(function()
+		Track.Send(if gui.Enabled then "MenuOpen" else "MenuClose", name)
+	end)
 end
 
 -- Set by SideButtons: runs whenever a window opens (folds the pop-out MENU away)

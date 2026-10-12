@@ -11,6 +11,7 @@ local SocialService = game:GetService("SocialService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
+local Track = require(script.Parent.Track)
 local Ui = require(script.Parent.Ui)
 
 local player = Players.LocalPlayer
@@ -118,7 +119,14 @@ function Settings.Start()
 		options.PromptMessage =
 			`Invite friends: they get {Config.Social.Invites.NewPlayerGift} coins, and you get a big coin bonus for each one!`
 		options.LaunchData = tostring(player.UserId)
+		Track.Send("InviteOpened")
 		pcall(SocialService.PromptGameInvite, SocialService, player, options)
+	end)
+	-- Analytics: how many friends they actually invited
+	pcall(function()
+		SocialService.GameInvitePromptClosed:Connect(function(_sender: Player, recipients: { number })
+			Track.Send("InviteSent", #recipients)
+		end)
 	end)
 	task.spawn(function()
 		local ok, allowed = pcall(SocialService.CanSendGameInviteAsync, SocialService, player)

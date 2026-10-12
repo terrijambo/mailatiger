@@ -37,6 +37,7 @@ export type Parcel = {
 	Stamp: string?, -- stamp or CHAOS label, shown on the receipt
 	Variant: string?, -- "Shiny" or "Golden" (Config/Variants.luau)
 	Machines: { [string]: boolean }?, -- the Post Office machines that have stamped it (each multiplies its XP)
+	Loop: string?, -- analytics id for this parcel's trip through the funnels (Analytics.Loop)
 }
 
 export type ChallengeProgress = { Id: string, Progress: number, Done: boolean, Claimed: boolean? } -- (Claimed as in Order)
@@ -106,6 +107,15 @@ export type Profile = {
 	InvitePaid: boolean, -- that friend has been paid for you
 	InviteRewards: number, -- friends you've been paid for
 	FollowAsked: number, -- times the Favorite / Get updates card was shown
+	-- Play history, for analytics (Analytics.luau). Added 2026-10-12: older saves start counting on their next join.
+	FirstJoin: number, -- os.time() of the first visit (0 = not recorded yet)
+	FirstJoinGuessed: boolean, -- already playing before this was tracked, so FirstJoin is just that next join
+	LastJoin: number, -- os.time() of the latest visit
+	LastDay: number, -- the day (days since 1970, UTC) of the latest visit
+	DaysPlayed: number, -- different days played
+	Sessions: number, -- visits
+	PlaySeconds: number, -- total time played
+	Milestones: { [string]: number }, -- first times (Analytics.Milestone) -> minutes of playtime it took
 }
 
 local DataService = {}
@@ -115,6 +125,20 @@ local loadedEvent = Instance.new("BindableEvent")
 -- CAREFUL: the profile passed along is a COPY (Roblox events copy tables). To change the player's save,
 -- use DataService.Get(player) inside the handler.
 DataService.Loaded = loadedEvent.Event
+
+-- Set by Analytics: runs just before a leaving player's last save (and on server shutdown), so the
+-- session's playtime goes into that save
+DataService.OnLeaving = nil :: ((Player, Profile) -> ...any)?
+
+local function beforeLastSave(player: Player, profile: Profile?)
+	local hook = DataService.OnLeaving
+	if hook and profile then
+		local ok, err = pcall(hook, player, profile)
+		if not ok then
+			warn(`[DataService] OnLeaving: {err}`)
+		end
+	end
+end
 
 local profiles: { [Player]: Profile } = {}
 local temporary: { [Player]: boolean } = {}
@@ -171,6 +195,14 @@ local function newProfile(): Profile
 		InvitePaid = false,
 		InviteRewards = 0,
 		FollowAsked = 0,
+		FirstJoin = 0,
+		FirstJoinGuessed = false,
+		LastJoin = 0,
+		LastDay = 0,
+		DaysPlayed = 0,
+		Sessions = 0,
+		PlaySeconds = 0,
+		Milestones = {},
 	}
 end
 
@@ -380,6 +412,7 @@ function DataService.Start()
 	end
 
 	Players.PlayerRemoving:Connect(function(player)
+		beforeLastSave(player, profiles[player])
 		save(player, true)
 		profiles[player] = nil
 		temporary[player] = nil
@@ -397,8 +430,9 @@ function DataService.Start()
 	-- When the server shuts down, save everyone before it closes (Roblox allows about 30 seconds)
 	game:BindToClose(function()
 		local pending = 0
-		for player in profiles do
+		for player, profile in profiles do
 			pending += 1
+			beforeLastSave(player, profile)
 			task.spawn(function()
 				save(player, true)
 				pending -= 1

@@ -12,6 +12,7 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
+local Analytics = require(script.Parent.Analytics)
 local Remotes = require(script.Parent.Remotes)
 
 local Dive = Config.Dive
@@ -66,8 +67,13 @@ function DiveService.Hit(player: Player, from: Vector3, kind: string, attacker: 
 	end
 	if DiveService.IsDodging(player) then
 		Remotes.Notify:FireClient(player, "Dodged", {})
+		Analytics.Custom(player, "WildAttack", 1, "Dodged", kind, Analytics.Segment(player))
+		Analytics.Milestone(player, "FirstDodge")
 		return false
 	end
+	-- Hit by a wild animal's attack (a big source of "this game is annoying" if it happens too often)
+	Analytics.Custom(player, "WildAttack", 1, "Hit", kind, Analytics.Segment(player))
+	Analytics.Did(player, "GotHit")
 	local attack = Dive.Attack
 	local away = Vector3.new(root.Position.X - from.X, 0, root.Position.Z - from.Z)
 	away = if away.Magnitude > 0.1 then away.Unit else Vector3.xAxis

@@ -34,15 +34,19 @@ function MachineService.Buy(player: Player, machineId: string): boolean
 	end
 	if profile.Level < machine.Level then
 		say(player, `The {machine.DisplayName} needs a Level {machine.Level} chute. Keep mailing!`)
+		Analytics.Blocked(player, "MachineLevel", machineId)
 		return false
 	end
 	local price = Machines.Price(machine)
 	if not Economy.TrySpend(player, price, `Machine_{machineId}`) then
 		say(player, `The {machine.DisplayName} costs {Format.Short(price)} coins.`)
+		Analytics.Blocked(player, "MachineCoins", machineId)
 		return false
 	end
 	profile.Machines[machineId] = true
-	Analytics.Custom(player, `Machine_{machineId}`, profile.Level)
+	Analytics.Custom(player, "Bought", profile.Level, "Machine", machineId, Analytics.Segment(player))
+	Analytics.Did(player, "BoughtMachine")
+	Analytics.Milestone(player, "FirstMachine")
 	Remotes.Notify:FireClient(player, "MachineBought", {
 		Id = machineId,
 	})
@@ -70,12 +74,14 @@ function MachineService.Use(player: Player, machineId: string)
 		local left = batch.ReadyAt - os.time()
 		if left > 0 then
 			say(player, `The {machine.DisplayName} is still working on your parcels: {left}s to go.`)
+			Analytics.Blocked(player, "MachineBusy", machineId)
 			return
 		end
 		local collected = 0
 		local kept: { DataService.Parcel } = {}
 		for _, parcel in batch.Parcels do
 			if MailService.HasRoom(player) then
+				Analytics.Loop(player, "StampLoop", parcel.Loop, 2, "Collected")
 				parcel.Machines = parcel.Machines or {}
 				(parcel.Machines :: { [string]: boolean })[machineId] = true
 				table.insert(profile.Parcels, parcel)
@@ -92,6 +98,18 @@ function MachineService.Use(player: Player, machineId: string)
 			)
 		else
 			profile.Processing[machineId] = nil
+		end
+		Analytics.Custom(
+			player,
+			"MachineCollect",
+			collected,
+			machineId,
+			if #kept > 0 then "BagFull" else "All",
+			Analytics.Segment(player)
+		)
+		Analytics.Did(player, "Collected")
+		if #kept > 0 then
+			Analytics.Blocked(player, "CollectBagFull", machineId)
 		end
 		Remotes.Notify:FireClient(player, "MachineCollected", {
 			Id = machineId,
@@ -117,6 +135,11 @@ function MachineService.Use(player: Player, machineId: string)
 		end
 	end
 	if #dropped == 0 then
+		Analytics.Blocked(
+			player,
+			if #profile.Parcels == 0 then "MachineBagEmpty" else "MachineAlreadyStamped",
+			machineId
+		)
 		say(
 			player,
 			if #profile.Parcels == 0
@@ -127,6 +150,12 @@ function MachineService.Use(player: Player, machineId: string)
 	end
 	profile.Parcels = stay
 	profile.Processing[machineId] = { Parcels = dropped, ReadyAt = os.time() + machine.Seconds }
+	for _, parcel in dropped do
+		Analytics.Loop(player, "StampLoop", parcel.Loop, 1, "DroppedIn")
+	end
+	Analytics.Custom(player, "MachineDrop", #dropped, machineId, `Left{#stay}`, Analytics.Segment(player))
+	Analytics.Did(player, "DroppedIn")
+	Analytics.Milestone(player, "FirstStamp")
 	Remotes.Notify:FireClient(player, "MachineStarted", { Id = machineId, Count = #dropped, Seconds = machine.Seconds })
 	MailService.RefreshCarried(player)
 	Economy.Sync(player)

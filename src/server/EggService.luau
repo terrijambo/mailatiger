@@ -63,20 +63,32 @@ function EggService.Hatch(player: Player, stand: BasePart)
 	end
 	if not ProgressionService.ZoneOpen(player, zoneId) then
 		say(player, "This island isn't open for you yet.")
+		Analytics.Blocked(player, "EggLocked", zoneId)
 		return
 	end
 	local animalId = Eggs.Roll(zoneId, profile.Level, math.random())
 	if not animalId then
 		say(player, "Everything in this egg is too strong for you right now. Level up first!")
+		Analytics.Blocked(player, "EggTooStrong", zoneId)
 		return
 	end
 	local price = Eggs.Price(zoneId)
 	if not Economy.TrySpend(player, price, `Egg_{zoneId}`) then
 		say(player, `An egg here costs {Format.Short(price)} coins.`)
+		Analytics.Blocked(player, "EggCoins", zoneId)
 		return
 	end
 	hatching[player] = true
-	Analytics.Custom(player, `Egg_{zoneId}`, 1)
+	Analytics.Custom(
+		player,
+		"Bought",
+		1,
+		"Egg",
+		`{zoneId}_{Config.Wild.RarityOf[animalId] or "Common"}`,
+		Analytics.Segment(player)
+	)
+	Analytics.Did(player, "Egg")
+	Analytics.Milestone(player, "FirstEgg")
 	-- The slot-machine roller on the player's screen (client/EggRoller.luau) spins through this egg's odds
 	-- and lands on the animal already rolled here; it hatches as the reel stops
 	local odds = {}

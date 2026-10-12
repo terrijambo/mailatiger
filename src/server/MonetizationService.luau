@@ -78,7 +78,8 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 	elseif diamonds then
 		-- (retired diamond packs: an old purchase still arriving gives Rebirth Points instead)
 		profile.RebirthPoints += diamonds
-		Analytics.Custom(player, `RebirthPoints_{key}`, diamonds)
+		Analytics.EarnPoints(player, diamonds, profile.RebirthPoints, key)
+		Analytics.Custom(player, "RebirthPointsEarned", diamonds, key, Analytics.Segment(player))
 		say(player, `{diamonds} Rebirth Points! Spend them at the Rebirth Market on Rebirth Beach.`)
 		return true
 	elseif key == "Invincible" then

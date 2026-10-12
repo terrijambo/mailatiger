@@ -11,6 +11,7 @@
 --   RedeemCode     client -> server   a reward code typed into Settings (server checks it)
 --   Troll          client -> server   use a troll item from the hotbar (server checks ownership and cooldown)
 --   Dive           client -> server   the player dived (Q / Y / DIVE button): dodge window + dive-grab (DiveService)
+--   Track          client -> server   analytics from the player's screen: menus, tutorial steps, device (Analytics)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -36,6 +37,7 @@ local setting = remote("Setting")
 local redeemCode = remote("RedeemCode")
 local troll = remote("Troll")
 local dive = remote("Dive")
+local track = remote("Track")
 
 folder.Parent = ReplicatedStorage
 
@@ -77,4 +79,5 @@ return {
 	RedeemCode = redeemCode,
 	Troll = troll,
 	Dive = dive,
+	Track = track,
 }

@@ -214,7 +214,8 @@ local function boom(player: Player, entry: Entry, level: number, playerLevel: nu
 	})
 	Remotes.Notify:FireClient(player, "Breakout", { Animal = name })
 	say(player, `That {name} is Level {level}. You're Level {playerLevel}. RETURN TO SENDER!`)
-	Analytics.Custom(player, "WildBoom")
+	Analytics.Custom(player, "WildBoom", level - playerLevel, entry.AnimalId, Analytics.LevelBand(playerLevel))
+	Analytics.Blocked(player, "TooStrong", entry.AnimalId)
 	task.delay(Wild.Boom.Seconds, function()
 		if player.Parent then
 			Travel.ToTown(player)
@@ -236,6 +237,7 @@ local function onGrab(entry: Entry, player: Player)
 	BoxingService.DropJob(player) -- (an old animal still running loose doesn't block a new grab)
 	if not MailService.HasRoom(player) then
 		say(player, Config.Gruff.BagFull)
+		Analytics.Blocked(player, "GrabBagFull", tostring(MailService.Count(player)))
 		return
 	end
 	local level = Wild.LevelOf[entry.AnimalId] or 1
@@ -248,7 +250,14 @@ local function onGrab(entry: Entry, player: Player)
 	local at = entry.Ball.Position
 	remove(entry)
 	if BoxingService.StartWild(player, entry.AnimalId, entry.ArenaId, entry.Variant, at, difficulty) then
-		Analytics.Custom(player, "WildGrab")
+		Analytics.Custom(
+			player,
+			"WildGrab",
+			1,
+			Analytics.RarityOf(entry.AnimalId),
+			if difficulty > 0 then "Hard" else "Normal",
+			if entry.Variant then entry.Variant else Analytics.Segment(player)
+		)
 	end
 end
 
@@ -572,7 +581,7 @@ function WildService.StartLure(player: Player, lureId: string)
 		player,
 		`{lure.DisplayName} on! Rarer animals will turn up right next to you in any zone for {lure.Seconds // 60} minutes.`
 	)
-	Analytics.Custom(player, `Lure_{lureId}`)
+	Analytics.Custom(player, "Bought", 1, "Lure", lureId, Analytics.Segment(player))
 end
 
 function WildService.Start(builtMap: MapBuilder.Map)

@@ -65,10 +65,6 @@ local function setupPlayer(player: Player)
 
 	-- Studio testing only: free coins when nothing is being saved (see Config.Dev.StudioTestCoins)
 	local profile = DataService.Get(player)
-	-- Brand-new players go into the onboarding funnel (see Analytics.luau)
-	if profile and profile.Mailed == 0 and not profile.TutorialDone then
-		Analytics.StartOnboarding(player)
-	end
 	if profile and RunService:IsStudio() and player:GetAttribute("TemporaryData") == true then
 		profile.Coins = math.max(profile.Coins, Config.Dev.StudioTestCoins)
 	end
@@ -179,7 +175,8 @@ function Economy.AddRebirthPoints(player: Player, amount: number, source: string
 	local profile = DataService.Get(player)
 	if profile and amount > 0 then
 		profile.RebirthPoints += amount
-		Analytics.Custom(player, `RebirthPoints_{source}`, amount)
+		Analytics.EarnPoints(player, amount, profile.RebirthPoints, source)
+		Analytics.Custom(player, "RebirthPointsEarned", amount, source, Analytics.Segment(player))
 		Economy.Sync(player)
 	end
 end
@@ -202,7 +199,9 @@ function Economy.BuyUpgrade(player: Player, upgradeId: string): (boolean, string
 	end
 	profile.RebirthPoints -= cost
 	profile.Upgrades[upgradeId] = level + 1
-	Analytics.Custom(player, `Upgrade_{upgradeId}`, level + 1)
+	Analytics.SpendPoints(player, cost, profile.RebirthPoints, `Upgrade_{upgradeId}`)
+	Analytics.Custom(player, "Bought", level + 1, "Upgrade", upgradeId, Analytics.Segment(player))
+	Analytics.Milestone(player, "FirstUpgrade")
 	Economy.Sync(player)
 	return true, `{upgrade.Emoji} {upgrade.DisplayName} Lv {level + 1}: {Config.Upgrades.Text(upgrade, level + 1)}!`
 end
@@ -265,7 +264,6 @@ function Economy.Start()
 	for _, player in Players:GetPlayers() do
 		watch(player)
 	end
-	Players.PlayerRemoving:Connect(Analytics.Forget)
 end
 
 return Economy

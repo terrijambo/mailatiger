@@ -199,7 +199,30 @@ function MailService.MailAll(player: Player, fromChute: boolean)
 	end
 	if #profile.Parcels == 0 then
 		notify(player, "Message", { Speaker = "Mail Chute", Text = "Your bag is empty. Go box an animal!" })
+		Analytics.Blocked(player, "MailEmptyBag")
 		return
+	end
+	-- Analytics: every parcel finishes its funnel runs, and the trip itself is logged
+	local stamped = 0
+	for _, parcel in profile.Parcels do
+		Analytics.Loop(player, "CoreLoop", parcel.Loop, 3, "Mailed")
+		if parcel.Machines and next(parcel.Machines) then
+			stamped += 1
+			Analytics.Loop(player, "StampLoop", parcel.Loop, 3, "MailedStamped")
+		end
+	end
+	Analytics.Custom(
+		player,
+		"MailTrip",
+		#profile.Parcels,
+		if fromChute then "Chute" else "Rocket",
+		`Stamped{stamped}of{#profile.Parcels}`,
+		Analytics.Segment(player)
+	)
+	Analytics.Did(player, "Mailed")
+	Analytics.Milestone(player, "FirstMail")
+	if stamped > 0 then
+		Analytics.Milestone(player, "FirstStampedMail")
 	end
 
 	local total, orderBonus, ordersReady, best = 0, 0, 0, 1

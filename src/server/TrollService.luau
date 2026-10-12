@@ -105,6 +105,7 @@ EFFECTS.BananaPeel = function(player, root, troll)
 			peel:Destroy()
 			BoxingService.Stun(victim, troll.Power)
 			Remotes.Notify:FireClient(victim, "Slip", { Seconds = troll.Power })
+			Analytics.Custom(victim, "Chaos", 1, "Hit", "BananaPeel", Analytics.Segment(victim))
 			say(victim, "CHAOS", `🍌 You slipped on {player.DisplayName}'s banana peel!`)
 		end
 	end)
@@ -129,6 +130,7 @@ EFFECTS.StinkBomb = function(player, root, troll)
 				slow(victim, troll.Power, 0.7)
 				if not hit[victim] then
 					hit[victim] = true
+					Analytics.Custom(victim, "Chaos", 1, "Hit", troll.Id, Analytics.Segment(victim))
 					Remotes.Notify:FireClient(victim, "Spray", { Seconds = 3 })
 				end
 			end
@@ -164,6 +166,7 @@ EFFECTS.TapeBomb = function(player, root, troll)
 	local target = BoxingService.AngerNearest(root.Position, troll.Radius, player, troll.Power)
 	if target then
 		say(target, "CHAOS", `💣 {player.DisplayName} tape-bombed your box! Your animal is furious!`)
+		Analytics.Custom(target, "Chaos", 1, "Hit", "TapeBomb_MidBox", Analytics.Segment(target))
 		local targetRoot = rootOf(target)
 		if targetRoot then
 			-- A little tape-wrapped bomb flies over (just for show)
@@ -197,6 +200,7 @@ EFFECTS.AirHorn = function(player, root, troll)
 			local direction = Vector3.new(flat.X, 0, flat.Z)
 			direction = if direction.Magnitude > 0.01 then direction.Unit else root.CFrame.LookVector
 			Remotes.Notify:FireClient(victim, "Knockback", { Direction = direction, Strength = troll.Power })
+			Analytics.Custom(victim, "Chaos", 1, "Hit", "AirHorn", Analytics.Segment(victim))
 			say(victim, "CHAOS", `📯 HOOOONK! {player.DisplayName} air-horned you!`)
 		end
 	end
@@ -228,7 +232,7 @@ local function use(player: Player, trollId: unknown)
 	Remotes.Notify:FireClient(player, "TrollUsed", { Id = trollId, Cooldown = troll.Cooldown })
 	effect(player, root, troll)
 	Sfx.Play(`Troll_{trollId}`, root.Position)
-	Analytics.Custom(player, `Troll_{trollId}`)
+	Analytics.Custom(player, "Chaos", 1, "Attack", trollId, Analytics.Segment(player))
 	ChallengeService.Track(player, "Troll", {})
 end
 

@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Analytics = require(script.Analytics)
 local BoxingService = require(script.BoxingService)
 local ChallengeService = require(script.ChallengeService)
 local CodesService = require(script.CodesService)
@@ -34,6 +35,7 @@ local map = MapBuilder.Build()
 Travel.Start(map)
 
 -- Everything that listens for "a player's save finished loading" connects first...
+Analytics.Start()
 Economy.Start()
 ShopService.Start(map)
 DiveService.Start()

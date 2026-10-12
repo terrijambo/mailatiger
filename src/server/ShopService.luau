@@ -133,6 +133,9 @@ local function claim(player: Player, profile: DataService.Profile, id: string)
 	if coins > 0 then
 		Economy.AddCoins(player, coins, "Order")
 	end
+	Analytics.Custom(player, "Claimed", 1, string.match(id, "^%a+") or "?", Analytics.Segment(player))
+	Analytics.Did(player, "Claimed")
+	Analytics.Milestone(player, "FirstClaim")
 	-- Every order done and claimed: new ones right away
 	if Orders.Refresh(profile) then
 		Remotes.Notify:FireClient(
@@ -169,6 +172,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 	-- only on Rebirth Beach. Coins and everything else are still checked below.
 	if MARKET_ACTIONS[action] and not onRebirthBeach(player) then
 		reply(player, "That's sold at the Rebirth Market, on Rebirth Beach (cross the Backyard to get there).")
+		Analytics.Blocked(player, "MarketOffBeach", action)
 		return
 	end
 	if action == "BuyTroll" then
@@ -184,6 +188,8 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		end
 		if ok then
 			Remotes.Notify:FireClient(player, "UpgradeBought", { Id = itemId })
+		elseif text ~= "" then
+			Analytics.Blocked(player, "UpgradeNotBought", itemId)
 		end
 		return
 	elseif action == "StudioBuy" then
@@ -196,6 +202,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			WildService.StartLure(player, "Lure")
 		else
 			reply(player, `An Animal Lure costs {Format.Short(cost)} coins. Keep mailing!`)
+			Analytics.Blocked(player, "LureCoins")
 		end
 		return
 	elseif action == "Promo" then
@@ -252,8 +259,11 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		end
 		if not Economy.TrySpend(player, box.Price, `Box_{itemId}`) then
 			reply(player, `The {box.DisplayName} costs {Format.Short(box.Price)} coins.`)
+			Analytics.Blocked(player, "BoxCoins", itemId)
 			return
 		end
+		Analytics.Custom(player, "Bought", 1, "Box", itemId, Analytics.Segment(player))
+		Analytics.Milestone(player, "FirstBoxUpgrade")
 		profile.Boxes[itemId] = true
 		profile.EquippedBox = itemId
 		reply(player, `Bought the {box.DisplayName}! It's equipped.`)
@@ -269,6 +279,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		local level = profile.Tools[itemId] or 0
 		if level >= tool.MaxLevel then
 			reply(player, `Your {tool.DisplayName} are maxed out.`)
+			Analytics.Blocked(player, "ToolMaxed", itemId)
 			return
 		end
 		-- Tools are bought with Rebirth Points, and kept forever
@@ -278,10 +289,13 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 				player,
 				`Level {level + 1} {tool.DisplayName} costs {points} Rebirth Point{if points == 1 then "" else "s"}. You have {profile.RebirthPoints}. Rebirth to earn more!`
 			)
+			Analytics.Blocked(player, "ToolPoints", itemId)
 			return
 		end
 		profile.RebirthPoints -= points
-		Analytics.Custom(player, `Tool_{itemId}`, level + 1)
+		Analytics.SpendPoints(player, points, profile.RebirthPoints, `Tool_{itemId}`)
+		Analytics.Custom(player, "Bought", level + 1, "Tool", itemId, Analytics.Segment(player))
+		Analytics.Milestone(player, "FirstTool")
 		profile.Tools[itemId] = level + 1
 		reply(player, `{tool.DisplayName} upgraded to level {level + 1}! (Yours forever.)`)
 	elseif action == "BuyStamp" then
@@ -291,8 +305,10 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		end
 		if not Economy.TrySpend(player, stamp.Price, `Stamp_{itemId}`) then
 			reply(player, `A {stamp.DisplayName} stamp costs {Format.Short(stamp.Price)} coins.`)
+			Analytics.Blocked(player, "StampCoins", itemId)
 			return
 		end
+		Analytics.Custom(player, "Bought", 1, "Stamp", itemId, Analytics.Segment(player))
 		profile.Stamps[itemId] = (profile.Stamps[itemId] or 0) + 1
 		profile.SelectedStamp = profile.SelectedStamp or itemId
 		reply(player, `Bought a {stamp.DisplayName} stamp.`)
@@ -310,17 +326,29 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 				player,
 				`Rebirth #{profile.Rebirths + 1} needs a Level {needLevel} chute. You're Level {profile.Level}.`
 			)
+			Analytics.Blocked(player, "RebirthLevel", `R{profile.Rebirths + 1}`)
 			return
 		end
 		local cost = Economy.RebirthCost(profile.Rebirths)
 		if profile.Coins < cost then
 			reply(player, `Rebirth costs {Format.Short(cost)} coins.`)
+			Analytics.Blocked(player, "RebirthCoins", `R{profile.Rebirths + 1}`)
 			return
 		end
 		-- Start over (chute level, machines, coins, animals, boxes, stamps), but keep your tools, collection
 		-- and quests, and earn a permanent coins-per-minute multiplier plus Rebirth Points
 		Analytics.Spend(player, profile.Coins, 0, `Rebirth_{profile.Rebirths + 1}`)
-		Analytics.Custom(player, "Rebirth", profile.Rebirths + 1)
+		-- Value: which rebirth. Fields: days since first join, total playtime, coins left over
+		Analytics.Custom(
+			player,
+			"Rebirth",
+			profile.Rebirths + 1,
+			Analytics.DayBand(player),
+			`{math.floor(Analytics.PlayMinutes(player) / 30) * 30}m+`,
+			`R{profile.Rebirths + 1}`
+		)
+		Analytics.Milestone(player, `Rebirth{profile.Rebirths + 1}`)
+		Analytics.Progress(player, "Rebirth", profile.Rebirths + 1)
 		Badges.Award(player, "Reborn")
 		profile.Coins = 0
 		profile.Owned = { Hamster = true }
@@ -341,6 +369,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		profile.Rebirths += 1
 		local points = Config.Machines.RebirthPoints(profile.Rebirths)
 		profile.RebirthPoints += points
+		Analytics.EarnPoints(player, points, profile.RebirthPoints, "Rebirth")
 		Orders.Refresh(profile, true)
 		local mult = rebirth.ChuteMult ^ profile.Rebirths
 		reply(

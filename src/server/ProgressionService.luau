@@ -87,7 +87,23 @@ function ProgressionService.AddXP(player: Player, amount: number, reason: string
 		leveled = true
 		local coins = Economy.BestBaseValue(player) * Levels.LevelUpJobs * profile.Level
 		profile.Coins += coins
+		Analytics.Earn(player, coins, profile.Coins, "LevelUp")
 		Analytics.Custom(player, "LevelUp", profile.Level)
+		-- Value: total minutes played to get here. Fields: the level, rebirths so far, days since first join
+		Analytics.Custom(
+			player,
+			"LevelReached",
+			Analytics.PlayMinutes(player),
+			`L{profile.Level}`,
+			`R{math.min(profile.Rebirths, 5)}`,
+			Analytics.DayBand(player)
+		)
+		Analytics.Progress(player, "ChuteLevel", profile.Level)
+		for zoneId, zoneLevel in Levels.ZoneLevels do
+			if zoneLevel == profile.Level and zoneLevel > 1 then
+				Analytics.Milestone(player, `Unlock_{zoneId}`)
+			end
+		end
 		notify(player, "LevelUp", {
 			Level = profile.Level,
 			Coins = coins,
@@ -139,9 +155,20 @@ checkQuest = function(player: Player)
 		end
 		local coins = Economy.BestBaseValue(player) * quest.Jobs
 		profile.Coins += coins
+		Analytics.Earn(player, coins, profile.Coins, "Quest")
 		profile.Quest += 1
 		profile.QuestProgress = 0
 		Analytics.Custom(player, "QuestDone", profile.Quest - 1)
+		-- Value: total minutes played to finish it (a quest that takes much longer than the one before = stuck)
+		Analytics.Custom(
+			player,
+			"QuestReached",
+			Analytics.PlayMinutes(player),
+			`Q{profile.Quest - 1}`,
+			Analytics.LevelBand(profile.Level),
+			Analytics.DayBand(player)
+		)
+		Analytics.Did(player, "QuestDone")
 		local nextQuest = Quests[profile.Quest]
 		notify(player, "QuestDone", {
 			Text = quest.Text,

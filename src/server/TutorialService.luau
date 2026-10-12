@@ -24,6 +24,16 @@ function TutorialService.Start()
 	Remotes.Listen(Remotes.Setting, 5, function(player: Player, name: unknown, on: unknown)
 		local profile = DataService.Get(player)
 		if profile and typeof(name) == "string" and SETTINGS[name] and typeof(on) == "boolean" then
+			if (profile.Settings[name] ~= false) ~= on then
+				Analytics.Custom(
+					player,
+					"SettingChanged",
+					1,
+					name,
+					if on then "On" else "Off",
+					Analytics.Segment(player)
+				)
+			end
 			profile.Settings[name] = on
 			DataService.Sync(player)
 		end
@@ -37,9 +47,17 @@ function TutorialService.Start()
 		profile.TutorialDone = true
 		if action == "Done" then
 			Analytics.Onboarding(player, "TutorialDone")
+			Analytics.Milestone(player, "TutorialDone")
 			ProgressionService.AddXP(player, Config.Levels.TutorialXP, "Tutorial")
 		else
-			Analytics.Custom(player, "TutorialSkipped")
+			-- Value: minutes played. Fields: the walkthrough step they skipped at, and their device
+			Analytics.Custom(
+				player,
+				"TutorialSkipped",
+				Analytics.PlayMinutes(player),
+				Analytics.TutorialStepOf(player),
+				Analytics.DeviceOf(player)
+			)
 		end
 		-- Checked here, not trusted from the client: the bonus needs a real mailed animal
 		if action == "Done" and profile.Mailed > 0 then

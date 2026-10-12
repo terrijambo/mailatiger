@@ -98,7 +98,14 @@ end
 local function finished(player: Player, entry: DataService.ChallengeProgress, challenge: Challenge, weekly: boolean)
 	entry.Done = true
 	entry.Claimed = false
-	Analytics.Custom(player, if weekly then "WeeklyChallengeDone" else "DailyChallengeDone")
+	Analytics.Custom(
+		player,
+		if weekly then "WeeklyChallengeDone" else "DailyChallengeDone",
+		1,
+		challenge.Id,
+		Analytics.Segment(player)
+	)
+	Analytics.Milestone(player, "FirstChallenge")
 	Remotes.Notify:FireClient(player, "ChallengeDone", {
 		Text = Challenges.Text(challenge),
 		Weekly = weekly,
@@ -134,6 +141,7 @@ local function checkAllDailies(player: Player, profile: Profile)
 	end
 	state.Streak = if state.LastAllDay == state.Day - 1 then state.Streak + 1 else 1
 	state.LastAllDay = state.Day
+	Analytics.Custom(player, "AllDailiesDone", state.Streak, Analytics.Segment(player))
 	local minutes = Challenges.AllDailiesMinutes
 		+ Challenges.StreakMinutes * math.min(state.Streak, Challenges.MaxStreak)
 	local coins = Economy.AddPrize(player, minutes, "AllDailies")

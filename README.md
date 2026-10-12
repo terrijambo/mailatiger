@@ -6,6 +6,7 @@ machines, and mail them. Postmaster Gruff is watching.
 - Where things stand and what's next: [HANDOFF.md](HANDOFF.md)
 - Every design decision, with the reasons: [ROADMAP.md](ROADMAP.md) (a history log: the newest dated entries win)
 - New to Roblox scripting? Start with [docs/LEARN.md](docs/LEARN.md)
+- What the game tracks in Roblox Analytics, and where to find it: [docs/ANALYTICS.md](docs/ANALYTICS.md)
 
 ## Tools (already installed)
 | Tool | What it does |

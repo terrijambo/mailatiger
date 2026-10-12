@@ -16,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Menus = require(script.Parent.Menus)
 local Profile = require(script.Parent.Profile)
+local Track = require(script.Parent.Track)
 local Ui = require(script.Parent.Ui)
 
 local Money = Config.Monetization
@@ -78,6 +79,9 @@ function Store.Start()
 		button.Activated:Connect(function()
 			if not button.Active then
 				return -- (the boost button while the boost is full)
+			end
+			if item.Id ~= 0 then
+				Track.Send("PurchasePrompt", item.Key, if isPass then "Pass" else "Product")
 			end
 			if item.Id == 0 then
 				shopAction:FireServer("StudioBuy", item.Key) -- Studio only: free, for testing
