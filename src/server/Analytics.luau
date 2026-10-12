@@ -155,6 +155,17 @@ local function stateOf(player: Player): State
 	return state
 end
 
+-- The game moved the player (e.g. the walkthrough's start on the Backyard): the "Moved" onboarding step
+-- counts from here, so only their own walking counts
+function Analytics.Teleported(player: Player)
+	local state = states[player]
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if state and root and state.NewPlayer and not state.Onboarding.Moved then
+		state.SpawnAt = root.Position
+	end
+end
+
 -- Remembers the last thing the player did
 function Analytics.Did(player: Player, action: string)
 	local state = stateOf(player)

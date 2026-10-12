@@ -11,6 +11,8 @@ local DataService = require(script.Parent.DataService)
 local Economy = require(script.Parent.Economy)
 local ProgressionService = require(script.Parent.ProgressionService)
 local Remotes = require(script.Parent.Remotes)
+local Travel = require(script.Parent.Travel)
+local WildService = require(script.Parent.WildService)
 
 -- Coins for finishing the walkthrough (not for skipping it)
 local REWARD = 100
@@ -20,7 +22,28 @@ local TutorialService = {}
 -- Settings live here too (it's the other tiny "remember this about me" remote)
 local SETTINGS = { Music = true, Sfx = true, Motion = true, Chaos = true }
 
+-- A new hire starts right on the Backyard, face to face with a calm, easy animal (no PEN button, no hunting)
+local function startNewHire(player: Player)
+	local profile = DataService.Get(player)
+	if not profile or profile.TutorialDone or profile.Mailed > 0 then
+		return
+	end
+	local character = player.Character or player.CharacterAdded:Wait()
+	character:WaitForChild("HumanoidRootPart", 10)
+	task.wait(0.5) -- (let the character settle before moving it)
+	if not player.Parent then
+		return
+	end
+	Travel.ToArena(player, "Backyard")
+	Analytics.Teleported(player)
+	task.wait(0.2)
+	WildService.SpawnTutorial(player)
+end
+
 function TutorialService.Start()
+	DataService.Loaded:Connect(function(player: Player)
+		task.spawn(startNewHire, player)
+	end)
 	Remotes.Listen(Remotes.Setting, 5, function(player: Player, name: unknown, on: unknown)
 		local profile = DataService.Get(player)
 		if profile and typeof(name) == "string" and SETTINGS[name] and typeof(on) == "boolean" then

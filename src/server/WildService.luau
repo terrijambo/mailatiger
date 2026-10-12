@@ -268,10 +268,10 @@ local function spawn(
 	luredFor: Player?,
 	forced: string?,
 	forcedVariant: string?
-)
+): Entry?
 	local arena = map.Arenas[arenaId]
 	if not arena then
-		return
+		return nil
 	end
 	local animalId = if forced
 		then forced
@@ -283,7 +283,7 @@ local function spawn(
 		else pickNormal(arenaId)
 	local animal = animalId and Config.Animals.ById[animalId]
 	if not animalId or not animal then
-		return
+		return nil
 	end
 	local radius = radiusOf(animalId)
 	local position = if near
@@ -368,6 +368,7 @@ local function spawn(
 	ball.Parent = folder
 	CollectionService:AddTag(ball, "Critter") -- (the client draws the Blender model on it)
 	table.insert(wilds, entry)
+	return entry
 end
 
 -- The nearest player this animal could attack (in range, not busy boxing)
@@ -561,6 +562,33 @@ function WildService.SpawnNear(player: Player, animalId: string)
 	end
 	local zone = zoneAt(root.Position) or "Backyard"
 	spawn(zone, root.Position + root.CFrame.LookVector * 6, nil, nil, animalId)
+end
+
+-- Gruff's walkthrough: a calm, easy animal standing right in front of a brand-new player (TutorialService), so
+-- the first grab takes seconds instead of a hunt. It never attacks, never wanders off, and is theirs alone.
+function WildService.SpawnTutorial(player: Player)
+	local root = rootOf(player)
+	if not root then
+		return
+	end
+	-- The easiest one-person animal on the Backyard
+	local easiest, easiestLevel = nil, math.huge
+	for _, animal in Config.Animals.List do
+		local level = Wild.LevelOf[animal.Id] or 1
+		if Wild.ZoneOf[animal.Id] == "Backyard" and animal.Carriers == 1 and level < easiestLevel then
+			easiest, easiestLevel = animal.Id, level
+		end
+	end
+	if not easiest then
+		return
+	end
+	local entry = spawn("Backyard", root.Position + root.CFrame.LookVector * 10, nil, player, easiest, nil)
+	if entry then
+		entry.Attack = nil
+		entry.PauseUntil = os.clock() + 600 -- (stands still)
+		entry.Expires = os.clock() + 600
+		entry.Ball:SetAttribute("Tutorial", true)
+	end
 end
 
 -- Starts (or extends) a lure for a player: "Lure" (coins) or "MegaLure" (Robux)

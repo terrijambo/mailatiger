@@ -57,6 +57,9 @@ local Twists: { [string]: TwistSet } = {
 }
 
 return {
+	-- A brand-new player's very first BOX (Gruff's walkthrough) starts at 0 anger and angers this much slower
+	FirstBoxAngerMult = 0.4,
+
 	-- Stage 1: CATCH. The animal runs around the arena. Corner it, then hold E to grab it.
 	Catch = {
 		FleeRadius = 18, -- it runs when you're this close

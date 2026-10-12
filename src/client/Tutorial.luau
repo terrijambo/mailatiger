@@ -1,6 +1,7 @@
 --!strict
--- Gruff's first-time walkthrough: teleport to the Backyard (PEN) -> grab a wild animal -> box it -> mail it ->
--- go shopping.
+-- Gruff's first-time walkthrough: grab the animal in front of you -> box it -> mail it -> go shopping.
+-- To keep it quick, the server starts a new hire on the Backyard next to a calm, easy animal, makes that first
+-- box gentle, and zips them back to the chute once it's taped (TutorialService, WildService, BoxingService).
 -- A panel with Gruff says what to do next, and a glowing arrow (a beam from you, plus a bouncing marker) points
 -- at where to go. It follows what you actually do, so it can't get stuck: if the animal escapes, it sends you
 -- back to catching. "Skip" ends it for good. Finishing it pays a small bonus (the server checks it).
@@ -24,7 +25,7 @@ local player = Players.LocalPlayer
 local Tutorial = {}
 
 local YELLOW = Color3.fromRGB(255, 220, 70)
-local SHOP_STEP_SECONDS = 12
+local SHOP_STEP_SECONDS = 6
 
 local function buildPanel(): (ScreenGui, TextLabel, TextButton)
 	local gui = Ui.make("ScreenGui", {

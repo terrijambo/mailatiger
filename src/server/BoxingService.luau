@@ -444,13 +444,21 @@ local function startBox(s: Session)
 	end
 	local hard = cfg.Hard
 	angerMult *= 1 + (hard.AngerRateMult - 1) * s.Difficulty -- an animal above your level is a handful
+	-- A brand-new player's very first box (Gruff's walkthrough) is a gentle one: calm to start, slow to anger
+	local owner = DataService.Get(s.Player)
+	local firstBox = owner ~= nil and owner.Mailed == 0 and not owner.TutorialDone and #owner.Parcels == 0
+	if firstBox then
+		angerMult *= Boxing.FirstBoxAngerMult
+	end
 	s.Box = {
 		Start = Workspace:GetServerTimeNow(),
-		Anger = math.max( -- PRIORITY starts high; the Calm Hands Rebirth Upgrade takes some off
-			0,
-			(if stamp and stamp.StartAnger then stamp.StartAnger else box.StartAnger)
-				- Economy.UpgradeBonus(s.Player, "CalmHands")
-		),
+		Anger = if firstBox
+			then 0
+			else math.max( -- PRIORITY starts high; the Calm Hands Rebirth Upgrade takes some off
+				0,
+				(if stamp and stamp.StartAnger then stamp.StartAnger else box.StartAnger)
+					- Economy.UpgradeBonus(s.Player, "CalmHands")
+			),
 		Spots = makeSpots(s),
 		SeamCount = seamCount,
 		Taped = taped,
@@ -758,6 +766,15 @@ local function finishJob(s: Session)
 		})
 		ChallengeService.Track(member, "Box", { Stars = stars, Seconds = seconds, Chaos = s.Chaos })
 		notify(member, "BoxDone", {})
+		-- Gruff's walkthrough: the first parcel zips you straight to the mail chute (no walking back)
+		local profile = DataService.Get(member)
+		if profile and profile.Mailed == 0 and not profile.TutorialDone then
+			task.delay(1.5, function()
+				if member.Parent then
+					Travel.ToGruff(member)
+				end
+			end)
+		end
 		notify(member, "Parcel", {
 			Animal = animal.DisplayName,
 			Stars = stars,

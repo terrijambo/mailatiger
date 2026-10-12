@@ -52,13 +52,13 @@ return {
 
 	-- The first-time walkthrough (src/client/Tutorial.luau). One line per step.
 	Tutorial = {
-		Pen = "You. New hire. We MAIL ANIMALS here. Tap the PEN button: it teleports you to the Backyard, where the wild ones are.",
-		Wild = "Wild animals everywhere! Walk up to one and HOLD E to grab it. ORANGE name tag = tougher than you. RED = way too strong: grab that and you get VINE BOOMED.",
-		Catch = "There it is! Chase it down, get close, and HOLD E to grab it.",
-		Box = "Now BOX it. Its anger climbs FAST: rub a ♥ to reset it to zero. DON'T touch the ✖ spots, and drag tape along every seam.",
-		Escaped = "You LOST it?! Catch it again (HOLD E). And rub the ♥ spots faster this time.",
-		Mail = "It's taped up and in your bag. Tap GRUFF to zip back to me, then HOLD E at the MAIL CHUTE by my counter.",
-		Shop = "Coins! Talk to me to spend them: hold E at my counter, or tap SHOP. Level up and you can grab bigger animals. Now get back to work.",
+		Pen = "New hire! We MAIL ANIMALS. Tap PEN to go where the wild ones are.",
+		Wild = "See that animal? Walk up and HOLD E to grab it.",
+		Catch = "Get close and HOLD E to grab it!",
+		Box = "Rub a ♥ to calm it. Drag tape along every seam. Avoid the ✖ spots!",
+		Escaped = "It got away! HOLD E to grab it again.",
+		Mail = "Taped! Now HOLD E at the MAIL CHUTE next to me.",
+		Shop = "Coins! Spend them at my counter or tap SHOP. Now get back to work.",
 		Reward = "Here, a little signing bonus. Your MENU has orders, upgrades and more. Don't spend it all on tape.",
 	},
 }
