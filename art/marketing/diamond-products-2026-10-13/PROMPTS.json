@@ -1,0 +1,17 @@
+[
+  {
+    "name": "handful-of-diamonds",
+    "prompt": "Use case ads-marketing. Single 512x512 square Roblox developer-product icon. Slightly rough small-dev Roblox Studio render, simple chunky low-poly geometry, bright flat colors, matte basic game materials, neutral simple lighting. One large centered object against solid royal purple circle with pale grey outer corners. Reads at 150 pixels. Diamonds are bright cyan angular gems with pale cyan faces and dark teal facets, simple recognizable diamond silhouettes. No text, currency symbols, logos, realism, cinematic lighting or glossy premium polish. Handful of Diamonds: a small group of exactly five large cyan diamonds, three resting in a low pile and two leaning upright. No actual hand, bag or chest. The gems are large even though quantity is small. Clear gaps and simple broad facets.",
+    "tool": "built-in image generation"
+  },
+  {
+    "name": "pouch-of-diamonds",
+    "prompt": "Use case ads-marketing. Single 512x512 square Roblox developer-product icon. Slightly rough small-dev Roblox Studio render, simple chunky low-poly geometry, bright flat colors, matte basic game materials, neutral simple lighting. One large centered object against solid royal purple circle with pale grey outer corners. Reads at 150 pixels. Diamonds are bright cyan angular gems with pale cyan faces and dark teal facets, simple recognizable diamond silhouettes. No text, currency symbols, logos, realism, cinematic lighting or glossy premium polish. Pouch of Diamonds: one large chunky open brown drawstring pouch, bulging and filled with cyan diamonds. Five large gem tops protrude clearly above the dark bag rim and two loose diamonds lie in front. Simple thick tan drawstring, no tiny stitches. Bag has broad flat brown surfaces, diamonds unmistakable. Group fills circle with safe margin, obvious medium quantity. No chest or extra props.",
+    "tool": "built-in image generation"
+  },
+  {
+    "name": "chest-of-diamonds",
+    "prompt": "Use case ads-marketing. Single 512x512 square Roblox developer-product icon. Slightly rough small-dev Roblox Studio render, simple chunky low-poly geometry, bright flat colors, matte basic game materials, neutral simple lighting. One large centered object against solid royal purple circle with pale grey outer corners. Reads at 150 pixels. Diamonds are bright cyan angular gems with pale cyan faces and dark teal facets, simple recognizable diamond silhouettes. No text, currency symbols, logos, realism, cinematic lighting or glossy premium polish. Chest of Diamonds: one large open chunky brown wooden treasure chest with simple broad gold bands and gold latch, overflowing with a mound of bright cyan diamonds. Lid visibly raised behind the gems, three-quarter view. Ten or more simple large angular gems form a wide heaped silhouette above the rim, with three loose gems in front. Brown surfaces flat with no woodgrain or tiny decoration. Obvious biggest diamond quantity, big readable chest silhouette. No coins, text, sparkle clutter or other props.",
+    "tool": "built-in image generation"
+  }
+]
