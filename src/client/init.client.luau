@@ -58,4 +58,4 @@ task.spawn(ChuteVisual.Start) -- waits for the map to load, so it runs on its ow
 task.spawn(MachineStations.Start) -- (the Post Office machines round the plaza; also waits for the map)
 task.spawn(Tutorial.Start) -- waits for your save to load
 
-print(`[Mail a Tiger] Client started for {Players.LocalPlayer.Name}.`)
+print(`[Mail Animals!] Client started for {Players.LocalPlayer.Name}.`)

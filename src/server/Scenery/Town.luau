@@ -562,7 +562,7 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 		Transparency = 1,
 		CanCollide = false,
 	})
-	Kit.signText(title, Enum.NormalId.Back, "📦 MAIL A TIGER 🐯", Color3.fromRGB(255, 200, 60), nil, nil)
+	Kit.signText(title, Enum.NormalId.Back, "📦 MAIL ANIMALS! 🐯", Color3.fromRGB(255, 200, 60), nil, nil)
 
 	-- The green ring: cottages between the paths, then trees, bushes, flowers and rocks wherever there's room
 	local cottageColors = {

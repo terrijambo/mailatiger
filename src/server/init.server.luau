@@ -59,4 +59,4 @@ DataService.Start()
 -- Leaderboards need to know whether DataStores work, so they start last.
 LeaderboardService.Start(map)
 
-print(`[Mail a Tiger] Server started. {#Config.Animals.List} animals loaded.`)
+print(`[Mail Animals!] Server started. {#Config.Animals.List} animals loaded.`)

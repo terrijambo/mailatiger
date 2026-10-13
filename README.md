@@ -1,4 +1,4 @@
-# Mail a Tiger
+# Mail Animals! (formerly Mail a Tiger)
 
 Grab wild animals, pet them calm while you tape them into a box, stamp the parcels in your Post Office
 machines, and mail them. Postmaster Gruff is watching.
