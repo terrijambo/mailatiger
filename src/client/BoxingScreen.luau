@@ -20,6 +20,7 @@ local Workspace = game:GetService("Workspace")
 local BoxMath = require(ReplicatedStorage.Shared.BoxMath)
 local Config = require(ReplicatedStorage.Shared.Config)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local Profile = require(script.Parent.Profile)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Ui = require(script.Parent.Ui)
 
@@ -29,11 +30,11 @@ local BoxingScreen = {}
 
 local PINK = Color3.fromRGB(255, 120, 170)
 local ANGRY = Color3.fromRGB(220, 50, 50)
-local TAPE = Color3.fromRGB(235, 205, 120)
-local GOLD_TAPE = Color3.fromRGB(255, 200, 40) -- VIP pass
-
+-- Your tape color (Config/Styles.luau: Gold with VIP, any color with the Style Pack)
 local function tapeColor(): Color3
-	return if Players.LocalPlayer:GetAttribute("Pass_VIP") == true then GOLD_TAPE else TAPE
+	return Config.Styles.TapeFor(Profile.Get().TapeStyle, function(passKey: string): boolean
+		return Players.LocalPlayer:GetAttribute(`Pass_{passKey}`) == true
+	end).Color
 end
 local CARDBOARD = Color3.fromRGB(205, 165, 115)
 local DARK = Color3.fromRGB(30, 30, 36)

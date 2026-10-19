@@ -116,6 +116,11 @@ export type Profile = {
 	Sessions: number, -- visits
 	PlaySeconds: number, -- total time played
 	Milestones: { [string]: number }, -- first times (Analytics.Milestone) -> minutes of playtime it took
+	-- Added 2026-10-19
+	LastSeen: number, -- os.time() of the latest save (so about when you left); 0 = not recorded yet
+	TapeStyle: string, -- chosen tape color (Config/Styles.luau); "" = default (Gold for VIPs, else Classic)
+	TrailOn: boolean, -- the Style Pack run trail is switched on
+	NewsSeen: string, -- the Config/News.luau Id of the last "New this week" card shown
 }
 
 local DataService = {}
@@ -203,6 +208,10 @@ local function newProfile(): Profile
 		Sessions = 0,
 		PlaySeconds = 0,
 		Milestones = {},
+		LastSeen = 0,
+		TapeStyle = "",
+		TrailOn = true,
+		NewsSeen = "",
 	}
 end
 
@@ -310,6 +319,7 @@ local function save(player: Player, release: boolean): boolean
 		return false
 	end
 
+	profile.LastSeen = os.time()
 	local lostLock = false
 	local ok, err = pcall(function()
 		activeStore:UpdateAsync(keyFor(player), function(old: any)

@@ -26,6 +26,11 @@ local TEST_PURPLE = Color3.fromRGB(140, 90, 220)
 
 local Store = {}
 
+-- Today's deal (Config.Monetization.DealFor): days since 1970, by the server's clock
+local function todaysDeal(): string?
+	return Money.DealFor(math.floor(Workspace:GetServerTimeNow() / 86400))
+end
+
 local function boostLeft(): number
 	local untilTime = Workspace:GetAttribute("BoostUntil")
 	return if typeof(untilTime) == "number" then math.max(0, untilTime - Workspace:GetServerTimeNow()) else 0
@@ -95,11 +100,15 @@ function Store.Start()
 	end
 
 	local function row(order: number, item: Item, title: string, description: string, isPass: boolean, color: Color3)
+		local deal = not isPass and todaysDeal() == item.Key
 		local frame = Ui.card(list, {
 			LayoutOrder = order,
 			Size = UDim2.new(1, -12, 0, 64),
-			BackgroundColor3 = Ui.WHITE,
+			BackgroundColor3 = if deal then Color3.fromRGB(255, 236, 200) else Ui.WHITE,
 		})
+		if deal then
+			title = `🔥 {title}: +{math.round(Money.DealBonus * 100)}% TODAY`
+		end
 		Ui.icon(frame, `Store_{item.Key}`, { Position = UDim2.fromOffset(10, 8), Size = UDim2.fromOffset(48, 48) })
 		Ui.label(frame, {
 			Position = UDim2.fromOffset(68, 6),
@@ -173,16 +182,94 @@ function Store.Start()
 		})
 		boostButton = buyButton(featured, boost, false, Ui.ORANGE, UDim2.fromOffset(180, 60))
 
+		-- Today's deal: one product gives more today (MonetizationService adds the bonus)
+		local dealKey = todaysDeal()
+		local dealItem = if dealKey then Money.ProductByKey[dealKey] else nil
+		if dealItem then
+			header(nextOrder(), `🔥 Today's deal: +{math.round(Money.DealBonus * 100)}% more`)
+			row(nextOrder(), dealItem, dealItem.DisplayName, dealItem.Description, false, Ui.RED)
+		end
+
 		-- Passes
 		header(nextOrder(), "Passes (yours forever)")
 		for _, pass in Money.Passes do
 			row(nextOrder(), pass, pass.DisplayName, pass.Description, true, Ui.ORANGE)
 		end
 
+		-- Your style: tape colors (Gold with VIP, the rest with the Style Pack) and the run trail
+		header(nextOrder(), "🎨 Your style")
+		local data = Profile.Get()
+		local function owns(passKey: string): boolean
+			return player:GetAttribute(`Pass_{passKey}`) == true
+		end
+		local current = Config.Styles.TapeFor(data.TapeStyle, owns)
+		local swatches = Ui.make("Frame", {
+			LayoutOrder = nextOrder(),
+			Size = UDim2.new(1, -12, 0, 0),
+			AutomaticSize = Enum.AutomaticSize.Y,
+			BackgroundTransparency = 1,
+		}, list)
+		Ui.make("UIGridLayout", {
+			CellSize = UDim2.fromOffset(84, 56),
+			CellPadding = UDim2.fromOffset(8, 8),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}, swatches)
+		for index, tape in Config.Styles.Tapes do
+			local unlocked = tape.Needs == nil or owns(tape.Needs)
+			local chosen = tape.Id == current.Id
+			local swatch = Ui.button(swatches, {
+				LayoutOrder = index,
+				BackgroundColor3 = tape.Color,
+				TextSize = 14,
+				TextColor3 = if tape.Id == "White"
+						or tape.Id == "Gold"
+						or tape.Id == "Classic"
+					then Ui.BROWN
+					else Ui.WHITE,
+				Text = if chosen
+					then `✓ {tape.DisplayName}`
+					elseif unlocked then tape.DisplayName
+					else `🔒 {tape.DisplayName}`,
+			})
+			swatch.Activated:Connect(function()
+				if unlocked then
+					shopAction:FireServer("SetTape", tape.Id)
+					return
+				end
+				-- Locked: offer the pass that unlocks it
+				local pass = Money.PassByKey[tape.Needs or ""]
+				if pass and pass.Id ~= 0 then
+					Track.Send("PurchasePrompt", pass.Key, "Pass")
+					MarketplaceService:PromptGamePassPurchase(player, pass.Id)
+				end
+			end)
+		end
+		if owns("StylePack") then
+			local trailOn = data.TrailOn ~= false
+			local trail = Ui.button(list, {
+				LayoutOrder = nextOrder(),
+				Size = UDim2.new(1, -12, 0, 40),
+				BackgroundColor3 = if trailOn then Ui.GREEN else Ui.GREY,
+				TextSize = 18,
+				Text = if trailOn then "✨ Run trail: ON" else "Run trail: OFF",
+			})
+			trail.Activated:Connect(function()
+				shopAction:FireServer("ToggleTrail")
+			end)
+		else
+			Ui.label(list, {
+				LayoutOrder = nextOrder(),
+				Size = UDim2.new(1, -12, 0, 22),
+				TextSize = 14,
+				TextColor3 = Color3.fromRGB(110, 100, 90),
+				Text = "🔒 colors and a matching run trail come with the Style Pack. Gold tape comes with VIP.",
+			})
+		end
+
 		-- Goodies
 		header(nextOrder(), "Goodies")
 		for _, product in Money.Products do
-			local skip = product.Key == "ServerBoost" or product.Retired == true
+			local skip = product.Key == "ServerBoost" or product.Retired == true or product.Key == dealKey
 			if not skip then
 				row(nextOrder(), product, product.DisplayName, product.Description, false, Ui.BLUE)
 			end

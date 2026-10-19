@@ -36,6 +36,8 @@ return {
 	Rarity = require(script.Rarity),
 	Eggs = require(script.Eggs),
 	Dive = require(script.Dive),
+	Styles = require(script.Styles),
+	News = require(script.News),
 
 	Dev = {
 		-- In Roblox Studio every animal is free, so you can test any of them right away.

@@ -419,7 +419,7 @@ function Hud.Start()
 		bagLabel.TextColor3 = if #profile.Parcels >= capacity then Color3.fromRGB(255, 100, 90) else BAG_TAN
 		bagRow:SetAttribute("NearlyFull", #profile.Parcels >= math.max(1, math.ceil(capacity * 0.8)))
 
-		-- Total coin boost from rebirths, Golden Paws, the server boost, Premium and the group
+		-- Total coin boost from rebirths, Golden Paws, the server boost, 2x Coins, Premium and the group
 		-- (the same math as Economy.PayoutMult on the server)
 		local money = Config.Monetization
 		local mult = 1 + profile.Rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth
@@ -427,6 +427,9 @@ function Hud.Start()
 		mult *= 1 + Config.Upgrades.Bonus(paws, profile.Upgrades.GoldenPaws or 0) / 100
 		if boostLeft() > 0 then
 			mult *= money.BoostMult
+		end
+		if player:GetAttribute("Pass_Coins2x") then
+			mult *= money.Coins2xMult
 		end
 		if player:GetAttribute("Premium") then
 			mult *= money.PremiumPayoutMult
@@ -457,7 +460,7 @@ function Hud.Start()
 		status.TextColor3 = if player:GetAttribute("Chaos") then Color3.fromRGB(255, 130, 120) else Ui.WHITE
 	end
 	Profile.Watch(refreshStatus)
-	for _, attribute in { "Chaos", "Premium", "InGroup", "FriendsHere" } do
+	for _, attribute in { "Chaos", "Premium", "InGroup", "FriendsHere", "Pass_Coins2x" } do
 		player:GetAttributeChangedSignal(attribute):Connect(refreshStatus)
 	end
 

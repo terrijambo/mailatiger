@@ -203,15 +203,13 @@ local function buildBox(s: Session): Model
 		box.CFrame * CFrame.new(0, 1.6 * scale, 0),
 		boxColor:Lerp(Color3.new(0, 0, 0), 0.15)
 	)
-	local strip = piece(
-		"Tape",
-		Vector3.new(0.05, 0.3, 0.7),
-		box.CFrame * CFrame.new(0, 1.75 * scale, 0),
-		-- VIP pass: golden tape
-		if s.Player:GetAttribute("Pass_VIP") == true
-			then Color3.fromRGB(255, 200, 40)
-			else Color3.fromRGB(230, 200, 120)
-	)
+	-- Your tape color (Config/Styles.luau: Gold with VIP, any color with the Style Pack)
+	local profile = DataService.Get(s.Player)
+	local tapeColor =
+		Config.Styles.TapeFor(if profile then profile.TapeStyle else "", function(passKey: string): boolean
+			return s.Player:GetAttribute(`Pass_{passKey}`) == true
+		end).Color
+	local strip = piece("Tape", Vector3.new(0.05, 0.3, 0.7), box.CFrame * CFrame.new(0, 1.75 * scale, 0), tapeColor)
 	strip.Transparency = 1 -- appears as you tape
 	local critter = piece(
 		"Animal",

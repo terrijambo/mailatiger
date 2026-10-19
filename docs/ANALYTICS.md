@@ -17,7 +17,7 @@ breakdown menu). They hold small sets of values, so every breakdown stays readab
 
 **Value** is the number the dashboard adds up and averages (a count, seconds, or minutes; listed per event).
 
-**Limits.** Roblox allows 100 custom event names per game. The game sends 53. Event names never contain ids
+**Limits.** Roblox allows 100 custom event names per game. The game sends 56. Event names never contain ids
 (the id goes in a field), so adding a new machine or animal never adds a name. The game also stays under
 Roblox's per-server rate limit, and when a full server gets close it drops the nice-to-have events
 (BOX stats, menus, zones, performance) before anything important.
@@ -89,6 +89,7 @@ Roblox's per-server rate limit, and when a full server gets close it drops the n
 | `QuestReached` | minutes of total playtime | `Q{quest}` | level band | days band |
 | `Rebirth` | rebirth number | days band | playtime (30-minute steps) | `R{n}` |
 | `ZoneEnter` | minutes of total playtime | zone | segment | |
+| `OfflinePay` | coins paid for time away | segment | | |
 | `Claimed`, `DailyChallengeDone`, `WeeklyChallengeDone`, `AllDailiesDone`, `BossJoined`, `BossWon`, `BossLost`, `PaycheckStreak` | | | | |
 
 Also **Analytics → Progression**: paths `ChuteLevel` and `Rebirth`.
@@ -115,6 +116,8 @@ Also **Analytics → Progression**: paths `ChuteLevel` and `Rebirth`.
 | `PurchaseResult` | Robux price | `Pass_VIP`, `Product_ServerBoost`... | `Bought` / `Cancelled` | how long the prompt was up (`<3s`...) |
 | `FollowPrompt` | 1 | `Shown`, `Favorite`, `Updates`, `Close`, `Favorite_Success`... | segment | |
 | `Invite` | 1 (opened) or friends invited (sent) | `Opened` / `Sent` | segment | |
+| `DealBought` | 1 | product key (today's deal) | segment | |
+| `StylePicked` | 1 | `Tape` | color id | segment |
 
 The store funnel: `Menu` (Store, Opened) → `PurchasePrompt` → `PurchaseResult` Bought.
 

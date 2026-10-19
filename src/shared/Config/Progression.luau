@@ -15,6 +15,15 @@ return {
 		MaxStreak = 7,
 	},
 
+	-- Your chute keeps working while you're away: when you come back after at least MinMinutes, you get
+	-- Rate x your chute's coins per minute for the time you were gone (counted up to MaxMinutes).
+	-- Kept small on purpose: machines and rebirths cost 6-30 minutes of chute income.
+	Offline = {
+		MinMinutes = 10,
+		MaxMinutes = 180,
+		Rate = 0.1,
+	},
+
 	-- Delivery streak: every box finished with MinStars or more in a row raises your streak, and each step
 	-- up adds PerStep to that job's pay (x1, x1.125, x1.25 ... up to Max). A worse box, a launch or quitting a
 	-- job resets it. Kept only while you're in the server.

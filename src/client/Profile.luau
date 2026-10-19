@@ -43,6 +43,8 @@ export type Data = {
 	Upgrades: { [string]: number },
 	Shinies: { [string]: number }?,
 	Goldens: { [string]: number }?,
+	TapeStyle: string?,
+	TrailOn: boolean?,
 	Challenges: {
 		Day: number,
 		Daily: { { Id: string, Progress: number, Done: boolean, Claimed: boolean? } },

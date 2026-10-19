@@ -87,6 +87,8 @@ local icons: { [string]: Icon } = {
 	Store_UnlockNext = icon("🔓"),
 	Store_PriorityStamps = icon("🔥"),
 	Store_GruffCoffee = icon("☕"),
+	Store_Coins2x = icon("💰"),
+	Store_StylePack = icon("🎨"),
 
 	-- Rebirth Upgrades
 	Upgrade_GoldenPaws = icon("🐾"),

@@ -43,6 +43,9 @@ local function checkPasses(player: Player)
 			end
 		end
 	end
+	if DataService.Get(player) then
+		Economy.Sync(player) -- (2x Coins changes your chute rate)
+	end
 end
 
 local function say(player: Player, text: string)
@@ -69,7 +72,17 @@ end
 -- Set by WildService: starts a MEGA Lure for the player (the "UnlockNext" product)
 MonetizationService.OnMegaLure = nil :: ((Player) -> ())?
 
+-- Today's deal (Config.Monetization.DealFor): this product gives DealBonus more today
+local function dealMult(key: string): number
+	local today = math.floor(os.time() / 86400)
+	return if Money.DealFor(today) == key then 1 + Money.DealBonus else 1
+end
+
 local function grant(player: Player, profile: DataService.Profile, key: string): boolean
+	local deal = dealMult(key)
+	if deal > 1 then
+		Analytics.Custom(player, "DealBought", 1, key, Analytics.Segment(player))
+	end
 	local jobs = Money.CoinPackJobs[key]
 	local diamonds = Money.DiamondPacks[key]
 	if key == "ServerBoost" then
@@ -83,11 +96,11 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 		say(player, `{diamonds} Rebirth Points! Spend them at the Rebirth Market on Rebirth Beach.`)
 		return true
 	elseif key == "Invincible" then
-		MonetizationService.AddInvincible(player, profile, Money.InvincibleSeconds)
+		MonetizationService.AddInvincible(player, profile, math.round(Money.InvincibleSeconds * deal))
 		say(player, "🛡️ INVINCIBLE! No vine boom, and Chaos attacks bounce off you. Go wild.")
 		return true
 	elseif jobs then
-		local coins = Economy.BestBaseValue(player) * jobs -- scales with your best animal
+		local coins = math.round(Economy.BestBaseValue(player) * jobs * deal) -- scales with your best animal
 		profile.Coins += coins
 		Analytics.Earn(player, coins, profile.Coins, key, true)
 		say(player, `{Format.Short(coins)} coins. Don't let it go to your head.`)
@@ -101,8 +114,9 @@ local function grant(player: Player, profile: DataService.Profile, key: string):
 		hook(player)
 		return true
 	elseif key == "PriorityStamps" then
-		profile.Stamps.Priority = (profile.Stamps.Priority or 0) + Money.PriorityStampCount
-		say(player, `{Money.PriorityStampCount} Priority stamps. Use them wisely. You won't.`)
+		local count = math.ceil(Money.PriorityStampCount * deal)
+		profile.Stamps.Priority = (profile.Stamps.Priority or 0) + count
+		say(player, `{count} Priority stamps. Use them wisely. You won't.`)
 		return true
 	elseif key == "GruffCoffee" then
 		say(player, "...A coffee? For me? ...Hmph. Thanks. Now get back to work.")
@@ -146,6 +160,7 @@ function MonetizationService.StudioBuy(player: Player, key: string)
 	local pass = Money.PassByKey[key]
 	if pass then
 		player:SetAttribute(`Pass_{key}`, true)
+		Economy.Sync(player) -- (2x Coins changes your chute rate)
 		say(player, `[Studio test] {pass.DisplayName}! ...Fancy.`)
 	elseif Money.ProductByKey[key] and grant(player, profile, key) then
 		Economy.Sync(player)
@@ -213,6 +228,51 @@ local function addVipTag(player: Player)
 	gui.Parent = head
 end
 
+-- Style Pack: a run trail in your tape color (Config/Styles.luau). Called again whenever the style changes.
+function MonetizationService.RefreshStyle(player: Player)
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart")
+	if not root then
+		return
+	end
+	local old = root:FindFirstChild("StyleTrail")
+	if old then
+		old:Destroy()
+	end
+	for _, name in { "StyleTrailTop", "StyleTrailBottom" } do
+		local attachment = root:FindFirstChild(name)
+		if attachment then
+			attachment:Destroy()
+		end
+	end
+	local profile = DataService.Get(player)
+	if not MonetizationService.HasPass(player, "StylePack") or (profile and profile.TrailOn == false) then
+		return
+	end
+	local styles = Config.Styles
+	local tape = styles.TapeFor(if profile then profile.TapeStyle else "", function(passKey: string): boolean
+		return MonetizationService.HasPass(player, passKey)
+	end)
+	local top = Instance.new("Attachment")
+	top.Name = "StyleTrailTop"
+	top.Position = Vector3.new(0, 0.8, 0)
+	top.Parent = root
+	local bottom = Instance.new("Attachment")
+	bottom.Name = "StyleTrailBottom"
+	bottom.Position = Vector3.new(0, -0.8, 0)
+	bottom.Parent = root
+	local trail = Instance.new("Trail")
+	trail.Name = "StyleTrail"
+	trail.Attachment0 = top
+	trail.Attachment1 = bottom
+	trail.Color = ColorSequence.new(tape.Color)
+	trail.Transparency = NumberSequence.new(0.2, 1)
+	trail.Lifetime = styles.TrailSeconds
+	trail.LightEmission = 0.4
+	trail.FaceCamera = true
+	trail.Parent = root
+end
+
 -- Roblox Premium and group membership (each is a small coin bonus, see Config.Monetization)
 local function checkPerks(player: Player)
 	player:SetAttribute("Premium", player.MembershipType == Enum.MembershipType.Premium)
@@ -255,9 +315,15 @@ local function watchPlayer(player: Player)
 	player.CharacterAdded:Connect(function(character)
 		character:WaitForChild("Head", 10)
 		addVipTag(player)
+		character:WaitForChild("HumanoidRootPart", 10)
+		MonetizationService.RefreshStyle(player)
 	end)
 	player:GetAttributeChangedSignal("Pass_VIP"):Connect(function()
 		addVipTag(player)
+		MonetizationService.RefreshStyle(player)
+	end)
+	player:GetAttributeChangedSignal("Pass_StylePack"):Connect(function()
+		MonetizationService.RefreshStyle(player)
 	end)
 	checkPasses(player)
 	addVipTag(player)
@@ -274,6 +340,7 @@ function MonetizationService.Start()
 	MarketplaceService.ProcessReceipt = processReceipt
 	-- A shield bought before a rejoin keeps running
 	DataService.Loaded:Connect(function(player: Player)
+		MonetizationService.RefreshStyle(player)
 		local profile = DataService.Get(player)
 		if profile and (profile.InvincibleUntil or 0) > os.time() then
 			player:SetAttribute("InvincibleUntil", profile.InvincibleUntil)
@@ -287,6 +354,7 @@ function MonetizationService.Start()
 		for _, pass in Money.Passes do
 			if pass.Id == passId then
 				player:SetAttribute(`Pass_{pass.Key}`, true)
+				Economy.Sync(player) -- (2x Coins changes your chute rate)
 				say(player, `{pass.DisplayName}! ...Fancy.`)
 			end
 		end

@@ -98,6 +98,18 @@ The E2E scripts only run in a place marked with the `MailATigerTestPlace` attrib
 - **Oct 7 update (machines, chute level, rarities, eggs, 60% player):** the owner played it: "a good update",
   with fixes needed (below). A full automated playtest of it hasn't been reported passing yet.
 
+## 2026-10-19 update (retention + Robux, from the success scorecard)
+- **Welcome back** (`server/WelcomeService`, `client/WelcomeBack`): returning players get coins for time away
+  (`Config.Progression.Offline`: 10% of chute income, counted up to 180 min) and the "New this week" lines
+  once per update (`Config/News.luau`: change its Id and lines with every update). Uses the new save field
+  `LastSeen` (set on every save).
+- **2x Coins pass** (`Pass_Coins2x`, in `Economy.BoostMult` and the HUD mirror) and **Style Pack pass**
+  (`Config/Styles.luau`: tape colors on the BOX screen and parcel, plus a run trail; Gold tape still comes with
+  VIP). Pick them in the Store's "Your style" section (`ShopAction` SetTape / ToggleTrail).
+- **Today's deal** (`Monetization.Deals`, `DealFor`): one product a day gives +50%; shown at the top of the Store.
+- Owner still to create on Roblox: the Shield product, both new passes, the group. Their ids go in
+  `Config/Monetization.luau` (`Id = 0` keeps an item hidden as "Soon").
+
 ## Your tasks
 ### A. Code (yours)
 1. **Owner's fix list from playing the Oct 7 update (2026-10-08):**

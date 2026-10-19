@@ -46,6 +46,20 @@ local passes: { Pass } = {
 		DisplayName = "VIP Postie",
 		Description = "Golden tape on every box, and a golden VIP tag over your head.",
 	},
+	{
+		Key = "Coins2x",
+		Id = 0,
+		Price = 199,
+		DisplayName = "2x Coins",
+		Description = "Earn double coins from everything, forever.",
+	},
+	{
+		Key = "StylePack",
+		Id = 0,
+		Price = 149,
+		DisplayName = "Style Pack",
+		Description = "Pick your own tape color, and leave a matching trail wherever you run.",
+	},
 }
 
 local products: { Product } = {
@@ -142,6 +156,22 @@ for _, product in products do
 	productByKey[product.Key] = product
 end
 
+-- Today's deal (the product key, or nil if none is on sale). `day` = days since 1970 (UTC).
+local deals = { "CoinsMedium", "PriorityStamps", "CoinsSmall", "Invincible", "CoinsLarge" }
+local function dealFor(day: number): string?
+	local live = {}
+	for _, key in deals do
+		local product = productByKey[key]
+		if product and product.Id ~= 0 and not product.Retired then
+			table.insert(live, key)
+		end
+	end
+	if #live == 0 then
+		return nil
+	end
+	return live[(day % #live) + 1]
+end
+
 return {
 	Passes = passes,
 	PassByKey = passByKey,
@@ -169,4 +199,11 @@ return {
 	CoinPackJobs = { CoinsSmall = 20, CoinsMedium = 60, CoinsLarge = 200 },
 	UnlockNextMaxTier = 4,
 	PriorityStampCount = 5,
+	-- 2x Coins pass: everything you earn is multiplied by this
+	Coins2xMult = 2,
+	-- Today's deal: one product a day (UTC) gives DealBonus more (+50% coins, stamps or shield time).
+	-- It rotates through this list; products not set up yet (Id 0) are skipped.
+	Deals = deals,
+	DealBonus = 0.5,
+	DealFor = dealFor,
 }

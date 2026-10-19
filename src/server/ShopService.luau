@@ -271,6 +271,24 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 		if profile.Boxes[itemId] then
 			profile.EquippedBox = itemId
 		end
+	elseif action == "SetTape" then
+		-- Style: pick a tape color (Config/Styles.luau). Locked colors need their pass.
+		local tape = Config.Styles.TapeById[itemId]
+		if not tape then
+			return
+		end
+		if tape.Needs and not MonetizationService.HasPass(player, tape.Needs) then
+			return
+		end
+		profile.TapeStyle = itemId
+		Analytics.Custom(player, "StylePicked", 1, "Tape", itemId, Analytics.Segment(player))
+		MonetizationService.RefreshStyle(player)
+	elseif action == "ToggleTrail" then
+		if not MonetizationService.HasPass(player, "StylePack") then
+			return
+		end
+		profile.TrailOn = not profile.TrailOn
+		MonetizationService.RefreshStyle(player)
 	elseif action == "UpgradeTool" then
 		local tool = Config.Tools.ById[itemId]
 		if not tool then

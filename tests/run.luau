@@ -231,6 +231,39 @@ for key in keys do
 	check(Config.Icons[`Store_{key}`] ~= nil, `store item {key} has no Store_{key} icon`)
 end
 
+-- Today's deal: only real (set-up, not retired) products, and every day has one when any is set up
+for _, key in Config.Monetization.Deals do
+	check(Config.Monetization.ProductByKey[key] ~= nil, `Deals has {key}, which isn't a product`)
+end
+for day = 20000, 20020 do
+	local deal = Config.Monetization.DealFor(day)
+	if deal then
+		local product = Config.Monetization.ProductByKey[deal]
+		check(product.Id ~= 0 and not product.Retired, `day {day}'s deal {deal} can't be bought`)
+	end
+end
+
+section("Styles")
+local Styles = Config.Styles
+local function owns(list)
+	return function(key)
+		return table.find(list, key) ~= nil
+	end
+end
+check(Styles.TapeFor("", owns({})).Id == "Classic", "no passes: Classic tape")
+check(Styles.TapeFor("", owns({ "VIP" })).Id == "Gold", "VIP with no pick: Gold tape (as before)")
+check(Styles.TapeFor("Classic", owns({ "VIP" })).Id == "Classic", "VIP can pick Classic")
+check(Styles.TapeFor("Red", owns({})).Id == "Classic", "Red without the Style Pack falls back to Classic")
+check(Styles.TapeFor("Red", owns({ "StylePack" })).Id == "Red", "Style Pack unlocks Red")
+check(Styles.TapeFor("Gold", owns({ "StylePack" })).Id == "Classic", "Gold needs VIP, not the Style Pack")
+check(Styles.TapeFor("Nope", owns({})).Id == "Classic", "an unknown pick falls back to Classic")
+for _, tape in Styles.Tapes do
+	check(
+		tape.Needs == nil or Config.Monetization.PassByKey[tape.Needs] ~= nil,
+		`tape {tape.Id} needs a pass that doesn't exist`
+	)
+end
+
 section("Icon sheets")
 for key, cell in Config.IconAtlas.Cells do
 	check(

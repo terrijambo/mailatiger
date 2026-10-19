@@ -219,13 +219,17 @@ function Economy.PayoutMult(player: Player): number
 	return (1 + rebirths * Config.Progression.Rebirth.PayoutBonusPerRebirth) * Economy.BoostMult(player)
 end
 
--- Boosts on everything you earn: Golden Paws, the server boost, Roblox Premium, the group and friends
+-- Boosts on everything you earn: Golden Paws, the server boost, the 2x Coins pass, Roblox Premium, the group
+-- and friends
 -- (MonetizationService sets those attributes)
 function Economy.BoostMult(player: Player): number
 	local mult = 1 + Economy.UpgradeBonus(player, "GoldenPaws") / 100
 	local money = Config.Monetization
 	if Economy.BoostActive() then
 		mult *= money.BoostMult
+	end
+	if player:GetAttribute("Pass_Coins2x") == true then
+		mult *= money.Coins2xMult
 	end
 	if player:GetAttribute("Premium") == true then
 		mult *= money.PremiumPayoutMult

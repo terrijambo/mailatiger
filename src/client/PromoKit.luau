@@ -21,7 +21,8 @@ local player = Players.LocalPlayer
 local PromoKit = {}
 
 -- The everyday HUD that F8 hides (menus and the BOX screen still show when you open them)
-local HIDE = { "MailATigerHud", "SideButtons", "TrollBar", "Tutorial", "FollowPrompt", "Popups", "LevelUp" }
+local HIDE =
+	{ "MailATigerHud", "SideButtons", "TrollBar", "Tutorial", "FollowPrompt", "WelcomeBack", "Popups", "LevelUp" }
 
 function PromoKit.Start()
 	if not RunService:IsStudio() then
