@@ -28,6 +28,11 @@ local function startNewHire(player: Player)
 	if not profile or profile.TutorialDone or profile.Mailed > 0 then
 		return
 	end
+	-- Already boxed their first animal last visit (it's in their bag or a machine): they start in town, by the
+	-- chute, where the walkthrough's next step points
+	if #profile.Parcels > 0 or next(profile.Processing) ~= nil then
+		return
+	end
 	local character = player.Character or player.CharacterAdded:Wait()
 	character:WaitForChild("HumanoidRootPart", 10)
 	task.wait(0.5) -- (let the character settle before moving it)

@@ -151,6 +151,7 @@ local function nearestWild(range: number): BasePart?
 			and ball:GetAttribute("Wild") == true
 			and typeof(level) == "number"
 			and level <= myLevel
+			and (ball:GetAttribute("LuredFor") == nil or ball:GetAttribute("LuredFor") == player.UserId)
 		then
 			local distance = (ball.Position - root.Position).Magnitude
 			if distance < bestDistance then
@@ -306,7 +307,16 @@ function Tutorial.Start()
 			arrow.Marker.Enabled = show
 			if goal and root then
 				if arrow.From.Parent ~= root then
-					arrow.From.Parent = root
+					-- (a respawn can destroy the old character with the attachment in it: make a new one)
+					if not pcall(function()
+						arrow.From.Parent = root
+					end) then
+						local from = Instance.new("Attachment")
+						from.Name = "TutorialFrom"
+						from.Parent = root
+						arrow.From = from
+						arrow.Beam.Attachment0 = from
+					end
 				end
 				local top = goal.Position + Vector3.new(0, goal.Size.Y / 2 + 1, 0)
 				arrow.To.WorldPosition = top

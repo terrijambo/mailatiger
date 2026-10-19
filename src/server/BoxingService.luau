@@ -967,6 +967,10 @@ local function onTape(s: Session, player: Player, seamIndex: unknown)
 	s.FirstTouch = s.FirstTouch or Workspace:GetServerTimeNow()
 	Analytics.Onboarding(player, "FirstTape")
 	state.Anger += Boxing.Box.TapeAnger * state.TapeAngerMult * state.AngerMult
+	if invincible(s.Player) then
+		-- (shielded: it can't break out, so the last seam always closes the box instead of jamming at 100)
+		state.Anger = math.min(state.Anger, 99)
+	end
 
 	local allTaped = true
 	for _, done in state.Taped do

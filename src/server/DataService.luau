@@ -147,6 +147,7 @@ end
 
 local profiles: { [Player]: Profile } = {}
 local temporary: { [Player]: boolean } = {}
+local leaving: { [Player]: boolean } = {} -- their last save is in progress (autosaves must not lock it again)
 local sessionId = HttpService:GenerateGUID(false)
 local store: DataStore? = nil
 
@@ -318,6 +319,9 @@ local function save(player: Player, release: boolean): boolean
 	if not profile or not activeStore or temporary[player] then
 		return false
 	end
+	if not release and leaving[player] then
+		return false -- (an autosave queued behind the last save would re-lock a save whose player has gone)
+	end
 
 	profile.LastSeen = os.time()
 	local lostLock = false
@@ -341,6 +345,23 @@ local function save(player: Player, release: boolean): boolean
 		player:Kick("Your progress was opened on another server. Please rejoin.")
 	end
 	return ok and not lostLock
+end
+
+-- The last save when a player leaves (or the server closes): retried a few times, since losing it loses up to
+-- a minute of progress and leaves the save locked until the lock times out
+local function saveAndRelease(player: Player)
+	leaving[player] = true
+	if not store or temporary[player] then
+		return -- (saving is off this session)
+	end
+	for attempt = 1, 4 do
+		if save(player, true) then
+			break
+		end
+		if attempt < 4 then
+			task.wait(attempt)
+		end
+	end
 end
 
 local function onPlayerAdded(player: Player)
@@ -423,9 +444,10 @@ function DataService.Start()
 
 	Players.PlayerRemoving:Connect(function(player)
 		beforeLastSave(player, profiles[player])
-		save(player, true)
+		saveAndRelease(player)
 		profiles[player] = nil
 		temporary[player] = nil
+		leaving[player] = nil
 	end)
 
 	task.spawn(function()
@@ -444,7 +466,7 @@ function DataService.Start()
 			pending += 1
 			beforeLastSave(player, profile)
 			task.spawn(function()
-				save(player, true)
+				saveAndRelease(player)
 				pending -= 1
 			end)
 		end

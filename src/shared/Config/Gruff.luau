@@ -52,7 +52,7 @@ return {
 
 	-- The first-time walkthrough (src/client/Tutorial.luau). One line per step.
 	Tutorial = {
-		Pen = "New hire! We MAIL ANIMALS. Tap PEN to go where the wild ones are.",
+		Pen = "New hire! We MAIL ANIMALS. Tap GRUFF to come to me, then PEN to go where the wild ones are.",
 		Wild = "See that animal? Walk up and HOLD E to grab it.",
 		Catch = "Get close and HOLD E to grab it!",
 		Box = "Rub a ♥ to calm it. Drag tape along every seam. Avoid the ✖ spots!",

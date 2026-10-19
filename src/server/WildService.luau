@@ -223,8 +223,19 @@ local function boom(player: Player, entry: Entry, level: number, playerLevel: nu
 	end)
 end
 
+-- A lured animal (a lure, the MEGA Lure, a new hire's tutorial animal) is only for the player it came for,
+-- while they're still here
+local function reservedForOther(entry: Entry, player: Player): boolean
+	local owner = entry.LuredFor
+	return owner ~= nil and owner ~= player and owner.Parent ~= nil
+end
+
 local function onGrab(entry: Entry, player: Player)
 	if entry.Taken then
+		return
+	end
+	if reservedForOther(entry, player) then
+		say(player, Config.Gruff.NotYours)
 		return
 	end
 	local profile = DataService.Get(player)
@@ -248,8 +259,10 @@ local function onGrab(entry: Entry, player: Player)
 	-- Above your level (but within reach): a harder BOX, the hardest at the full gap
 	local difficulty = math.clamp((level - profile.Level) / Wild.MaxLevelGap, 0, 1)
 	local at = entry.Ball.Position
-	remove(entry)
+	-- Held while the job starts; only removed once it has (so a failed start doesn't make the animal vanish)
+	entry.Taken = true
 	if BoxingService.StartWild(player, entry.AnimalId, entry.ArenaId, entry.Variant, at, difficulty) then
+		remove(entry)
 		Analytics.Custom(
 			player,
 			"WildGrab",
@@ -258,6 +271,8 @@ local function onGrab(entry: Entry, player: Player)
 			if difficulty > 0 then "Hard" else "Normal",
 			if entry.Variant then entry.Variant else Analytics.Segment(player)
 		)
+	else
+		entry.Taken = false
 	end
 end
 
@@ -627,7 +642,7 @@ function WildService.Start(builtMap: MapBuilder.Map)
 	table.insert(DiveService.OnDive, function(player: Player, root: BasePart): boolean
 		local best, bestDistance = nil, math.huge
 		for _, entry in wilds do
-			if not entry.Taken then
+			if not entry.Taken and not reservedForOther(entry, player) then
 				local distance = (entry.Ball.Position - root.Position).Magnitude
 				if distance < entry.Radius + Config.Dive.GrabReach and distance < bestDistance then
 					best, bestDistance = entry, distance
