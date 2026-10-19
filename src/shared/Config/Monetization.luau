@@ -48,14 +48,14 @@ local passes: { Pass } = {
 	},
 	{
 		Key = "Coins2x",
-		Id = 0,
+		Id = 2037119007,
 		Price = 199,
 		DisplayName = "2x Coins",
 		Description = "Earn double coins from everything, forever.",
 	},
 	{
 		Key = "StylePack",
-		Id = 0,
+		Id = 2037730996,
 		Price = 149,
 		DisplayName = "Style Pack",
 		Description = "Pick your own tape color, and leave a matching trail wherever you run.",
