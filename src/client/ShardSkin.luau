@@ -123,13 +123,14 @@ local function clear(target: GuiObject)
 end
 
 -- A holder for the layers, under everything else inside the target. A target that lays its children out
--- (a grid or list of buttons) would treat the holder as one more cell, so then the holder sits right behind
+-- (a grid or list of buttons) would treat the holder as one more cell, so then (and for text boxes) it sits right behind
 -- the target instead, as a sibling that copies its place, size, visibility and pop-open scale.
 local function holder(target: GuiObject): Frame
 	local frame = Instance.new("Frame")
 	frame.Name = "Shard"
 	frame.BackgroundTransparency = 1
-	if not target:FindFirstChildWhichIsA("UIGridStyleLayout") then
+	-- (a text box draws its typed text under its own children, so it also gets the painting behind it)
+	if not (target:IsA("TextBox") or target:FindFirstChildWhichIsA("UIGridStyleLayout")) then
 		frame.Size = UDim2.fromScale(1, 1)
 		frame.ZIndex = 0
 		frame.Parent = target
@@ -312,7 +313,6 @@ function ShardSkin.Bar(back: GuiObject, fill: GuiObject, color: Color3): boolean
 	local geo = Geometry.Bar.md
 	local ids = Assets.Bar.md
 	local L = geo.Layers
-	local _, family = familyFor(color, Palette.Families)
 	clear(back)
 	clear(fill)
 	local root = holder(back)
@@ -329,15 +329,29 @@ function ShardSkin.Bar(back: GuiObject, fill: GuiObject, color: Color3): boolean
 	picture.Size = UDim2.new(1, -pad * 2, 1, -pad * 2)
 	local g = Instance.new("UIGradient")
 	g.Rotation = 90
-	g.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, family.l),
-		ColorSequenceKeypoint.new(0.32, family.l),
-		ColorSequenceKeypoint.new(0.33, family.m),
-		ColorSequenceKeypoint.new(0.66, family.m),
-		ColorSequenceKeypoint.new(0.67, family.d),
-		ColorSequenceKeypoint.new(1, family.d),
-	})
 	g.Parent = picture
+	-- The fill's color can change as it fills (the ANGER meter goes green to red): it follows the fill's
+	-- BackgroundColor3 (still set by the game, though the frame itself is no longer drawn)
+	local shown = ""
+	local function recolor(from: Color3)
+		local name, family = familyFor(from, Palette.Families)
+		if name == shown then
+			return
+		end
+		shown = name
+		g.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, family.l),
+			ColorSequenceKeypoint.new(0.32, family.l),
+			ColorSequenceKeypoint.new(0.33, family.m),
+			ColorSequenceKeypoint.new(0.66, family.m),
+			ColorSequenceKeypoint.new(0.67, family.d),
+			ColorSequenceKeypoint.new(1, family.d),
+		})
+	end
+	recolor(color)
+	fill:GetPropertyChangedSignal("BackgroundColor3"):Connect(function()
+		recolor(fill.BackgroundColor3)
+	end)
 	local function fit()
 		local s = cornerFit(L.shell, back.AbsoluteSize)
 		shell.SliceScale = 1 / Geometry.Scale * s
@@ -381,6 +395,129 @@ function ShardSkin.Plate(target: GuiObject): ImageLabel?
 	recolor()
 	followFade(target, { outline, plate })
 	return plate
+end
+
+-- A text box: the pack's dark sunken input well (white text on it)
+function ShardSkin.Field(target: TextBox): boolean
+	if not Geometry then
+		return false
+	end
+	local function pick(height: number): string
+		return if height < 54 then "sm" elseif height < 66 then "md" else "lg"
+	end
+	local given = if target.AbsoluteSize.Y > 1 then target.AbsoluteSize.Y else target.Size.Y.Offset
+	local size = pick(given)
+	local geo = Geometry.Field[size]
+	local ids = Assets.Field[size]
+	local L = geo.Layers
+	clear(target)
+	local root = holder(target)
+	local shell = layer(root, "Shell", ids.shell, L.shell.Slice, 0)
+	shell.ImageColor3 = Palette.Line
+	local plate = layer(root, "Plate", ids.plate, L.plate.Slice, 1)
+	plate.Position = UDim2.fromOffset(geo.Pad, geo.Pad)
+	plate.Size = UDim2.new(1, -geo.Pad * 2, 1, -geo.Pad * 2)
+	local function fit()
+		local s = cornerFit(L.shell, target.AbsoluteSize)
+		shell.SliceScale = 1 / Geometry.Scale * s
+		plate.SliceScale = 1 / Geometry.Scale * s
+	end
+	target:GetPropertyChangedSignal("AbsoluteSize"):Connect(fit)
+	fit()
+	target.TextColor3 = Color3.new(1, 1, 1)
+	target.PlaceholderColor3 = Color3.fromRGB(170, 180, 205)
+	return true
+end
+
+-- A dark see-through plate behind a row of HUD numbers and icons, resized to what's showing in it (a coin
+-- count grows and shrinks). Only things that draw count: text (by its actual words), images and viewports.
+function ShardSkin.Pill(row: GuiObject): boolean
+	if not Geometry then
+		return false
+	end
+	local ids = Assets.Panel.md
+	local L = Geometry.Panel.md.Layers
+	local root = Instance.new("Frame")
+	root.Name = "Pill"
+	root.BackgroundTransparency = 1
+	root.ZIndex = 0
+	root.Parent = row
+	local outline = layer(root, "Outline", ids.outline, L.outline.Slice, 0)
+	outline.ImageColor3 = Palette.Line
+	outline.ImageTransparency = 0.25
+	local plate = layer(root, "Plate", ids.frame, L.frame.Slice, 0)
+	plate.ImageColor3 = Palette.Families.slate.b
+	plate.ImageTransparency = 0.3
+	plate.Position = UDim2.fromOffset(3, 3)
+	plate.Size = UDim2.new(1, -6, 1, -6)
+	local PAD_X, PAD_Y = 10, 2
+
+	local function shows(object: GuiObject): boolean
+		local node: Instance? = object
+		while node and node ~= row do
+			if node:IsA("GuiObject") and not node.Visible then
+				return false
+			end
+			node = node.Parent
+		end
+		return true
+	end
+	local function refresh()
+		local scale = if row.Size.X.Offset > 0 then row.AbsoluteSize.X / row.Size.X.Offset else 1
+		if scale <= 0 or not row.Visible then
+			return
+		end
+		local left, top, right, bottom = math.huge, math.huge, -math.huge, -math.huge
+		for _, d in row:GetDescendants() do
+			if
+				(d:IsA("TextLabel") or d:IsA("TextButton") or d:IsA("ImageLabel") or d:IsA("ImageButton"))
+				and not d:IsDescendantOf(root)
+				and d.AbsoluteSize.X > 1
+				and shows(d)
+			then
+				local x0, x1 = d.AbsolutePosition.X, d.AbsolutePosition.X + d.AbsoluteSize.X
+				if (d:IsA("TextLabel") or d:IsA("TextButton")) and d.Text ~= "" and not d.TextScaled then
+					local w = math.min(d.TextBounds.X, d.AbsoluteSize.X)
+					if d.TextXAlignment == Enum.TextXAlignment.Left then
+						x1 = x0 + w
+					elseif d.TextXAlignment == Enum.TextXAlignment.Right then
+						x0 = x1 - w
+					else
+						local middle = (x0 + x1) / 2
+						x0, x1 = middle - w / 2, middle + w / 2
+					end
+				elseif
+					(d:IsA("TextLabel") or d:IsA("TextButton"))
+					and d.Text == ""
+					and d.BackgroundTransparency >= 1
+				then
+					continue
+				end
+				left = math.min(left, x0)
+				right = math.max(right, x1)
+				top = math.min(top, d.AbsolutePosition.Y)
+				bottom = math.max(bottom, d.AbsolutePosition.Y + d.AbsoluteSize.Y)
+			end
+		end
+		if left == math.huge then
+			root.Visible = false
+			return
+		end
+		root.Visible = true
+		local origin = row.AbsolutePosition
+		root.Position = UDim2.fromOffset((left - origin.X) / scale - PAD_X, (top - origin.Y) / scale - PAD_Y)
+		root.Size = UDim2.fromOffset((right - left) / scale + PAD_X * 2, (bottom - top) / scale + PAD_Y * 2)
+		local s = math.min(0.4, cornerFit(L.outline, root.AbsoluteSize))
+		outline.SliceScale = 1 / Geometry.Scale * s
+		plate.SliceScale = 1 / Geometry.Scale * s
+	end
+	task.spawn(function()
+		while root.Parent do
+			refresh()
+			task.wait(0.2)
+		end
+	end)
+	return true
 end
 
 -- Light colors (white, cream) are plates; everything else is a gem

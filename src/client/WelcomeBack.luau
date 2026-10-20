@@ -80,6 +80,7 @@ local function show(data: { [string]: any })
 	}, gui)
 	Ui.round(card, 16)
 	Ui.border(card, 3)
+	Ui.plate(card)
 	Ui.autoScale(card)
 	Ui.outlined(card, {
 		Position = UDim2.fromOffset(0, 10),

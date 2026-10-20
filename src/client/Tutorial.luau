@@ -43,6 +43,7 @@ local function buildPanel(): (ScreenGui, TextLabel, TextButton)
 	}, gui)
 	Ui.round(panel, 16)
 	Ui.border(panel, 3)
+	Ui.plate(panel)
 	Ui.autoScale(panel)
 	Ui.make("UISizeConstraint", { MaxSize = Vector2.new(420, 160) }, panel)
 

@@ -684,6 +684,26 @@ function Ui.bar(back: GuiObject, fill: GuiObject, color: Color3): boolean
 	return SHARD and ShardSkin.Bar(back, fill, color)
 end
 
+-- A cream card that pops up (a toast, Gruff's speech bubble): the pack's outlined flat plate. No-op without it.
+function Ui.plate(frame: GuiObject): boolean
+	return SHARD and ShardSkin.Plate(frame) ~= nil
+end
+
+-- A text box in the pack's dark input well (its text turns white). No-op without the pack.
+function Ui.field(box: TextBox): boolean
+	return SHARD and ShardSkin.Field(box)
+end
+
+-- A dark see-through plate behind a row of HUD numbers that fits whatever is showing. No-op without the pack.
+function Ui.pill(row: GuiObject): boolean
+	return SHARD and ShardSkin.Pill(row)
+end
+
+-- A colored gem behind a HUD frame (a timer pill): its color comes from BackgroundColor3. No-op without the pack.
+function Ui.gem(frame: GuiObject): boolean
+	return SHARD and ShardSkin.Gem(frame, "Button") ~= nil
+end
+
 -- A white rounded card with an outline (a row in a list, a tile in a grid)
 function Ui.card(parent: Instance, props: { [string]: any }): Frame
 	local base: { [string]: any } = {

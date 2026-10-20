@@ -168,12 +168,15 @@ faceted frame, dark header, cream paper, red gem X), all `Ui.button`s (gem, fami
 color), `Ui.card`s (flat outlined plates), side buttons, the TASKS panel and the MENU flyout (`Ui.hudPanel`),
 and the XP bar (`Ui.bar`). The pack's own animator script is not needed (nothing is built with its tags).
 
+Second pass (2026-10-20, checked in Play): HUD stat rows on dark plates that fit their numbers (`Ui.pill`),
+popups and speech bubbles on outlined cream plates (`Ui.plate`: toasts, Tutorial, Welcome Back, follow
+prompt), the 2x Coins timer as a gem (`Ui.gem`), event card, boss title strip and victory card as HUD panels,
+the event and ANGER bars as pack bars (the ANGER fill turns green to amber to red), the code box as the pack's
+dark input well (`Ui.field`), and the BOX screen's box and flaps as cardboard plates.
+
 Still to do in Phase 2:
-- HUD bottom-left (level, coins, Rebirth Points): pack-style chips (`Kits/Hud` uses Chip + Bar).
-- The top quest banner, event banner, toasts and popups (`Hud.luau`, `EventBanner.luau`).
-- Text boxes (the code box in Settings): the pack's Field piece.
-- Rows inside the TASKS panel (thin progress lines), OrdersBoard, TrollBar, EggRoller, Tutorial bubbles.
-- The BOX screen (`BoxingScreen.luau`), with the most care.
+- The top quest banner (a soft dark strip; fine for now) and the thin progress lines inside the TASKS panel.
+- TrollBar, EggRoller, the ♥ / ✖ spots and tape on the BOX screen (drawn shapes, could use pack icons).
 - Phone pass: `bash tools/devices/run.sh` (needs Studio closed).
 
 ---

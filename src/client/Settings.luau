@@ -83,6 +83,7 @@ function Settings.Start()
 		ClearTextOnFocus = false,
 	}, window)
 	Ui.round(codeBox, 8)
+	Ui.field(codeBox)
 	local redeemButton = Ui.button(window, {
 		AnchorPoint = Vector2.new(1, 0),
 		Position = UDim2.new(1, -24, 0, codeY),

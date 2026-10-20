@@ -122,6 +122,8 @@ function Hud.Start()
 		end
 	end)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
+	Ui.pill(coinRow)
+	Ui.pill(bagRow)
 
 	-- Next to the coins, left to right: a + (opens the Premium Store), then your Rebirth Points
 	local coinExtras = Ui.make("Frame", {
@@ -241,6 +243,7 @@ function Hud.Start()
 	local levelRow, levelLabel = statRow(stack, 0, "Hud_Level", Ui.GOLD)
 	levelLabel.Size = UDim2.fromOffset(90, 44)
 	levelExtras.Parent = levelRow
+	Ui.pill(levelRow)
 	local xpBack = Ui.make("Frame", {
 		Position = UDim2.fromOffset(136, 12),
 		Size = UDim2.fromOffset(150, 20),
@@ -475,6 +478,7 @@ function Hud.Start()
 	Ui.round(boostPill, 14)
 	Ui.border(boostPill, 3)
 	Ui.gloss(boostPill)
+	Ui.gem(boostPill)
 	Ui.autoScale(boostPill)
 	-- Top-left on big screens; top-right on phones (the stats are top-left there)
 	Ui.onResize(function()
@@ -669,6 +673,7 @@ function Hud.Start()
 	placeToast()
 	Ui.round(toast, 18)
 	local toastStroke = Ui.border(toast, 3)
+	Ui.plate(toast)
 	local toastSizer = Ui.autoScale(toast)
 	local badge = Ui.make("Frame", {
 		AnchorPoint = Vector2.new(0, 0.5),

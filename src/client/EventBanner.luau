@@ -48,6 +48,7 @@ function EventBanner.Start()
 	}, gui)
 	Ui.round(card, 14)
 	Ui.border(card, 3)
+	Ui.hudPanel(card, Ui.PURPLE)
 	Ui.autoScale(card)
 	Ui.onResize(function()
 		local compact = Ui.compact()
@@ -83,6 +84,7 @@ function EventBanner.Start()
 		BackgroundColor3 = Ui.GOLD,
 	}, barBack)
 	Ui.round(barFill, 5)
+	Ui.bar(barBack, barFill, Ui.GOLD)
 
 	-- Tap the chip to open or close it (behind the GO / SKIP buttons)
 	local toggle = Ui.make("TextButton", {
@@ -307,6 +309,7 @@ function EventBanner.Start()
 		Visible = false,
 	}, titleLayer)
 	Ui.border(strip, 4)
+	Ui.hudPanel(strip, Ui.RED)
 	local bigName = Ui.outlined(strip, {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 0, 14),
@@ -334,6 +337,7 @@ function EventBanner.Start()
 	}, titleLayer)
 	Ui.round(victory, 18)
 	Ui.border(victory, 4)
+	Ui.hudPanel(victory, Ui.PURPLE)
 	local victoryScale = Ui.autoScale(victory)
 	local victoryTitle = Ui.outlined(victory, {
 		Position = UDim2.fromOffset(0, 10),

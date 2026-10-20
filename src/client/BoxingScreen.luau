@@ -108,6 +108,7 @@ function BoxingScreen.Start()
 	Ui.round(meterBack, 10)
 	local meterFill = Ui.make("Frame", { Size = UDim2.fromScale(0.2, 1), BackgroundColor3 = Ui.GREEN }, meterBack)
 	Ui.round(meterFill, 10)
+	Ui.bar(meterBack, meterFill, Ui.GREEN)
 	local meterText = Ui.label(meterBack, {
 		Size = UDim2.fromScale(1, 1),
 		TextXAlignment = Enum.TextXAlignment.Center,
@@ -222,6 +223,7 @@ function BoxingScreen.Start()
 		openFlap(flap, side)
 		Ui.round(flap, 6)
 		Ui.make("UIStroke", { Thickness = 3, Color = DARK }, flap)
+		Ui.plate(flap)
 		flaps[side] = flap
 	end
 	local boxCard = Ui.make("Frame", {
@@ -233,6 +235,7 @@ function BoxingScreen.Start()
 	}, scene)
 	Ui.round(boxCard, 10)
 	Ui.make("UIStroke", { Thickness = 4, Color = DARK }, boxCard)
+	Ui.plate(boxCard)
 	local boxTitle = Ui.label(scene, {
 		AnchorPoint = Vector2.new(0.5, 0),
 		Position = UDim2.new(0.5, 0, 1, 8),
