@@ -86,7 +86,8 @@ blocks movement or the camera.
 
 ## 6. Lighting
 
-- `Lighting.Technology = Future` (a Studio setting: Lighting → Properties → Technology; scripts can't set it).
+- Lighting → Properties: **LightingStyle = Realistic** and **PrioritizeLightingQuality = on** (Studio settings saved in
+  the place; they replaced the old `Technology = Future` in 2026 Studio).
 - Shared light, day/night cycle, atmosphere, bloom and sun rays: `Config/Look.luau`, applied by
   `server/Look.luau`.
 - Per-island mood: `Config/Look.luau` → `Zones`, applied on each player's screen by `client/ZoneLook.luau`.

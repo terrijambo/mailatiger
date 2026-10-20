@@ -2,8 +2,8 @@
 -- How the world is lit. Applied when a server starts (server/Look.luau).
 -- Set Apply = false to keep whatever you set up in Studio's Lighting instead.
 --
--- For the nicest shadows on the low-poly models, also set Lighting -> Technology to "Future" (or
--- "ShadowMap") in Studio's Properties window. Scripts aren't allowed to change that one.
+-- For the nicest shadows on the low-poly models, also set Lighting -> LightingStyle to "Realistic" and tick
+-- PrioritizeLightingQuality in Studio's Properties window (they replaced the old Technology = Future).
 
 return {
 	Apply = true,

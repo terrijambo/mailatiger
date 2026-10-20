@@ -130,7 +130,8 @@ imports end to end.
   after Phase 3 if client memory is over budget; those models then need `ModelStreamingMode = Persistent`.
 
 **Owner steps for Phase 1** (Studio, about 5 minutes):
-1. Lighting → Properties → **Technology → Future** (it's `Voxel` now; scripts can't change it). Ctrl+S.
+1. Lighting → Properties → **LightingStyle → Realistic**, and tick **PrioritizeLightingQuality**. Ctrl+S.
+   (Newer Studio has no "Technology" property any more; these two replaced it.)
 2. Upload the two pack textures and paste their ids in `src/shared/Config/Atlases.luau` (steps at the top
    of that file). The textures are in the KayKit zips; the agent can hand them over.
 
