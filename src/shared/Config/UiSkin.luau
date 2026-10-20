@@ -15,6 +15,10 @@ export type Part = {
 }
 
 return {
+	-- The UIPack Plus look (client/ShardSkin.luau) for windows, buttons, cards and side buttons. It needs the
+	-- bought pack in the place (vendor/, synced by Rojo); without it, the painted Sheet below is used. false = off.
+	Shard = true,
+
 	Sheet = "rbxassetid://120764229448606", -- "" turns the painted look off
 
 	Parts = {

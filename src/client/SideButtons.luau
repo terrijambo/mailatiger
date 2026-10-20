@@ -69,6 +69,7 @@ function SideButtons.Start()
 		SortOrder = Enum.SortOrder.LayoutOrder,
 		FillDirectionMaxCells = 3,
 	}, popup)
+	Ui.hudPanel(popup, Ui.PURPLE) -- (after the grid, so the painting knows to sit behind it, not in it)
 
 	local function setMenu(open: boolean)
 		if open == popup.Visible then

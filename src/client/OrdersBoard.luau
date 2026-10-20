@@ -53,6 +53,7 @@ function OrdersBoard.Start()
 	}, gui)
 	Ui.round(panel, 12)
 	Ui.make("UIStroke", { Color = Color3.new(1, 1, 1), Transparency = 0.8, Thickness = 1.5 }, panel)
+	Ui.hudPanel(panel, Ui.GREY)
 	Ui.autoScale(panel)
 
 	-- Header: tap to fold / unfold

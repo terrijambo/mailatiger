@@ -21,8 +21,14 @@ local UserInputService = game:GetService("UserInputService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local ShardSkin = require(script.Parent.ShardSkin)
 
 local Ui = {}
+
+-- The UIPack Plus look (client/ShardSkin.luau) when the pack is in the place and Config.UiSkin.Shard is on;
+-- otherwise the older painted sheet (Ui.skin) or the plain drawn look
+local SHARD = ShardSkin.Available() and Config.UiSkin.Shard ~= false
+Ui.SHARD = SHARD
 
 Ui.FONT = Enum.Font.FredokaOne
 Ui.TITLE_FONT = Enum.Font.LuckiestGuy -- big, bold, cartoony: titles and headline numbers
@@ -309,8 +315,18 @@ function Ui.window(
 		BackgroundColor3 = Ui.OUTLINE,
 		BorderSizePixel = 0,
 	}, bar)
+	-- UIPack Plus: a faceted frame in the window's color, its dark header bar, and cream paper for the content
+	local shard = SHARD and ShardSkin.Panel(frame, color or Ui.BLUE, 46, true) ~= nil
+	if shard then
+		for _, child in bar:GetChildren() do
+			child:Destroy() -- (the gloss, corner, filler and dark line: the header bar is painted)
+		end
+		bar.BackgroundTransparency = 1
+		bar.Position = UDim2.fromOffset(5, 5)
+		bar.Size = UDim2.new(1, -10, 0, 46)
+	end
 	-- With the painted skin: a cream paper card, and a glossy plaque for a title bar that sits over its top edge
-	local painted = Ui.skin(frame, "Panel", false) ~= nil
+	local painted = not shard and Ui.skin(frame, "Panel", false) ~= nil
 	if painted then
 		bar.Position = UDim2.fromOffset(10, -10)
 		bar.Size = UDim2.new(1, -20, 0, 60)
@@ -324,9 +340,9 @@ function Ui.window(
 	end
 	Ui.outlined(bar, {
 		Name = "Title",
-		Position = UDim2.fromOffset(18, if painted then 2 else 4),
-		Size = UDim2.new(1, -90, 1, if painted then -14 else -6),
-		TextSize = 32,
+		Position = UDim2.fromOffset(if shard then 24 else 18, if painted then 2 elseif shard then 2 else 4),
+		Size = UDim2.new(1, -90, 1, if painted then -14 elseif shard then -8 else -6),
+		TextSize = if shard then 28 else 32,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Text = title,
 	})
@@ -346,7 +362,25 @@ function Ui.window(
 	Ui.border(close, 3)
 	Ui.gloss(close)
 	Ui.textOutline(close, 2)
-	if Ui.skin(close, "Close", false) then
+	local closeIcon = if SHARD then ShardSkin.Icon("Close") else nil
+	if SHARD and ShardSkin.Gem(close, "IconButton") then
+		-- A red gem in the header bar's right end, with the pack's white X
+		close.AnchorPoint = Vector2.new(1, 0.5)
+		close.Position = UDim2.new(1, -12, 0, 28)
+		close.Size = UDim2.fromOffset(42, 42)
+		if closeIcon then
+			close.Text = ""
+			Ui.make("ImageLabel", {
+				Name = "Icon",
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.5, -2),
+				Size = UDim2.fromScale(0.62, 0.62),
+				BackgroundTransparency = 1,
+				Image = closeIcon,
+				ZIndex = 6,
+			}, close)
+		end
+	elseif Ui.skin(close, "Close", false) then
 		close.Text = ""
 		close.Size = UDim2.fromOffset(54, 54)
 	end
@@ -492,7 +526,8 @@ function Ui.button(parent: Instance, props: { [string]: any }): TextButton
 	Ui.border(button, 3)
 	Ui.gloss(button)
 	Ui.press(button)
-	if not Ui.skin(button, "Button", true) then
+	local painted = if SHARD then ShardSkin.Gem(button, "Button") ~= nil else Ui.skin(button, "Button", true) ~= nil
+	if not painted then
 		Ui.textOutline(button, 2)
 		return button
 	end
@@ -548,7 +583,9 @@ function Ui.sideButton(parent: Instance, spec: SideButtonSpec): TextButton
 	Ui.border(button, 3)
 	Ui.gloss(button)
 	Ui.press(button)
-	Ui.skin(button, "Tile", true)
+	if not (SHARD and ShardSkin.Gem(button, "IconButton")) then
+		Ui.skin(button, "Tile", true)
+	end
 	Ui.icon(button, spec.Icon, {
 		Name = "Icon",
 		AnchorPoint = Vector2.new(0.5, 0),
@@ -635,6 +672,18 @@ function Ui.autoScale(target: GuiObject)
 	return scale
 end
 
+-- A HUD panel (white text on it): the pack's solid faceted panel when the UIPack Plus look is on, otherwise the
+-- frame keeps its own drawn look. color picks the panel's color family (Ui.GREY = slate).
+function Ui.hudPanel(frame: GuiObject, color: Color3): boolean
+	return SHARD and ShardSkin.Panel(frame, color, 0, false) ~= nil
+end
+
+-- A progress bar in the UIPack Plus look: back is the bar's background, fill its child that grows (width as a
+-- fraction). Returns false (and changes nothing) without the pack.
+function Ui.bar(back: GuiObject, fill: GuiObject, color: Color3): boolean
+	return SHARD and ShardSkin.Bar(back, fill, color)
+end
+
 -- A white rounded card with an outline (a row in a list, a tile in a grid)
 function Ui.card(parent: Instance, props: { [string]: any }): Frame
 	local base: { [string]: any } = {
@@ -646,7 +695,11 @@ function Ui.card(parent: Instance, props: { [string]: any }): Frame
 	local card = Ui.make("Frame", base, parent)
 	Ui.round(card, 12)
 	Ui.border(card, 2.5)
-	Ui.skin(card, "Button", true) -- (painted: the same glossy plate as the buttons, tinted to its color)
+	-- UIPack Plus: a flat chamfered plate in the card's color (cards hold dark text, so no gem shading).
+	-- Otherwise the painted sheet's glossy plate, tinted to its color.
+	if not (SHARD and ShardSkin.Plate(card)) then
+		Ui.skin(card, "Button", true)
+	end
 	return card
 end
 

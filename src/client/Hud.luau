@@ -255,6 +255,7 @@ function Hud.Start()
 	}, xpBack)
 	Ui.round(xpFill, 10)
 	Ui.gloss(xpFill)
+	Ui.bar(xpBack, xpFill, Color3.fromRGB(80, 200, 255))
 	local xpText = Ui.outlined(xpBack, {
 		Size = UDim2.fromScale(1, 1),
 		Font = Ui.FONT,
