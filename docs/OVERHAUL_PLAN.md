@@ -177,7 +177,8 @@ dark input well (`Ui.field`), and the BOX screen's box and flaps as cardboard pl
 Still to do in Phase 2:
 - The top quest banner (a soft dark strip; fine for now) and the thin progress lines inside the TASKS panel.
 - TrollBar, EggRoller, the ♥ / ✖ spots and tape on the BOX screen (drawn shapes, could use pack icons).
-- Phone pass: `bash tools/devices/run.sh` (needs Studio closed).
+- ~~Phone pass~~: done 2026-10-20, `bash tools/devices/run.sh` = 16 layouts, 0 problems (laptop down to
+  327x303, HUD and Shop). The tool now clips to scrolling lists, so rows scrolled out of view no longer count.
 
 ---
 

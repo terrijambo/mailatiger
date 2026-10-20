@@ -57,6 +57,22 @@ local function dump(tag)
 					for _, d in { top, table.unpack(top:GetDescendants()) } do
 						if d:IsA("GuiObject") and shows(d) and draws(d) then
 							local p, s = d.AbsolutePosition, d.AbsoluteSize
+							-- Only the part you can see: clip to every clipping frame it sits in (a scrolling
+							-- list's rows below the window are scrolled away, not off screen)
+							local a0, b0, a1, b1 = p.X, p.Y, p.X + s.X, p.Y + s.Y
+							local node = d.Parent
+							while node and node ~= screen do
+								if node:IsA("GuiObject") and node.ClipsDescendants then
+									local q, t = node.AbsolutePosition, node.AbsoluteSize
+									a0, b0 = math.max(a0, q.X), math.max(b0, q.Y)
+									a1, b1 = math.min(a1, q.X + t.X), math.min(b1, q.Y + t.Y)
+								end
+								node = node.Parent
+							end
+							if a1 - a0 < 1 or b1 - b0 < 1 then
+								continue
+							end
+							p, s = Vector2.new(a0, b0), Vector2.new(a1 - a0, b1 - b0)
 							x0, y0 = math.min(x0, p.X), math.min(y0, p.Y)
 							x1, y1 = math.max(x1, p.X + s.X), math.max(y1, p.Y + s.Y)
 							local c = d.BackgroundColor3
