@@ -437,7 +437,8 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 	local paths: { { A: Vector3, B: Vector3 } } = {}
 	for _, d in destinations do
 		local dir = Vector3.new(d.From.X, 0, d.From.Z).Unit
-		table.insert(paths, { A = dir * (R - 2), B = d.From + dir * 2 })
+		-- (it ends where the bridge starts: overlapping the first planks at the same height made them flicker)
+		table.insert(paths, { A = dir * (R - 2), B = d.From })
 	end
 	local function nearPath(p: Vector3, pad: number): boolean
 		for _, path in paths do

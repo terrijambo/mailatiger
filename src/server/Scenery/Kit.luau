@@ -339,9 +339,21 @@ local KAYKIT = {
 }
 Kit.KAYKIT = KAYKIT
 
--- A grass tuft (the small clutter that breaks up flat lawns). No shadow: there are a lot of them.
+-- The height of the ground (or whatever solid thing) under a spot. Decorations don't count: models are spawned
+-- with CanQuery off. Nil over nothing.
+function Kit.groundAt(at: Vector3): Vector3?
+	local hit = workspace:Raycast(Vector3.new(at.X, at.Y + 40, at.Z), Vector3.new(0, -120, 0))
+	return if hit then hit.Position else nil
+end
+
+-- A grass tuft (the small clutter that breaks up flat lawns), set on the real ground there. No shadow: there
+-- are a lot of them.
 function Kit.grass(parent: Instance, at: Vector3, size: number): Model?
-	local model = Kit.model(parent, pickFor(KAYKIT.Grass, at, 4), at, nil, size, false)
+	local ground = Kit.groundAt(at)
+	if not ground then
+		return nil
+	end
+	local model = Kit.model(parent, pickFor(KAYKIT.Grass, at, 4), ground, nil, size, false)
 	if model then
 		for _, p in model:GetDescendants() do
 			if p:IsA("BasePart") then
@@ -826,10 +838,11 @@ function Kit.road(parent: Instance, a: Vector3, b: Vector3, width: number, style
 	local function at(x: number, y: number, z: number): CFrame
 		return cf * CFrame.new(x, y, z)
 	end
+	-- (0.26 tall, not 0.3: bridge planks run onto the road ends at 0.3, and two surfaces at one height flicker)
 	part(parent, {
 		Name = "RoadBed",
-		Size = Vector3.new(width, 0.3, length),
-		CFrame = at(0, 0.15, 0),
+		Size = Vector3.new(width, 0.26, length),
+		CFrame = at(0, 0.13, 0),
 		Color = style.Bed,
 	})
 	local inner = if style.Curb then width - 2 else width

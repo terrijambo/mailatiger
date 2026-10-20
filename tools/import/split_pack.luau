@@ -51,10 +51,10 @@ for _, root in { workspace, ServerStorage } do
 					mesh.CanTouch = false
 					mesh.CanQuery = false
 					mesh.Parent = model
+					-- Pivot flat, at the bottom center. The importer tilts each piece's pivot 90 degrees (Blender's
+					-- "Z is up"), and the game places models by their pivot, so without this they lie on their side.
+					mesh.PivotOffset = CFrame.new(0, -mesh.Size.Y / 2, 0)
 					model.PrimaryPart = mesh
-					-- Pivot at the bottom center (the game stands models on the floor by their bounding box anyway)
-					local cf, size = model:GetBoundingBox()
-					model.WorldPivot = cf * CFrame.new(0, -size.Y / 2, 0)
 					model.Parent = mapModels
 					made += 1
 				end

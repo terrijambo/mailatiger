@@ -206,6 +206,15 @@ before the next one starts.
 **Done when:** 0 visible graybox parts, all glitch detectors at zero, every zone inside its performance
 budget.
 
+**Status (2026-10-20): town, first pass.** KayKit Forest + City are in the place (`ReplicatedStorage.MapModels`,
+142 models named `Forest_*` / `City_*`, imported with `art/export/kaykit/<Pack>_all.fbx` and split by
+`tools/import/split_pack.luau`; the split resets each pivot, which the importer tilts 90 degrees). The scenery
+helpers (`Kit.tree/pine/bush/rock/grass`) use KayKit first, so every island's generic trees changed too. Town:
+KayKit townhouses on the ring, a bush ring instead of the block hedge, ~220 grass tufts and pebbles on the real
+ground. Town glitches 56+ to 0 (paths stop at the bridges; road beds are 0.04 lower so bridge planks never
+share their height). Still over budget in the Town: ~2,740 visible parts and 57 lights (mostly the part-built
+lampposts, plaza grout lines and gameplay props): next town pass. Then the islands, in unlock order.
+
 ---
 
 ## Phase 4 — Animals and Gruff (owner + agent; the most work, ~2–3 weeks)
