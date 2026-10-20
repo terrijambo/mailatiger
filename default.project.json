@@ -5,17 +5,39 @@
 		"ReplicatedStorage": {
 			"Shared": {
 				"$path": "src/shared"
+			},
+			"ShardUI": {
+				"$path": { "optional": "vendor/ShardUI.rbxm" }
+			},
+			"ZeroPanel": {
+				"$path": { "optional": "vendor/ZeroPanel/ReplicatedStorage.rbxm" }
 			}
 		},
 		"ServerScriptService": {
 			"Server": {
 				"$path": "src/server"
+			},
+			"ZeroPanel": {
+				"$path": { "optional": "vendor/ZeroPanel/ServerScriptService.rbxm" }
+			}
+		},
+		"ServerStorage": {
+			"ShardUIReference": {
+				"$path": { "optional": "vendor/ShardUIReference.rbxm" }
+			}
+		},
+		"StarterGui": {
+			"ZeroPanel": {
+				"$path": { "optional": "vendor/ZeroPanel/StarterGui.rbxm" }
 			}
 		},
 		"StarterPlayer": {
 			"StarterPlayerScripts": {
 				"Client": {
 					"$path": "src/client"
+				},
+				"ZeroPanelClient": {
+					"$path": { "optional": "vendor/ZeroPanel/StarterPlayerScripts.rbxm" }
 				}
 			}
 		}

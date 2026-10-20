@@ -31,3 +31,6 @@ tools/devices/out/
 tools/devices/out.txt
 tools/photo/out/
 tools/photo/out.txt
+
+# Bought packs (proprietary: their licenses forbid any repository). Rebuild with tools/vendor_packs.luau
+vendor/
