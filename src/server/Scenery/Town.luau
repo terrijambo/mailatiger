@@ -605,7 +605,8 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 	local title = part(folder, {
 		Name = "TitleSign",
 		Size = Vector3.new(44, 10, 1),
-		CFrame = CFrame.lookAt(Vector3.new(62, 22, 0), Vector3.new(72, 22, 0)), -- (over the Post Office, facing the plaza)
+		-- (over the Post Office, facing the plaza; above the hero building's clock tower, 26 tall)
+		CFrame = CFrame.lookAt(Vector3.new(62, 32, 0), Vector3.new(72, 32, 0)),
 		Transparency = 1,
 		CanCollide = false,
 	})
