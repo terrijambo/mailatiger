@@ -92,7 +92,10 @@ function ModelFit.Paint(model: Model, artName: string)
 	local colors = require(module) :: any
 
 	for _, part in model:GetDescendants() do
-		if part:IsA("BasePart") then
+		-- (a part with its own texture, like the generated animals, keeps its painted colours)
+		local textured = part:IsA("MeshPart")
+			and (part.TextureID ~= "" or part:FindFirstChildOfClass("SurfaceAppearance") ~= nil)
+		if part:IsA("BasePart") and not textured then
 			-- Exact name first; otherwise a name that contains it (the importer sometimes adds prefixes)
 			local entry = colors[part.Name]
 			if not entry then

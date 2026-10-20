@@ -136,6 +136,16 @@ Script-built shapes have been tried and aren't good enough, and no pack exists, 
 5. **Review gate:** a turntable picture of each animal next to a KayKit tree and the player, checked by the owner.
    Not good enough after one retry → COMMISSION that animal instead.
 
+**Pilot result (2026-10-20): done, with Roblox Studio's own AI mesh generator.** ForgeGUI was out of credits
+(71 left; an image costs 1,600, refills 2026-11-10) and Higgsfield had ~1, so the pilot used Studio's built-in
+generator (no credits), with each animal split into named parts (Body, Head, Ears/Tail, legs or paws). Hamster
+(8 parts) and Tiger (7 parts) are installed in `ReplicatedStorage > AnimalModels`; the old ones are kept in
+`ServerStorage > OldAnimalModels`. Checked in Play: the wild Hamster and the Tiger on the BOX screen look like a
+matching, premium set (soft chibi shapes, big glossy eyes, textured colors). `ModelFit.Paint` now leaves textured
+parts alone. Still to do for these two: real animations (the separate parts make a code wiggle easy; a proper rig
+needs ForgeGUI credits or Blender). If the owner approves, the other 23 animals and Gruff go through the same
+generator with the same prompt style (see the pilot prompts in this file's history).
+
 **Pilot before committing:** Hamster (tier 1, seen first) and Tiger (the title animal) go through all 5 steps
 first. The owner judges them in Play. Only then do the other 23 and Gruff. The pilot costs a few ForgeGUI
 credits; the agent asks before spending any.
