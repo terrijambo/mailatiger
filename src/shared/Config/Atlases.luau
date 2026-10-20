@@ -11,6 +11,6 @@
 -- Left empty, the models keep whatever texture the importer gave them.
 
 return {
-	Forest = "",
-	City = "",
+	Forest = "rbxassetid://93520093767802", -- forest_texture.png (uploaded 2026-10-20)
+	City = "rbxassetid://128177561732103", -- citybits_texture.png (uploaded 2026-10-20)
 } :: { [string]: string }
