@@ -32,6 +32,26 @@ return {
 	Contrast = 0.12,
 	Exposure = -0.04, -- (ColorCorrection brightness: slightly darker overall)
 
+	-- A soft glow on bright things (lamps, gold, the sea's sparkle) and light rays when you look toward the sun
+	Bloom = { Intensity = 0.35, Size = 28, Threshold = 1.6 },
+	SunRays = { Intensity = 0.04, Spread = 0.7 },
+
+	-- Each area's own mood: a color grade laid over the world while you stand in it (client/ZoneLook.luau),
+	-- blended over ZoneBlendSeconds when you cross a bridge. Tint is multiplied in (white = no change);
+	-- Saturation, Contrast and Brightness are added to the world's own grade above.
+	ZoneBlendSeconds = 1.5,
+	Zones = {
+		Town = { Tint = Color3.fromRGB(255, 252, 245), Saturation = 0.04, Contrast = 0, Brightness = 0 },
+		Backyard = { Tint = Color3.fromRGB(250, 255, 240), Saturation = 0.08, Contrast = 0, Brightness = 0.01 },
+		Beach = { Tint = Color3.fromRGB(255, 248, 230), Saturation = 0.1, Contrast = -0.02, Brightness = 0.03 },
+		Barn = { Tint = Color3.fromRGB(255, 244, 222), Saturation = 0.05, Contrast = 0.02, Brightness = 0.01 },
+		Jungle = { Tint = Color3.fromRGB(232, 255, 228), Saturation = 0.12, Contrast = 0.04, Brightness = -0.02 },
+		IceRink = { Tint = Color3.fromRGB(228, 242, 255), Saturation = -0.06, Contrast = 0.02, Brightness = 0.03 },
+		Rooftop = { Tint = Color3.fromRGB(240, 238, 255), Saturation = -0.02, Contrast = 0.06, Brightness = 0 },
+		Boss = { Tint = Color3.fromRGB(255, 226, 210), Saturation = 0.06, Contrast = 0.08, Brightness = -0.03 },
+		Sea = { Tint = Color3.fromRGB(245, 252, 255), Saturation = 0.04, Contrast = 0, Brightness = 0.01 },
+	},
+
 	-- Day and night: a full day is DayMinutes of daylight (6:00 to 18:00) and NightMinutes of night. Every
 	-- server shares the same clock. Street lamps and the fountain glow brighter at night.
 	DayNight = {

@@ -109,6 +109,23 @@ local function bridge(island: Island): (Vector3, Vector3)
 	return fromCenter + direction * (fromRadius - 6), island.Center - direction * (island.Radius - 6)
 end
 
+-- Which area a point is in: "Town", an island's Id, or "Sea" (the water and the bridges). Used for each
+-- zone's color grade (client/ZoneLook) and by tools/layout to sort glitches and the budget by zone.
+local function zoneAt(position: Vector3): string
+	local flat = Vector3.new(position.X, 0, position.Z)
+	if flat.Magnitude <= TOWN_RADIUS + 10 then
+		return "Town"
+	end
+	local best, bestDistance = "Sea", math.huge
+	for _, island in islands do
+		local distance = (flat - island.Center).Magnitude
+		if distance <= island.Radius * 1.35 and distance < bestDistance then
+			best, bestDistance = island.Id, distance
+		end
+	end
+	return best
+end
+
 return {
 	-- Your character is drawn at this size (0.6 = 60%), so the world, the animals and Gruff feel big
 	PlayerScale = 0.6,
@@ -125,4 +142,5 @@ return {
 	BridgeWidth = 12,
 	At = at,
 	Bridge = bridge,
+	ZoneAt = zoneAt,
 }

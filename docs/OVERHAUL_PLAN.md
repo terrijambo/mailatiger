@@ -117,6 +117,23 @@ Before any art goes in, set the rules and the tools that keep it clean.
 **Done when:** the art bible exists, the glitch tools run and report the current mess, and a test pack
 imports end to end.
 
+**Status (2026-10-20): done, except the owner's steps below.**
+- Art bible: `docs/ART_BIBLE.md` (KayKit style, palette, scale, layers, model rules, checks).
+- Glitch detectors + zone budget: `bash tools/layout/run.sh` now ends with `GLITCHES: n   OVER BUDGET: n`.
+  Baseline: 128 glitches (1 floating, 5 sunk, 122 z-fighting, 0 invisible walls), Town over budget.
+- Import tool: `tools/import/kaykit.py` (tested on the free Forest pack, 101 models, and City Builder Bits,
+  41 models; pictures to pick from in `art/export/kaykit/*_sheet.png`). Pack textures: `Config/Atlases.luau`.
+- Lighting: bloom + sun rays (`Config/Look.luau`), and each island's own color grade (`Zones`,
+  `client/ZoneLook.luau`).
+- StreamingEnabled: **left off on purpose.** The map is ~8k parts, and several client scripts look up plaza
+  objects by name (Gruff, the chute, the machines, tutorial targets), which streaming could unload. Revisit
+  after Phase 3 if client memory is over budget; those models then need `ModelStreamingMode = Persistent`.
+
+**Owner steps for Phase 1** (Studio, about 5 minutes):
+1. Lighting → Properties → **Technology → Future** (it's `Voxel` now; scripts can't change it). Ctrl+S.
+2. Upload the two pack textures and paste their ids in `src/shared/Config/Atlases.luau` (steps at the top
+   of that file). The textures are in the KayKit zips; the agent can hand them over.
+
 ---
 
 ## Phase 2 — UI overhaul with UIPack Plus (agent; ~4–5 sessions)

@@ -34,3 +34,8 @@ tools/photo/out.txt
 
 # Bought packs (proprietary: their licenses forbid any repository). Rebuild with tools/vendor_packs.luau
 vendor/
+
+# KayKit exports and pictures (rebuild with tools/import/kaykit.py; only the size lists are kept)
+art/export/kaykit/**
+!art/export/kaykit/*/
+!art/export/kaykit/*/manifest.csv

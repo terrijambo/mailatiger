@@ -142,6 +142,7 @@ def main():
     for kind, a, b, box in sorted(problems):
         print(f"{kind:8} {a}  <->  {b}   at x={(box[0] + box[3]) / 2:.0f} z={(box[2] + box[5]) / 2:.0f}")
     print(f"\n{len(items)} pieces, {len(problems)} problems")
+    glitches = report_glitches(sys.argv[1])
 
     # Top-down picture
     xs = [i["box"][0] for i in items] + [i["box"][3] for i in items]
@@ -182,8 +183,82 @@ def main():
         rect(item["box"], fill=color)
     for kind, _, _, box in problems:
         rect(box, outline=(255, 0, 255))
+    for g in glitches:
+        x, z = g["x"], g["z"]
+        draw.ellipse([(x - x0) * scale - 3, (z - z0) * scale - 3, (x - x0) * scale + 3, (z - z0) * scale + 3],
+                     outline=(255, 255, 0))
     image.save(out)
     print("picture:", out)
+
+
+# Things allowed to hang in the air (clouds, birds...). Add a name here only when it floats on purpose.
+MAY_FLOAT = {"Cloud", "Bird", "Balloon", "Glow", "Sparkle", "OrdersLetter"}
+
+# Per-zone budget (overhaul quality bar line 7). Starting numbers: tighten them once the KayKit world is in.
+#   visible      parts you can see        meshes     different mesh ids (each one is a download)
+#   textures     different texture ids    lights     PointLights/SpotLights/SurfaceLights
+BUDGET = {"visible": 2500, "meshes": 150, "textures": 40, "lights": 30, "emitters": 40}
+
+
+def report_glitches(path):
+    """Prints the overhaul glitch report (floating, sunk, z-fighting, invisible walls) and the zone budget.
+    Returns the glitches with positions so the map picture can circle them."""
+    found = {"FLOATING": [], "SUNK": [], "Z-FIGHT": [], "INVISIBLE WALL": []}
+    budget = []
+    with open(path, encoding="utf-8", errors="replace") as f:
+        for line in f:
+            bits = line.strip().split("|")
+            kind = bits[0]
+            try:
+                if kind == "F" and len(bits) == 7:
+                    if bits[1].split("/")[-1] in MAY_FLOAT:
+                        continue
+                    gap = float(bits[6])
+                    note = "over nothing" if gap < 0 else f"{gap:.1f} above what's under it"
+                    found["FLOATING"].append({"text": f"{bits[1]}  ({note})", "zone": bits[2],
+                                              "x": float(bits[3]), "z": float(bits[5])})
+                elif kind == "S" and len(bits) == 8:
+                    found["SUNK"].append({"text": f"{bits[1]}  ({float(bits[6]):.1f} of {float(bits[7]):.1f} studs under)",
+                                          "zone": bits[2], "x": float(bits[3]), "z": float(bits[5])})
+                elif kind == "Z" and len(bits) == 8:
+                    found["Z-FIGHT"].append({"text": f"{bits[1]}  <->  {bits[2]}", "zone": bits[3],
+                                             "x": float(bits[4]), "z": float(bits[6])})
+                elif kind == "W" and len(bits) == 9:
+                    found["INVISIBLE WALL"].append({"text": f"{bits[1]}  ({bits[6]} x {bits[7]} x {bits[8]})",
+                                                    "zone": bits[2], "x": float(bits[3]), "z": float(bits[5])})
+                elif kind == "B" and len(bits) == 9:
+                    budget.append((bits[1], {"visible": int(bits[2]), "total": int(bits[3]), "meshParts": int(bits[4]),
+                                             "meshes": int(bits[5]), "textures": int(bits[6]), "lights": int(bits[7]),
+                                             "emitters": int(bits[8])}))
+            except ValueError:
+                continue
+
+    everything = []
+    print("\n=== Overhaul glitch report (target: 0 of everything) ===")
+    for kind, rows in found.items():
+        by_zone = defaultdict(int)
+        for row in rows:
+            by_zone[row["zone"]] += 1
+        zones = ", ".join(f"{z} {n}" for z, n in sorted(by_zone.items(), key=lambda kv: -kv[1]))
+        print(f"{kind:15} {len(rows):5}   {zones}")
+        everything += rows
+    for kind, rows in found.items():
+        if rows:
+            print(f"\n{kind} (first 40):")
+            for row in rows[:40]:
+                print(f"  [{row['zone']}] {row['text']}   at x={row['x']:.0f} z={row['z']:.0f}")
+
+    over = 0
+    if budget:
+        print("\n=== Zone budget ===")
+        print(f"{'zone':10} {'visible':>8} {'total':>7} {'meshes':>7} {'textures':>9} {'lights':>7} {'emitters':>9}")
+        for zone, s in sorted(budget):
+            flags = [k for k, limit in BUDGET.items() if s[k] > limit]
+            over += len(flags)
+            print(f"{zone:10} {s['visible']:8} {s['total']:7} {s['meshes']:7} {s['textures']:9} {s['lights']:7} "
+                  f"{s['emitters']:9}  {'OVER: ' + ', '.join(flags) if flags else 'ok'}")
+    print(f"\nGLITCHES: {len(everything)}   OVER BUDGET: {over}")
+    return everything
 
 
 if __name__ == "__main__":

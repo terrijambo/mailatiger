@@ -81,7 +81,8 @@ lune run tests/run.luau        # 1,177 checks, all passing on 2026-10-07
 | `bash tools/e2e/run.sh` | Full automated playtest (`tools/e2e/client.lua`): grab, box, mail, machines, eggs, shop, codes, dive, events, the boss. Each step logs PASS/FAIL. Last recorded full pass: **98/98 on 2026-10-06** |
 | `bash tools/smoke/run.sh` | Quick boot test: builds the real map with the owner's models and loads every module |
 | `bash tools/devices/run.sh` | Shrinks the test Studio from laptop to phone size; lists UI overlaps, off-screen UI and thumbstick/jump clashes, with pictures in `tools/devices/out/` |
-| `bash tools/layout/run.sh` | Dumps the built map and draws `tools/layout/map.png`; flags things on roads, lamps on asphalt, overlaps |
+| `bash tools/layout/run.sh` | Dumps the built map and draws `tools/layout/map.png`; flags things on roads, lamps on asphalt, overlaps, plus the overhaul glitch report (floating, sunk, z-fighting, invisible walls) and the per-zone budget |
+| `blender --background --python tools/import/kaykit.py -- <gltf folder> <Pack>` | Turns a KayKit pack into FBX files for Studio, with a picture of every model (`art/export/kaykit/`) |
 | `bash tools/photo/run.sh` | Photo tour of the game (captures only the test Studio window) into `tools/photo/out/` |
 | `lune run tools/check_models.luau MailATiger.rbxl` | Lists missing, misplaced or backwards models in the owner's saved place |
 

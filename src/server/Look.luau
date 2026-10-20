@@ -43,6 +43,17 @@ function Look.Apply()
 	color.Brightness = look.Exposure
 	color.Parent = Lighting
 
+	local bloom = Lighting:FindFirstChildOfClass("BloomEffect") or Instance.new("BloomEffect")
+	bloom.Intensity = look.Bloom.Intensity
+	bloom.Size = look.Bloom.Size
+	bloom.Threshold = look.Bloom.Threshold
+	bloom.Parent = Lighting
+
+	local rays = Lighting:FindFirstChildOfClass("SunRaysEffect") or Instance.new("SunRaysEffect")
+	rays.Intensity = look.SunRays.Intensity
+	rays.Spread = look.SunRays.Spread
+	rays.Parent = Lighting
+
 	if look.DayNight.Enabled then
 		task.spawn(Look.RunCycle, atmosphere, color)
 	end

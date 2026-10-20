@@ -17,6 +17,7 @@ return {
 	Gruff = require(script.Gruff),
 	Monetization = require(script.Monetization),
 	Look = require(script.Look),
+	Atlases = require(script.Atlases),
 	Codes = require(script.Codes),
 	Badges = require(script.Badges),
 	Levels = require(script.Levels),

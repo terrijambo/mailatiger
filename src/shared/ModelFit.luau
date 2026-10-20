@@ -30,9 +30,49 @@ function ModelFit.Fit(model: Model, floor: CFrame, width: number, byHeight: bool
 	model:PivotTo(target * boxCFrame:ToObjectSpace(model:GetPivot()))
 end
 
+-- Models from a texture pack (KayKit: tools/import/kaykit.py) are listed in src/shared/ArtAtlas/<Pack>.json.
+-- The whole pack shares one texture, uploaded once (its id goes in Config/Atlases.luau), and this puts it on
+-- every part of such a model. Until the id is filled in, the model keeps whatever the importer gave it.
+local atlasOf: { [string]: string }? = nil
+function ModelFit.ApplyAtlas(model: Model, artName: string)
+	if not atlasOf then
+		local index: { [string]: string } = {}
+		local shared = ReplicatedStorage:FindFirstChild("Shared")
+		local folder = shared and shared:FindFirstChild("ArtAtlas")
+		if folder then
+			for _, module in folder:GetChildren() do
+				if module:IsA("ModuleScript") then
+					local list = require(module) :: any
+					for _, name in list.Models do
+						index[name] = module.Name
+					end
+				end
+			end
+		end
+		atlasOf = index
+	end
+	local pack = (atlasOf :: { [string]: string })[artName]
+	if not pack then
+		return
+	end
+	local Atlases = require(ReplicatedStorage.Shared.Config).Atlases
+	local texture = Atlases[pack]
+	if not texture or texture == "" then
+		return
+	end
+	for _, part in model:GetDescendants() do
+		if part:IsA("MeshPart") then
+			part.TextureID = texture
+			part.Color = Color3.new(1, 1, 1)
+			part.Material = Enum.Material.SmoothPlastic
+		end
+	end
+end
+
 -- Colors each part using src/shared/ArtColors/<artName>.json (e.g. "Hamster", "Cardboard").
 -- Parts are matched by name: "Body" gets the Body color. Names with extra bits (like "Hamster_Body") match too.
 function ModelFit.Paint(model: Model, artName: string)
+	ModelFit.ApplyAtlas(model, artName)
 	local shared = ReplicatedStorage:FindFirstChild("Shared")
 	local folder = shared and shared:FindFirstChild("ArtColors")
 	local module = folder and folder:FindFirstChild(artName)
