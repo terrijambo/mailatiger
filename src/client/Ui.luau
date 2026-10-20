@@ -570,27 +570,23 @@ export type SideButtonSpec = {
 	LayoutOrder: number?,
 }
 
+-- No tile behind it (2026-10-20): the icon itself is the button, a little bigger, with its label across the bottom
 function Ui.sideButton(parent: Instance, spec: SideButtonSpec): TextButton
 	local button = Ui.make("TextButton", {
 		Name = spec.Label,
 		Size = UDim2.fromOffset(78, 78),
 		BackgroundColor3 = spec.Color,
+		BackgroundTransparency = 1,
 		Text = "",
-		AutoButtonColor = true,
+		AutoButtonColor = false,
 		LayoutOrder = spec.LayoutOrder or 0,
 	}, parent)
-	Ui.round(button, 16)
-	Ui.border(button, 3)
-	Ui.gloss(button)
 	Ui.press(button)
-	if not (SHARD and ShardSkin.Gem(button, "IconButton")) then
-		Ui.skin(button, "Tile", true)
-	end
 	Ui.icon(button, spec.Icon, {
 		Name = "Icon",
 		AnchorPoint = Vector2.new(0.5, 0),
-		Position = UDim2.new(0.5, 0, 0, 5),
-		Size = UDim2.fromOffset(54, 50),
+		Position = UDim2.new(0.5, 0, 0, -2),
+		Size = UDim2.fromOffset(72, 66),
 	})
 	local label = Ui.outlined(button, {
 		AnchorPoint = Vector2.new(0.5, 1),

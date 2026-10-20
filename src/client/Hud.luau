@@ -122,8 +122,6 @@ function Hud.Start()
 		end
 	end)
 	local coinRow, coinsLabel = statRow(stack, 3, "Hud_Coins", COIN_GREEN)
-	Ui.pill(coinRow)
-	Ui.pill(bagRow)
 
 	-- Next to the coins, left to right: a + (opens the Premium Store), then your Rebirth Points
 	local coinExtras = Ui.make("Frame", {
@@ -243,7 +241,6 @@ function Hud.Start()
 	local levelRow, levelLabel = statRow(stack, 0, "Hud_Level", Ui.GOLD)
 	levelLabel.Size = UDim2.fromOffset(90, 44)
 	levelExtras.Parent = levelRow
-	Ui.pill(levelRow)
 	local xpBack = Ui.make("Frame", {
 		Position = UDim2.fromOffset(136, 12),
 		Size = UDim2.fromOffset(150, 20),
@@ -600,8 +597,9 @@ function Hud.Start()
 				elseif waiting > 0 then "⏳ Collect your parcels from the machines"
 				else `🐾 Grab a wild animal: {Ui.hint("hold E", "hold X", "tap and hold")}`
 		end
-		-- (the BOX screen has its own instructions; during the walkthrough, Gruff's panel is the only one)
-		banner.Visible = player:GetAttribute("Stage") ~= "Box" and not Profile.Learning()
+		-- Never shown: the owner wants no constant message at the top (2026-10-20). New players still get Gruff's
+		-- walkthrough panel, and the TASKS list says what to do next.
+		banner.Visible = false
 	end
 	Profile.Watch(refreshObjective)
 	player:GetAttributeChangedSignal("Tip"):Connect(refreshObjective)

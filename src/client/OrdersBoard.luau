@@ -51,9 +51,8 @@ function OrdersBoard.Start()
 		BackgroundColor3 = Color3.fromRGB(20, 18, 35),
 		BackgroundTransparency = 0.3,
 	}, gui)
-	Ui.round(panel, 12)
-	Ui.make("UIStroke", { Color = Color3.new(1, 1, 1), Transparency = 0.8, Thickness = 1.5 }, panel)
-	Ui.hudPanel(panel, Ui.GREY)
+	-- No panel behind it (2026-10-20): just outlined text over the world, like the rest of the HUD
+	panel.BackgroundTransparency = 1
 	Ui.autoScale(panel)
 
 	-- Header: tap to fold / unfold
@@ -116,14 +115,17 @@ function OrdersBoard.Start()
 	end)
 
 	local function sectionLabel(order: number, text: string)
-		Ui.label(body, {
-			LayoutOrder = order,
-			Size = UDim2.new(1, 0, 0, 18),
-			Font = Ui.TITLE_FONT,
-			TextSize = 14,
-			TextColor3 = DIM,
-			Text = text,
-		})
+		Ui.textOutline(
+			Ui.label(body, {
+				LayoutOrder = order,
+				Size = UDim2.new(1, 0, 0, 18),
+				Font = Ui.TITLE_FONT,
+				TextSize = 14,
+				TextColor3 = DIM,
+				Text = text,
+			}),
+			1.5
+		)
 	end
 
 	-- One line: what to do, then progress or a CLAIM button, with a thin bar underneath
@@ -133,14 +135,17 @@ function OrdersBoard.Start()
 			Size = UDim2.new(1, 0, 0, ROW),
 			BackgroundTransparency = 1,
 		}, body)
-		Ui.label(frame, {
-			Size = UDim2.new(1, if claimId then -78 else -64, 0, 24),
-			TextSize = 15,
-			TextColor3 = Ui.WHITE,
-			TextTruncate = Enum.TextTruncate.AtEnd,
-			TextWrapped = false,
-			Text = text,
-		})
+		Ui.textOutline(
+			Ui.label(frame, {
+				Size = UDim2.new(1, if claimId then -78 else -64, 0, 24),
+				TextSize = 15,
+				TextColor3 = Ui.WHITE,
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				TextWrapped = false,
+				Text = text,
+			}),
+			1.5
+		)
 		if claimId then
 			local button = Ui.button(frame, {
 				AnchorPoint = Vector2.new(1, 0),
@@ -156,15 +161,18 @@ function OrdersBoard.Start()
 				shopAction:FireServer("Claim", claimId)
 			end)
 		else
-			Ui.label(frame, {
-				AnchorPoint = Vector2.new(1, 0),
-				Position = UDim2.fromScale(1, 0),
-				Size = UDim2.fromOffset(62, 24),
-				TextSize = 14,
-				TextXAlignment = Enum.TextXAlignment.Right,
-				TextColor3 = color,
-				Text = right,
-			})
+			Ui.textOutline(
+				Ui.label(frame, {
+					AnchorPoint = Vector2.new(1, 0),
+					Position = UDim2.fromScale(1, 0),
+					Size = UDim2.fromOffset(62, 24),
+					TextSize = 14,
+					TextXAlignment = Enum.TextXAlignment.Right,
+					TextColor3 = color,
+					Text = right,
+				}),
+				1.5
+			)
 		end
 		local back = Ui.make("Frame", {
 			Position = UDim2.fromOffset(0, 26),
