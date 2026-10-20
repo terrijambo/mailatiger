@@ -35,8 +35,15 @@ function ChuteVisual.Start()
 			shownModel:Destroy()
 			shownModel = nil
 		end
+		-- Our hero version (MapModels > MA_<name>, art/blender_scripts/hero_props.py) first, then the older model
+		local heroes = ReplicatedStorage:FindFirstChild("MapModels")
 		local models = ReplicatedStorage:FindFirstChild("PropModels")
-		local template = models and models:FindFirstChild(modelName)
+		local template = heroes and heroes:FindFirstChild(`MA_{modelName}`)
+		if template then
+			modelName = `MA_{modelName}`
+		else
+			template = models and models:FindFirstChild(modelName)
+		end
 		if not (template and template:IsA("Model")) then
 			chutePart.LocalTransparencyModifier = 0 -- no art imported yet: keep the plain block
 			return

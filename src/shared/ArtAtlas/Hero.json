@@ -1,6 +1,19 @@
 {
 	"Models": [
 		"MA_Fountain",
-		"MA_PostOffice"
+		"MA_PostOffice",
+		"MA_PostCounter",
+		"MA_OrdersBoard",
+		"MA_MailChute",
+		"MA_MailChuteExpress",
+		"MA_MailChutePneumatic",
+		"MA_MailChuteRocket",
+		"MA_MachineStamp",
+		"MA_MachineScale",
+		"MA_MachineFragile",
+		"MA_MachineSorter",
+		"MA_MachineExpress",
+		"MA_MachineDrone",
+		"MA_MachineRocket"
 	]
 }

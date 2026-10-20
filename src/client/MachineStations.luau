@@ -14,6 +14,7 @@ local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Profile = require(script.Parent.Profile)
 
 local Machines = Config.Machines
@@ -67,12 +68,94 @@ local function moving(look: Look, p: BasePart)
 	look.Moving[p.Name] = p
 end
 
+-- The parts each machine's effects move (see the effects loop in Start)
+local MOVING_NAMES = {
+	"Plunger",
+	"Rod",
+	"Needle",
+	"Roller1",
+	"Roller2",
+	"Arm",
+	"Flash",
+	"Drone1",
+	"Drone2",
+	"RocketBody",
+	"RocketNose",
+	"Flame",
+}
+
+-- The hero model of a machine (art/blender_scripts/hero_machines.py, imported into MapModels as
+-- MA_Machine<Id>), lined up on the station by its Origin marker, or nil when it isn't imported
+local function heroLook(machine: Machine, base: CFrame): Look?
+	local models = ReplicatedStorage:FindFirstChild("MapModels")
+	local template = models and models:FindFirstChild(`MA_Machine{machine.Id}`)
+	if not (template and template:IsA("Model")) then
+		return nil
+	end
+	local model = template:Clone()
+	model.Name = `Machine_{machine.Id}`
+	local origin = model:FindFirstChild("Origin")
+	if not (origin and origin:IsA("BasePart")) then
+		model:Destroy()
+		return nil
+	end
+	-- Move every part so the Origin marker sits on the station's base, then drop the marker
+	local shift = base * origin.CFrame:Inverse()
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.CFrame = shift * p.CFrame
+		end
+	end
+	origin:Destroy()
+	ModelFit.Paint(model, `MA_Machine{machine.Id}`)
+	local look: Look = { Model = model, Moving = {}, Rest = {} }
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			p.Anchored = true
+			p.CanCollide = false
+			p.CanQuery = false
+			p.CanTouch = false
+			if table.find(MOVING_NAMES, p.Name) then
+				moving(look, p)
+			end
+		end
+	end
+	local flash = look.Moving.Flash
+	if flash then
+		flash.Material = Enum.Material.Neon
+		flash.Transparency = 1
+	end
+	return look
+end
+
 -- Builds a machine's look. owned = false: everything comes out as a see-through grey hologram.
 local function build(machine: Machine, station: BasePart, owned: boolean): Look
+	local base = station.CFrame * CFrame.new(0, -station.Size.Y / 2 + 0.6, 0) -- (on top of its stone base)
+	local hero = heroLook(machine, base)
+	if hero then
+		if not owned then
+			for _, p in hero.Model:GetDescendants() do
+				if p:IsA("BasePart") then
+					p.Color = GHOST
+					p.Material = Enum.Material.Glass
+					if p:IsA("MeshPart") then
+						p.TextureID = ""
+					end
+					p.Transparency = math.max(p.Transparency, 0.55)
+				end
+			end
+		end
+		hero.Model.WorldPivot = base
+		hero.Model:ScaleTo(SCALE)
+		for name, p in hero.Moving do
+			hero.Rest[name] = p.CFrame
+		end
+		hero.Model.Parent = Workspace
+		return hero
+	end
 	local model = Instance.new("Model")
 	model.Name = `Machine_{machine.Id}`
 	local look: Look = { Model = model, Moving = {}, Rest = {} }
-	local base = station.CFrame * CFrame.new(0, -station.Size.Y / 2 + 0.6, 0) -- (on top of its stone base)
 	local color = machine.Color
 	local dark = color:Lerp(Color3.new(0, 0, 0), 0.35)
 	local light = color:Lerp(Color3.new(1, 1, 1), 0.45)

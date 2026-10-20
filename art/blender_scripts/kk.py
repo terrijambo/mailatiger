@@ -163,13 +163,48 @@ def box(name, size, loc, group="Stone", color="Cream", bevel=0.12, rot=(0, 0, 0)
 
 
 def prism(name, sides, r_bottom, r_top, height, loc, group="Stone", color="Cream", bevel=0.12, spin=0.0,
-          light=(0.05, 0.75)):
-    """An n-sided column / cone frustum standing on loc."""
-    bpy.ops.mesh.primitive_cone_add(vertices=sides, radius1=r_bottom, radius2=r_top, depth=height,
-                                    location=(loc[0], loc[1], loc[2] + height / 2), rotation=(0, 0, spin))
+          light=(0.05, 0.75), rot=None):
+    """An n-sided column / cone frustum standing on loc. rot: lay it some other way (then loc is its centre)."""
+    if rot is None:
+        bpy.ops.mesh.primitive_cone_add(vertices=sides, radius1=r_bottom, radius2=r_top, depth=height,
+                                        location=(loc[0], loc[1], loc[2] + height / 2), rotation=(0, 0, spin))
+    else:
+        bpy.ops.mesh.primitive_cone_add(vertices=sides, radius1=r_bottom, radius2=r_top, depth=height,
+                                        location=loc, rotation=rot)
     obj = bpy.context.active_object
     obj.name = name
     return _finish(obj, group, color, bevel, light)
+
+
+def cylinder_x(name, radius, length, loc, group="Metal", color="Steel", sides=12, bevel=0.04, light=(0.05, 0.6)):
+    """A round bar lying along X (rollers, axles)."""
+    return prism(name, sides, radius, radius, length, loc, group, color, bevel, light=light,
+                 rot=(0, math.pi / 2, 0))
+
+
+def cylinder_y(name, radius, length, loc, group="Metal", color="Steel", sides=12, bevel=0.04, light=(0.05, 0.6)):
+    """A round bar lying along Y (front to back)."""
+    return prism(name, sides, radius, radius, length, loc, group, color, bevel, light=light,
+                 rot=(math.pi / 2, 0, 0))
+
+
+def ball(name, radius, loc, group="Trim", color="Red", subdivisions=2, light=(0.0, 0.5)):
+    bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=subdivisions, radius=radius, location=loc)
+    obj = bpy.context.active_object
+    obj.name = name
+    for poly in obj.data.polygons:
+        poly.use_smooth = False
+    return _finish(obj, group, color, 0, light)
+
+
+def finish(model: str, views=((35, 25), (215, 18))):
+    """Join the parts, export the FBX and render previews; prints a one-line summary."""
+    parts = joined_groups(model)
+    path = export_fbx(model, parts)
+    shots = render_preview(model, parts, views=views)
+    print(f"BUILT {model}: {len(parts)} parts {[o.name.split('__')[-1] for o in parts]}, "
+          f"{triangles(parts)} tris -> {os.path.basename(path)}; previews {[os.path.basename(p) for p in shots]}")
+    return parts
 
 
 def ring_blocks(name, sides, r_mid, thickness, height, z, group="Stone", color="Cream", gap=0.06, bevel=0.1,
@@ -284,7 +319,8 @@ def text3d(name, body, size, loc, depth=0.12, group="Metal", color="Gold", font=
     obj.data.body = body
     obj.data.size = size
     obj.data.extrude = depth
-    obj.data.bevel_depth = 0.02
+    obj.data.bevel_depth = 0.0
+    obj.data.resolution_u = 2  # (coarse curves: smooth enough at this size, a tenth of the triangles)
     obj.data.align_x = "CENTER"
     obj.data.align_y = "CENTER"
     path = os.path.join(os.environ.get("WINDIR", "C:/Windows"), "Fonts", font)
