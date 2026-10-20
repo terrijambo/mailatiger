@@ -54,6 +54,9 @@ for _, root in { workspace, ServerStorage } do
 							heroes[modelName] = model
 							made += 1
 						end
+						if model:FindFirstChild(partName) then
+							continue -- (the same file imported twice: keep the first copy of each part)
+						end
 						mesh.Name = partName
 						mesh.Anchored = true
 						mesh.CanCollide = false

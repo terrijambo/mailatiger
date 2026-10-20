@@ -707,7 +707,8 @@ function MapBuilder.Build(): Map
 	if office then
 		ModelFit.Align(office, west, -55) -- its front door sits right behind Gruff
 	end
-	block(map, "PostOfficeFloor", Vector3.new(40, 0, -15), Vector3.new(55, 0.3, 15), COLORS.Stone)
+	-- (the plaza's own paving colour: it reads as the square running up to the Post Office, not a grey slab)
+	block(map, "PostOfficeFloor", Vector3.new(40, 0, -15), Vector3.new(55, 0.3, 15), Color3.fromRGB(208, 184, 148))
 	local gruff, gruffHat = buildGruff(map, spot(51, 0.3, 0, west))
 	local postCounter = facingBox(map, "Counter", Vector3.new(46.5, 0.3, 0), west, Vector3.new(10, 3.5, 2), COLORS.Wood)
 	dress(map, "PostCounter", spot(46.5, 0.3, 0, west), 10.5, { postCounter })
