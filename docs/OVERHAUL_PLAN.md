@@ -161,6 +161,21 @@ underneath, not rewrite every screen at once.
 **Done when:** every screen uses ShardUI pieces, `tools/devices/run.sh` reports no problems, and the full
 E2E playtest (`tools/e2e/run.sh`) passes.
 
+**Status (2026-10-20): first pass done.** The adapter is `client/ShardSkin.luau`. It paints the pack's pieces
+inside the game's own frames (no layout changes), with the older look kept as a fallback when the pack is
+missing (`Config.UiSkin.Shard` switches it off). Checked in Play: Shop, Robux Store, Bag, Settings (windows:
+faceted frame, dark header, cream paper, red gem X), all `Ui.button`s (gem, family picked from the button's
+color), `Ui.card`s (flat outlined plates), side buttons, the TASKS panel and the MENU flyout (`Ui.hudPanel`),
+and the XP bar (`Ui.bar`). The pack's own animator script is not needed (nothing is built with its tags).
+
+Still to do in Phase 2:
+- HUD bottom-left (level, coins, Rebirth Points): pack-style chips (`Kits/Hud` uses Chip + Bar).
+- The top quest banner, event banner, toasts and popups (`Hud.luau`, `EventBanner.luau`).
+- Text boxes (the code box in Settings): the pack's Field piece.
+- Rows inside the TASKS panel (thin progress lines), OrdersBoard, TrollBar, EggRoller, Tutorial bubbles.
+- The BOX screen (`BoxingScreen.luau`), with the most care.
+- Phone pass: `bash tools/devices/run.sh` (needs Studio closed).
+
 ---
 
 ## Phase 3 — World rebuild (agent builds, owner imports models; ~1–2 sessions per area)
