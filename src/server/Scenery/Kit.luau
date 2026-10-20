@@ -272,6 +272,87 @@ function Kit.signText(
 end
 
 ---------------------------------------------------------------------------------------------------
+-- KayKit pieces (docs/ART_BIBLE.md; imported into MapModels by tools/import/split_pack.luau). Every helper
+-- below tries one of these first, then the older Blender model, then plain parts, so the map always builds.
+
+-- Is this piece imported into the place (ReplicatedStorage.MapModels)?
+function Kit.Has(name: string): boolean
+	local folder = ReplicatedStorage:FindFirstChild("MapModels")
+	return folder ~= nil and folder:FindFirstChild(name) ~= nil
+end
+
+-- A stable pick from a list for a spot on the map (the same spot always gets the same piece)
+local function pickFor(list: { string }, at: Vector3, salt: number): string
+	local n = math.floor(math.abs(at.X * 12.9898 + at.Z * 78.233 + salt * 37.719)) % #list
+	return list[n + 1]
+end
+Kit.PickFor = pickFor
+
+local KAYKIT = {
+	-- Round leafy trees (Tree1), blocky-canopy trees (Tree2) and umbrella trees (Tree3): the town and lawns
+	Trees = {
+		"Forest_Tree1A",
+		"Forest_Tree1B",
+		"Forest_Tree1C",
+		"Forest_Tree2B",
+		"Forest_Tree2C",
+		"Forest_Tree2D",
+		"Forest_Tree2E",
+		"Forest_Tree3B",
+		"Forest_Tree3C",
+	},
+	Pines = { "Forest_Tree4A", "Forest_Tree4B", "Forest_Tree4C" },
+	Bushes = {
+		"Forest_Bush1D",
+		"Forest_Bush1F",
+		"Forest_Bush1G",
+		"Forest_Bush2C",
+		"Forest_Bush2E",
+		"Forest_Bush2F",
+		"Forest_Bush3C",
+		"Forest_Bush4C",
+		"Forest_Bush4E",
+		"Forest_Bush4F",
+	},
+	Rocks = {
+		"Forest_Rock1J",
+		"Forest_Rock1K",
+		"Forest_Rock1N",
+		"Forest_Rock2E",
+		"Forest_Rock2G",
+		"Forest_Rock3M",
+		"Forest_Rock3P",
+		"Forest_Rock3R",
+	},
+	Pebbles = { "Forest_Rock1D", "Forest_Rock1G", "Forest_Rock2C", "Forest_Rock3G", "Forest_Rock3J" },
+	Grass = { "Forest_Grass1C", "Forest_Grass1D", "Forest_Grass2C", "Forest_Grass2D" },
+	Buildings = {
+		"City_BuildingA",
+		"City_BuildingB",
+		"City_BuildingC",
+		"City_BuildingD",
+		"City_BuildingE",
+		"City_BuildingF",
+		"City_BuildingG",
+		"City_BuildingH",
+	},
+}
+Kit.KAYKIT = KAYKIT
+
+-- A grass tuft (the small clutter that breaks up flat lawns). No shadow: there are a lot of them.
+function Kit.grass(parent: Instance, at: Vector3, size: number): Model?
+	local model = Kit.model(parent, pickFor(KAYKIT.Grass, at, 4), at, nil, size, false)
+	if model then
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.CastShadow = false
+			end
+		end
+	end
+	return model
+end
+
+---------------------------------------------------------------------------------------------------
 -- Plants
 
 -- A round, blobby cartoon tree: a short trunk and a cluster of leafy balls
@@ -281,6 +362,10 @@ function Kit.tree(parent: Instance, at: Vector3, height: number, leaves: Color3?
 	-- The Blender trees: mostly oaks, now and then a birch (only where no special leaf color is asked for)
 	local birch = leaves == nil and math.floor(math.abs(at.X * 3 + at.Z * 5)) % 5 == 0
 	local tint = if leaves then { Leaves = leaves, LeavesLight = leaves:Lerp(Color3.new(1, 1, 0.6), 0.18) } else nil
+	-- KayKit trees come colored by their texture, so they're used where no special leaf color is asked for
+	if not leaves and Kit.model(parent, pickFor(KAYKIT.Trees, at, 1), at, nil, h * 1.1, true) then
+		return
+	end
 	if Kit.model(parent, if birch then "BirchTree" else "OakTree", at, nil, h * 1.15, true, tint) then
 		return
 	end
@@ -330,6 +415,9 @@ end
 
 function Kit.pine(parent: Instance, at: Vector3, height: number, snowy: boolean)
 	local h = height
+	if not snowy and Kit.model(parent, pickFor(KAYKIT.Pines, at, 2), at, nil, h, true) then
+		return
+	end
 	if Kit.model(parent, if snowy then "SnowPine" else "PineTree", at, nil, h, true) then
 		return
 	end
@@ -419,6 +507,9 @@ end
 
 -- A bush: two or three leafy balls
 function Kit.bush(parent: Instance, at: Vector3, size: number, color: Color3?)
+	if not color and Kit.model(parent, pickFor(KAYKIT.Bushes, at, 3), at, nil, size * 1.5, false) then
+		return
+	end
 	local green = color or C.Hedge
 	Kit.ball(parent, "Bush", at + Vector3.new(0, size * 0.35, 0), size, green)
 	Kit.ball(
@@ -442,6 +533,13 @@ end
 
 -- A chunky low-poly boulder (a few tilted blocks)
 function Kit.rock(parent: Instance, at: Vector3, size: number, random: Random, colors: { Color3 }?)
+	-- (KayKit rocks are grey stone: islands that ask for their own rock colors keep the drawn rocks)
+	if not colors then
+		local list = if size < 2.5 then KAYKIT.Pebbles else KAYKIT.Rocks
+		if Kit.model(parent, pickFor(list, at, 5), at, nil, size * 1.4, false) then
+			return
+		end
+	end
 	local palette = colors or C.Rock
 	for i = 1, 3 do
 		local s = size * (1 - (i - 1) * 0.25)
@@ -808,7 +906,8 @@ function Kit.road(parent: Instance, a: Vector3, b: Vector3, width: number, style
 				part(parent, {
 					Name = "Curb",
 					Size = Vector3.new(1, 0.55, pieceLength - 0.12),
-					CFrame = at(side * (width / 2 - 0.5), 0.3, -length / 2 + (k + 0.5) * pieceLength),
+					-- (0.04 past the road bed's edge: faces on the same plane flicker)
+					CFrame = at(side * (width / 2 - 0.46), 0.3, -length / 2 + (k + 0.5) * pieceLength),
 					Color = curb:Lerp(Color3.new(1, 1, 1), if k % 2 == 0 then 0 else 0.08),
 				})
 			end

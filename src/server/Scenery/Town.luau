@@ -10,6 +10,7 @@ local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Kit = require(script.Parent.Kit)
 local Islands = require(script.Parent.Islands)
 
@@ -507,13 +508,19 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 		end
 	end
 
-	-- Lamps and a low hedge around the edge of the plaza (with gaps for the paths and the Post Office)
+	-- Lamps and a low hedge around the edge of the plaza (with gaps for the paths and the Post Office).
+	-- With KayKit in the place, the hedge is a ring of real bushes instead of green blocks.
+	local kayKit = Kit.Has("Forest_Bush1D")
 	local edgeCount = 72
 	for i = 1, edgeCount do
 		local a = i / edgeCount * math.pi * 2
 		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
 		local p = dir * (R + 1.2)
-		if not nearPath(p, 1) and clearOfKeep(p, 2) then
+		if kayKit then
+			if not nearPath(p, 1) and clearOfKeep(p, 2) then
+				Kit.bush(folder, p + dir * random:NextNumber(-0.3, 0.6), random:NextNumber(2.4, 3))
+			end
+		elseif not nearPath(p, 1) and clearOfKeep(p, 2) then
 			part(folder, {
 				Name = "Hedge",
 				Size = Vector3.new((R + 1.2) * 2 * math.pi / edgeCount + 0.4, 2.2, 1.8),
@@ -572,6 +579,7 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 		{ Color3.fromRGB(255, 226, 226), Color3.fromRGB(150, 90, 200) },
 	}
 	local houses = 0
+	local buildings: { Vector3 } = {}
 	for i = 0, 23 do
 		local a = (i + 0.5) / 24 * math.pi * 2
 		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
@@ -579,7 +587,16 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 		if houses < 6 and i % 3 == 0 and not nearPath(p, 12) and clearOfKeep(p, 14) and island.OnLand(p, 14) then
 			houses += 1
 			local colors = cottageColors[(houses % #cottageColors) + 1]
-			Kit.cottage(folder, p, -dir, colors[1], colors[2], 0.9)
+			-- A KayKit townhouse on its own little lot, front door toward the plaza (13 studs wide: under the
+			-- Post Office's height, which stays the tallest), or the drawn cottage without KayKit
+			local name = Kit.KAYKIT.Buildings[(houses % #Kit.KAYKIT.Buildings) + 1]
+			local building = Kit.Has(name)
+				and ModelFit.Spawn("MapModels", name, CFrame.lookAt(p, p - dir), 13, folder, { Solid = true })
+			if building then
+				table.insert(buildings, p)
+			else
+				Kit.cottage(folder, p, -dir, colors[1], colors[2], 0.9)
+			end
 			-- A little garden fence and a mailbox in front
 			box(
 				folder,
@@ -614,6 +631,11 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 					break
 				end
 			end
+			for _, b in buildings do
+				if (b - p).Magnitude < 13 then
+					free = false
+				end
+			end
 			if free then
 				placed += 1
 				local roll = random:NextNumber()
@@ -633,6 +655,33 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 					Kit.flowers(folder, p, flowerColors[random:NextInteger(1, #flowerColors)], random)
 				else
 					Kit.rock(folder, p, random:NextNumber(2, 4), random)
+				end
+			end
+		end
+	end
+
+	-- The small layer (KayKit only): grass tufts and pebbles all over the lawns, so no green is ever flat
+	if kayKit then
+		local tufts = 0
+		for _ = 1, 1500 do
+			if tufts >= 250 then
+				break
+			end
+			local a = random:NextNumber(0, math.pi * 2)
+			local r = random:NextNumber(R + 3, World.Town.Radius + 18)
+			local p = Vector3.new(math.cos(a), 0, math.sin(a)) * r
+			local onBuilding = false
+			for _, b in buildings do
+				if (b - p).Magnitude < 10 then
+					onBuilding = true
+				end
+			end
+			if not onBuilding and island.OnLand(p, 3) and not nearPath(p, 1) and clearOfKeep(p, 4) then
+				tufts += 1
+				if tufts % 8 == 0 then
+					Kit.rock(folder, p, random:NextNumber(0.8, 1.6), random)
+				else
+					Kit.grass(folder, p, random:NextNumber(1.2, 2.2))
 				end
 			end
 		end

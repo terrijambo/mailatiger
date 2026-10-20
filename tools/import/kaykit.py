@@ -15,6 +15,8 @@ It also writes:
   * src/shared/ArtAtlas/<PackName>.json   which models use which texture (read by ModelFit.Paint)
   * art/export/kaykit/<PackName>/manifest.csv   name, size in studs, triangles
   * art/export/kaykit/<PackName>_sheet.png      every model in a grid, to pick from (1 unit = 1 stud)
+  * art/export/kaykit/<PackName>_all.fbx        the whole pack in one file: ONE import in Studio, then
+                                                tools/import/split_pack.luau makes the named models
 
 Skips the bare "_Mesh" files (shapes without color). The packs themselves are not in the repo: download the
 free (or bought) tier from https://kaylousberg.itch.io/ and point this at its Assets/gltf folder.
@@ -193,6 +195,25 @@ def main():
         f.write("\n")
 
     if done:
+        # Every model in ONE file too (each still its own named object at the origin), so getting the whole
+        # pack into Studio is a single import; tools/import/split_pack.luau then splits it into named models.
+        bpy.ops.object.select_all(action="DESELECT")
+        for obj in done:
+            obj.location = (0, 0, 0)
+            obj.select_set(True)
+        bpy.context.view_layer.objects.active = done[0]
+        bpy.ops.export_scene.fbx(
+            filepath=os.path.join(ROOT, "art", "export", "kaykit", pack + "_all.fbx"),
+            use_selection=True,
+            object_types={"MESH"},
+            mesh_smooth_type="FACE",
+            apply_scale_options="FBX_SCALE_ALL",
+            axis_forward="-Z",
+            axis_up="Y",
+            add_leaf_bones=False,
+            path_mode="STRIP",
+            embed_textures=False,
+        )
         contact_sheet(done, sizes, os.path.join(ROOT, "art", "export", "kaykit", pack + "_sheet.png"))
     print(f"KAYKIT_DONE {pack}: {len(done)} models -> {out}")
 
