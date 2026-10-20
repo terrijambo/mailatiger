@@ -110,6 +110,13 @@ The E2E scripts only run in a place marked with the `MailATigerTestPlace` attrib
 - Owner still to create on Roblox: the Shield product, both new passes, the group. Their ids go in
   `Config/Monetization.luau` (`Id = 0` keeps an item hidden as "Soon").
 
+## 2026-10-20: overhaul started
+- **Master plan:** `docs/OVERHAUL_PLAN.md` (quality bar, asset shortlist, Phases 0-7). Work through it in order.
+- **Bought packs live in `vendor/` (git-ignored).** ZeroPanel (admin) and UIPack Plus (`ReplicatedStorage.ShardUI`)
+  are proprietary and their licenses forbid any repository; this repo is public. Rebuild `vendor/` with
+  `lune run tools/vendor_packs.luau <UIPackPlus.rbxm> <ZeroPanel.rbxm>`. Never commit them. ZeroPanel's owner is
+  the game's owner (`game.CreatorId`); if the game moves to a group, add the owner's user id in that tool.
+
 ## Your tasks
 ### A. Code (yours)
 1. **Owner's fix list from playing the Oct 7 update (2026-10-08):**
