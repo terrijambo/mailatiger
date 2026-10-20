@@ -28,10 +28,12 @@ lune run tools/smoke/merge.luau "$TMP/build.rbxl" "$TMP/place_copy.rbxl" "$TMP/m
 {
 	# run-in-roblox's plugin also runs inside the Play session. The edit session is frozen while Play runs,
 	# so the Play server prints a heartbeat to keep run-in-roblox from giving up.
+	# The plugin can load in the Play copies before RunService says they're running, so the edit copy marks
+	# Workspace with E2EPlaying just before Play: the copies inherit it and never start a second Play.
 	# Safety: only ever run inside the throwaway test place (marked by merge.luau), never in your own game
 	echo 'if game:GetService("Workspace"):GetAttribute("MailATigerTestPlace") ~= true then return end'
 	echo 'local RunService = game:GetService("RunService")'
-	echo 'if RunService:IsRunning() then'
+	echo 'if game:GetService("Workspace"):GetAttribute("E2EPlaying") or RunService:IsRunning() then'
 	echo '	if RunService:IsServer() then for _ = 1, 150 do task.wait(2) print("heartbeat") end end'
 	echo '	return'
 	echo 'end'
@@ -48,8 +50,15 @@ lune run tools/smoke/merge.luau "$TMP/build.rbxl" "$TMP/place_copy.rbxl" "$TMP/m
 	cat "${E2E_CLIENT:-tools/e2e/client.lua}"
 	echo ']==]'
 	echo 'client.Parent = game:GetService("StarterPlayer").StarterPlayerScripts'
-	echo 'local ok, result = pcall(function() return game:GetService("StudioTestService"):ExecutePlayModeAsync({}) end)'
-	echo 'if not ok then print("E2E could not start Play: " .. tostring(result)) return end'
+	echo 'game:GetService("Workspace"):SetAttribute("E2EPlaying", true)'
+	# Play started while Studio is still loading its built-in plugins can end at once with no result: wait, retry
+	echo 'local ok, result'
+	echo 'for _ = 1, 3 do'
+	echo '	task.wait(4)'
+	echo '	ok, result = pcall(function() return game:GetService("StudioTestService"):ExecutePlayModeAsync({}) end)'
+	echo '	if ok and type(result) == "table" then break end'
+	echo 'end'
+	echo 'if not ok or type(result) ~= "table" then print("E2E FAIL could not start Play: " .. tostring(result)) print("E2E DONE") return end'
 	echo 'for _, line in result.Client.Steps or {} do if string.sub(line, 1, 6) == "UIDUMP" then print(string.sub(line, 8)) else print("E2E " .. line) end end'
 	echo 'for _, line in result.Client.Errors or {} do print("E2E CLIENT " .. line) end'
 	echo 'for _, line in result.Server or {} do print("E2E SERVER " .. line) end'

@@ -40,6 +40,7 @@ local remotes = ReplicatedStorage:WaitForChild("Remotes")
 local notify = remotes:WaitForChild("Notify")
 local events = {}
 local lastBoxStart, lastParcel = nil, nil
+local allMessages = "" -- every message so far (another can land right after the one a step waits for)
 notify.OnClientEvent:Connect(function(kind, data)
 	events[kind] = (events[kind] or 0) + 1
 	if kind == "BoxStart" then
@@ -48,6 +49,7 @@ notify.OnClientEvent:Connect(function(kind, data)
 		lastParcel = data
 	elseif kind == "Message" then
 		lastMessage = tostring(data.Speaker) .. ": " .. tostring(data.Text)
+		allMessages ..= lastMessage .. "\n"
 	end
 end)
 
@@ -159,7 +161,7 @@ local function run()
 	end, 10), "daily paycheck paid (streak day 1)")
 
 	-- 1. Pick a Hamster at the Pen
-	root.CFrame = map.ShopCounter.CFrame * CFrame.new(0, 2, 5)
+	root.CFrame = map.Counter.CFrame * CFrame.new(0, 2, -5)
 	task.wait(0.5)
 	remotes.RequestAnimal:FireServer("Hamster", false)
 	log(waitFor(function()
@@ -237,12 +239,16 @@ local function run()
 
 	-- 4. Mail it at the chute
 	local chute = map.MailChute
-	root.CFrame = chute.CFrame * CFrame.new(0, 1, 5)
+	task.wait(2) -- (the walkthrough zips a first parcel to Gruff 1.5 s after boxing; let that happen first)
+	root.CFrame = chute.CFrame * CFrame.new(0, 1, -5)
 	task.wait(0.4)
 	holdPrompt(chute:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
 		return (events.MailReceipt or 0) > 0
-	end, 5), "mailed it at the chute (receipt)")
+	end, 5), "mailed it at the chute (receipt)" .. string.format(
+		" [%.1f studs from the chute]",
+		(root.Position - chute.Position).Magnitude
+	))
 	local after = profile()
 	log(after.Mailed == 1 and #after.Parcels == 0, "save: Mailed=1 and the bag is empty")
 	log(after.Coins > startCoins, "got paid (" .. startCoins .. " -> " .. after.Coins .. ")")
@@ -257,7 +263,7 @@ local function run()
 	dumpUi("hud")
 
 	-- 5. Shop, codes, settings
-	root.CFrame = map.ShopCounter.CFrame * CFrame.new(0, 2, 5)
+	root.CFrame = map.Counter.CFrame * CFrame.new(0, 2, -5)
 	task.wait(0.5)
 	remotes.ShopAction:FireServer("BuyStamp", "Fragile")
 	log(waitFor(function()
@@ -301,11 +307,13 @@ local function run()
 	task.wait(1.1)
 	local again = profile().Coins
 	lastMessage = nil
+	local seenBefore = #allMessages
 	remotes.RedeemCode:FireServer("LAUNCH")
 	task.wait(1)
 	-- (the chute pays coins every few seconds now, so check Gruff's answer, and that no code-sized payout came)
 	log(
-		string.find(lastMessage or "", "already", 1, true) ~= nil and profile().Coins - again < 1000,
+		string.find(string.sub(allMessages, seenBefore + 1), "already", 1, true) ~= nil
+			and profile().Coins - again < 1000,
 		"code LAUNCH can't be used twice"
 	)
 
@@ -350,11 +358,12 @@ local function run()
 	log(gui:FindFirstChild("Tutorial") == nil, "tutorial UI cleaned up")
 
 	-- 7. Prompts open their menus
+	-- (Gruff's counter, the chute and the orders board all face west, toward the plaza: their front is local -Z)
 	local function goTo(part)
-		root.CFrame = part.CFrame * CFrame.new(0, 2, 5)
+		root.CFrame = part.CFrame * CFrame.new(0, 2, -5)
 		task.wait(0.4)
 	end
-	goTo(map.ShopCounter)
+	goTo(map.Counter)
 	local penSpot = root.Position
 	remotes.ShopAction:FireServer("QuickTravel")
 	log(waitFor(function()
@@ -397,9 +406,19 @@ local function run()
 		task.wait(0.4)
 		holdPrompt(wildHamster:FindFirstChildOfClass("ProximityPrompt"), wildHamster)
 	end
-	log(waitFor(function()
-		return player:GetAttribute("Stage") == "Box"
-	end, 4), "grabbed a wild Hamster: straight to the BOX screen")
+	log(
+		waitFor(function()
+			return player:GetAttribute("Stage") == "Box"
+		end, 4),
+		"grabbed a wild Hamster: straight to the BOX screen"
+			.. string.format(
+				" [found %s, prompt %s, stage %s, zone %s]",
+				tostring(wildHamster ~= nil),
+				tostring(wildHamster and wildHamster:FindFirstChildOfClass("ProximityPrompt") ~= nil),
+				tostring(player:GetAttribute("Stage")),
+				tostring(player:GetAttribute("Zone"))
+			)
+	)
 	-- (give it up: Studio-only test action)
 	remotes.ShopAction:FireServer("GiveUp")
 	waitFor(function()
@@ -421,7 +440,14 @@ local function run()
 	end
 	log(waitFor(function()
 		return string.find(lastMessage or "", "RETURN TO SENDER", 1, true) ~= nil
-	end, 4), "a too-strong wild Unicorn (10+ levels above) VINE BOOMs you")
+	end, 4), "a too-strong wild Unicorn (10+ levels above) VINE BOOMs you" .. string.format(
+		" [found %s, prompt %s, stage '%s', parcels %d, launches %d]",
+		tostring(wildDragon ~= nil),
+		tostring(wildDragon and wildDragon:FindFirstChildOfClass("ProximityPrompt") ~= nil),
+		tostring(player:GetAttribute("Stage")),
+		#(profile().Parcels or {}),
+		events.Launch or 0
+	))
 	log(player:GetAttribute("Stage") == "", "...and no job started")
 	task.wait(3)
 
@@ -549,8 +575,8 @@ local function run()
 	end, 3), "Orders board in town opens the TASKS panel")
 	task.wait(0.4)
 	dumpUi("orders")
-	goTo(map.ShopCounter)
-	holdPrompt(map.ShopCounter:FindFirstChildOfClass("ProximityPrompt"))
+	goTo(map.Counter)
+	holdPrompt(map.Counter:FindFirstChildOfClass("ProximityPrompt"))
 	log(waitFor(function()
 		return gui.Shop.Enabled
 	end, 3), "talking to Gruff opens the shop")
@@ -559,7 +585,7 @@ local function run()
 	gui.Shop.Enabled = false
 
 	-- 8. Post Office machines: buy the ones your chute level allows; each multiplies parcel XP
-	goTo(map.ShopCounter)
+	goTo(map.Counter)
 	local machineLevel = profile().Level
 	local machinesBought = 0
 	for _, machine in Config.Machines.List do
@@ -715,7 +741,7 @@ local function run()
 		return false
 	end
 	-- Zone locks: a low-level player can't take a Tiger yet
-	goTo(map.ShopCounter)
+	goTo(map.Counter)
 	remotes.RequestAnimal:FireServer("Tiger", false)
 	task.wait(1)
 	log(player:GetAttribute("Stage") == "" and string.find(lastMessage or "", "Level", 1, true) ~= nil, "Tiger refused while its zone is locked")
@@ -859,7 +885,7 @@ local function run()
 	end
 
 	-- 12. A Wooden Crate and a FRAGILE stamp on a Hamster job
-	goTo(map.ShopCounter)
+	goTo(map.Counter)
 	remotes.ShopAction:FireServer("BuyBox", "Wood")
 	log(waitFor(function()
 		return profile().EquippedBox == "Wood"
@@ -869,7 +895,7 @@ local function run()
 	log(waitFor(function()
 		return profile().SelectedStamp == "Fragile"
 	end, 3), "FRAGILE stamp selected for the next job")
-	goTo(map.ShopCounter)
+	goTo(map.Counter)
 	lastBoxStart = nil
 	remotes.RequestAnimal:FireServer("Hamster", false)
 	waitFor(function()
