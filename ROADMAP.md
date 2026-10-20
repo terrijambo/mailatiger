@@ -280,3 +280,5 @@ _None right now. New questions get added here as they come up, always as a multi
 - **Overhaul (2026-10-20):** aim for top-100 quality: plan in `docs/OVERHAUL_PLAN.md`. UI moves to UIPack Plus (ShardUI) through the `Ui.luau` adapter; ZeroPanel is the admin panel. Both packs stay out of git (`vendor/`, licenses forbid repositories). The world style family is the owner's call (Phase 0).
 - **World style: KayKit (2026-10-20).** Chunky cute low-poly, one shared texture per pack. Quaternius only where KayKit has nothing, recolored. Rules in `docs/ART_BIBLE.md`.
 - **StreamingEnabled stays off for now (2026-10-20):** ~8k parts, and client code finds plaza objects by name. Revisit after the world rebuild if memory is over budget.
+- **HUD without backdrops (2026-10-20, owner):** side buttons are just their icons, the stats and Tasks are outlined text over the world, and the constant objective line at the top is gone.
+- **Assets (2026-10-20):** one size table for every model, everything colored by the KayKit atlas, animals made with a generate-then-clean-up pipeline after a Hamster + Tiger pilot (no pack has our roster). Details: `docs/ASSET_PLAN.md`.

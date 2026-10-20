@@ -112,7 +112,8 @@ The E2E scripts only run in a place marked with the `MailATigerTestPlace` attrib
   `Config/Monetization.luau` (`Id = 0` keeps an item hidden as "Soon").
 
 ## 2026-10-20: overhaul started
-- **Master plan:** `docs/OVERHAUL_PLAN.md` (quality bar, asset shortlist, Phases 0-7). Work through it in order.
+- **Master plan:** `docs/OVERHAUL_PLAN.md` (quality bar, Phases 0-7), and for every model: `docs/ASSET_PLAN.md`
+  (audit, source per asset, size table, animal pipeline, budget, order). Next step there: the size table.
 - **Bought packs live in `vendor/` (git-ignored).** ZeroPanel (admin) and UIPack Plus (`ReplicatedStorage.ShardUI`)
   are proprietary and their licenses forbid any repository; this repo is public. Rebuild `vendor/` with
   `lune run tools/vendor_packs.luau <UIPackPlus.rbxm> <ZeroPanel.rbxm>`. Never commit them. ZeroPanel's owner is

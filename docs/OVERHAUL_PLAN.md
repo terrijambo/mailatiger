@@ -1,3 +1,6 @@
+> **2026-10-20:** the asset work (Phases 3–4: every model, where it comes from, the size table, the animal
+> pipeline, the budget) is now planned in detail in [`docs/ASSET_PLAN.md`](ASSET_PLAN.md). Follow that for assets.
+
 # Overhaul Plan: making Mail Animals! look and feel like a top-100 Roblox game
 
 Written 2026-10-20. This is the master plan for the visual and feel overhaul. Work through it phase by phase,
