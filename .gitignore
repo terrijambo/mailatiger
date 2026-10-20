@@ -39,3 +39,6 @@ vendor/
 art/export/kaykit/**
 !art/export/kaykit/*/
 !art/export/kaykit/*/manifest.csv
+
+# Hero model exports and previews (rebuild with art/blender_scripts/hero_*.py)
+art/export/hero/

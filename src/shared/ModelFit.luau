@@ -65,6 +65,16 @@ function ModelFit.ApplyAtlas(model: Model, artName: string)
 			part.TextureID = texture
 			part.Color = Color3.new(1, 1, 1)
 			part.Material = Enum.Material.SmoothPlastic
+			-- Hero models are split into parts by what they're made of (kk.py groups): a few get their own look
+			if part.Name == "Water" then
+				part.Transparency = 0.35
+				part.Reflectance = 0.08
+			elseif part.Name == "Glass" then
+				part.Reflectance = 0.12
+			elseif part.Name == "Glow" then
+				part.Material = Enum.Material.Neon
+				part.Color = Color3.fromRGB(255, 200, 110)
+			end
 		end
 	end
 end
@@ -121,6 +131,16 @@ function ModelFit.Spawn(
 	options: SpawnOptions?
 ): Model?
 	local solid = options ~= nil and options.Solid == true
+	local byHeight = options ~= nil and options.ByHeight
+	-- The size table wins (Config/ModelSizes.luau): one size per model, wherever it's spawned from
+	local listed = (require(ReplicatedStorage.Shared.Config) :: any).ModelSizes[name]
+	if listed then
+		if listed.Height then
+			size, byHeight = listed.Height, true
+		elseif listed.Width then
+			size, byHeight = listed.Width, false
+		end
+	end
 	local folder = ReplicatedStorage:FindFirstChild(folderName)
 	local template = folder and folder:FindFirstChild(name)
 	local model: Model
@@ -143,7 +163,7 @@ function ModelFit.Spawn(
 			part.CanTouch = false
 		end
 	end
-	ModelFit.Fit(model, floor, size, options ~= nil and options.ByHeight)
+	ModelFit.Fit(model, floor, size, byHeight)
 	model.Parent = parent
 	return model
 end

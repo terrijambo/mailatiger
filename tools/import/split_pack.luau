@@ -1,6 +1,7 @@
 --!nocheck
 -- Splits an imported KayKit pack (art/export/kaykit/<Pack>_all.fbx, imported with Studio's 3D Importer) into
--- one Model per piece in ReplicatedStorage.MapModels, named like "Forest_Tree1A", so the map code can spawn
+-- one Model per piece in ReplicatedStorage.MapModels, named like "Forest_Tree1A" (and our hero models,
+-- art/export/hero/MA_all.fbx: their parts "MA_Fountain__Water" become one Model "MA_Fountain" with a part "Water"), so the map code can spawn
 -- them by name (shared/ModelFit.Spawn, Scenery/Kit.model). Runs in Studio's command bar (or by the agent):
 -- paste the whole file, then run it. It looks for imported models in Workspace and ServerStorage whose
 -- MeshParts are named "<Pack>_..." (Forest_, City_), moves each MeshPart into its own Model, and removes what's
@@ -30,12 +31,38 @@ local function packName(name)
 end
 
 local made, imports = 0, {}
+local heroes: { [string]: Model } = {}
 for _, root in { workspace, ServerStorage } do
 	for _, top in root:GetChildren() do
 		if top:IsA("Model") or top:IsA("Folder") then
 			local found = false
 			for _, mesh in top:GetDescendants() do
-				if mesh:IsA("MeshPart") and packName(mesh.Name) then
+				if mesh:IsA("MeshPart") and string.sub(mesh.Name, 1, 3) == "MA_" then
+					-- A hero model's part: "MA_Fountain__Water" goes into the Model "MA_Fountain" as "Water"
+					found = true
+					local modelName, partName = string.match(mesh.Name, "^(MA_[%w]+)__([%w]+)")
+					if modelName then
+						local model = heroes[modelName]
+						if not model then
+							local old = mapModels:FindFirstChild(modelName)
+							if old then
+								old:Destroy()
+							end
+							model = Instance.new("Model")
+							model.Name = modelName
+							model.Parent = mapModels
+							heroes[modelName] = model
+							made += 1
+						end
+						mesh.Name = partName
+						mesh.Anchored = true
+						mesh.CanCollide = false
+						mesh.CanTouch = false
+						mesh.CanQuery = false
+						mesh.PivotOffset = CFrame.new() -- (the importer tilts it; see below)
+						mesh.Parent = model
+					end
+				elseif mesh:IsA("MeshPart") and packName(mesh.Name) then
 					found = true
 					-- The importer sometimes adds a suffix ("Forest_Tree1A_Mesh"): keep the piece's own name
 					local name = string.gsub(mesh.Name, "_[Mm]esh$", "")
@@ -50,7 +77,6 @@ for _, root in { workspace, ServerStorage } do
 					mesh.CanCollide = false
 					mesh.CanTouch = false
 					mesh.CanQuery = false
-					mesh.Parent = model
 					-- Pivot flat, at the bottom center. The importer tilts each piece's pivot 90 degrees (Blender's
 					-- "Z is up"), and the game places models by their pivot, so without this they lie on their side.
 					mesh.PivotOffset = CFrame.new(0, -mesh.Size.Y / 2, 0)
@@ -64,6 +90,19 @@ for _, root in { workspace, ServerStorage } do
 			end
 		end
 	end
+	task.wait()
+end
+-- Each hero's biggest part is its PrimaryPart, with the model's pivot flat at the bottom center of all its parts
+for _, model in heroes do
+	local biggest, volume = nil, -1
+	for _, p in model:GetChildren() do
+		if p:IsA("BasePart") and p.Size.X * p.Size.Y * p.Size.Z > volume then
+			biggest, volume = p, p.Size.X * p.Size.Y * p.Size.Z
+		end
+	end
+	model.PrimaryPart = biggest
+	local cf, size = model:GetBoundingBox()
+	biggest.PivotOffset = biggest.CFrame:ToObjectSpace(CFrame.new(cf.Position - Vector3.new(0, size.Y / 2, 0)))
 end
 for _, top in imports do
 	top:Destroy()

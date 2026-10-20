@@ -156,7 +156,9 @@ local function dress(
 	hide: { any }?, -- grey parts to make invisible (any: Luau won't pass a {Part} where {BasePart} is expected)
 	options: ModelFit.SpawnOptions?
 ): Model?
-	local model = ModelFit.Spawn("MapModels", name, floor, size, parent, options)
+	-- Our hero version (MA_<name>, art/blender_scripts/hero_*.py) wins over the older model when it's imported
+	local model = ModelFit.Spawn("MapModels", `MA_{name}`, floor, size, parent, options)
+		or ModelFit.Spawn("MapModels", name, floor, size, parent, options)
 	if model then
 		-- e.g. "PenCounterArt": never the same name as the grey part it covers, so code that looks a part
 		-- up by name (like the tutorial arrow) always finds the part

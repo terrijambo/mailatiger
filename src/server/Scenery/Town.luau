@@ -488,7 +488,46 @@ function Town.Build(parent: Instance, island: Islands.Island, destinations: { De
 		end
 	end
 
-	fountain(folder)
+	-- The hero fountain (art/blender_scripts/hero_fountain.py) when it's imported, with splashes where its
+	-- streams land; otherwise the part-built one
+	local hero = ModelFit.Spawn("MapModels", "MA_Fountain", CFrame.lookAt(Vector3.zero, -Vector3.zAxis), 14.5, folder, {
+		ByHeight = true,
+		Solid = true,
+	})
+	if hero then
+		local _, size = hero:GetBoundingBox()
+		local scale = size.Y / 14.5 -- (the model was built in studs: positions below are from its script)
+		local function splash(at: Vector3, rate: number, spread: number)
+			local host = part(folder, {
+				Name = "FountainSplash",
+				Size = Vector3.new(spread, 0.2, spread),
+				CFrame = CFrame.new(at * scale),
+				Transparency = 1,
+				CanCollide = false,
+				CanQuery = false,
+				CanTouch = false,
+			})
+			local e = Instance.new("ParticleEmitter")
+			e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			e.Color = ColorSequence.new(Color3.fromRGB(220, 245, 255))
+			e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.5), NumberSequenceKeypoint.new(1, 0) })
+			e.Transparency = NumberSequence.new(0.2, 1)
+			e.Lifetime = NumberRange.new(0.4, 0.7)
+			e.Speed = NumberRange.new(4, 7)
+			e.SpreadAngle = Vector2.new(35, 35)
+			e.Acceleration = Vector3.new(0, -22, 0)
+			e.Rate = rate
+			e.EmissionDirection = Enum.NormalId.Top
+			e.Parent = host
+		end
+		for i = 0, 3 do
+			local a = i * math.pi / 2
+			splash(Vector3.new(math.cos(a) * 7.9, 2.95, math.sin(a) * 7.9), 18, 0.8)
+		end
+		splash(Vector3.new(0, 7.0, 0), 30, 7)
+	else
+		fountain(folder)
+	end
 
 	-- Round flower beds on the mid ring (between the paths and the counters)
 	local flowerColors = {
