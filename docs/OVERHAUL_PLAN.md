@@ -1,4 +1,4 @@
-# Overhaul Plan: making Mail a Tiger look and feel like a top-100 Roblox game
+# Overhaul Plan: making Mail Animals! look and feel like a top-100 Roblox game
 
 Written 2026-10-20. This is the master plan for the visual and feel overhaul. Work through it phase by phase,
 in order: each phase has a **Done when** line, and nothing moves on until that line is true. Log decisions in
@@ -61,8 +61,8 @@ The owner picks; the agent records the answers in `ROADMAP.md` → Decisions.
      the palette).
 2. **Animals:** keep our own 25-animal roster (it's the game's identity, and no pack has all of them),
    rebuilt to a higher-detail spec (Phase 4). Packs are used as a **style reference** and for a few fill-ins.
-3. **Name:** the game is "Mail a Tiger" on Roblox. If the overhaul should relaunch it as **"Mail Animals"**,
-   decide now: the name goes into the logo, thumbnails, Gruff's lines and the store page.
+3. **Name:** the game has been **Mail Animals!** since 2026-10-12 (internal names stay MailATiger). The new
+   logo, thumbnails and store art made in Phase 7 use Mail Animals!.
 4. **Budget:** the free tiers below are enough to start. Paid tiers add more pieces and color variants; the
    full recommended set is about **$35** (all one-time, all optional).
 
