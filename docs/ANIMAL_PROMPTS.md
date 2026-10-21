@@ -16,6 +16,9 @@ Lessons from tier 1:
 - Name the parts the game animates: ears, tail, legs/feet/paws, wings, fins, head and beak (see `Animate.luau`).
 - The generator doesn't always face the animal forward. If it shows its side or back, set its turn in the install
   script (the Goldfish and the Parrot both needed 180). "(turn N)" in the table below is that number.
+- Roblox's content check sometimes refuses a harmless prompt ("Moderation failed"). The first Pig prompt ("piglet",
+  "pink snout") was refused; rewording it ("farm pig", "round snout") went through.
+- The generator allows 8 parts at most, so four-legged animals with ears and a tail use one "back legs" part.
 
 | Tier | Animal | Look | Parts | Size (x, y, z) |
 |---|---|---|---|---|
@@ -24,6 +27,10 @@ Lessons from tier 1:
 | 1 | Hedgehog | soft rounded brown cartoon quills, cream face and belly, small round ears, black button nose, pink blush | body, head, quills, left ear, right ear, left foot, right foot | 2.6, 2.4, 2.8 |
 | 1 | Goldfish | **like a collectible toy figure**: round plump bright orange body, white belly, big flowing fan tail, small rounded fins, small happy open mouth, pink blush cheeks, no realistic scales | body, tail, top fin, left fin, right fin | 2.4, 2.4, 3.2 (turn 180) |
 | 1 | Parrot | **standing like a collectible toy figure**: round chubby bright green body, big round head, yellow curved beak, little red tuft on top, blue wings folded at its sides, short red and blue tail, pink blush cheeks, small orange feet, no realistic feathers | body, head, beak, left wing, right wing, tail, left foot, right foot | 2.6, 3.4, 2.6 (turn 180) |
+| 2 | Chicken | **standing like a collectible toy figure**: round plump white body, big round head, red comb on top and a little red wattle, small yellow-orange beak, small white wings folded at its sides, short fluffy white tail, pink blush cheeks, small orange feet, no realistic feathers | body, head, beak, left wing, right wing, tail, left foot, right foot | 2.6, 3.2, 2.6 |
+| 2 | Goat | baby goat **standing on four legs like a collectible toy figure**: round chubby cream-white body, big round head with two small curved tan horns, floppy ears, tiny tuft beard, pink nose, pink blush cheeks, short chunky legs with little dark hooves, short perky tail | body, head, left ear, right ear, front left leg, front right leg, back left leg, back right leg | 2.8, 3.4, 4 |
+| 2 | Pig | **farm pig** standing on four legs like a collectible toy figure: round light pink body, big round head with a big round snout, small floppy triangle ears, rosy cheeks, happy smile, short stubby legs with little hooves, curly tail (no "no realistic ..." ending) | body, head, left ear, right ear, tail, front left leg, front right leg, back legs | 2.8, 3, 3.6 |
+| 2 | Skunk | **standing on four legs like a collectible toy figure**: round black body with a white stripe down its back, big round black head with a white forehead stripe, small round ears, tiny pink nose, pink blush cheeks, short stubby legs, huge fluffy black-and-white tail curling up over its back | body, head, tail, left ear, right ear, front left leg, front right leg, back legs | 2.8, 3.6, 4 |
 | 4 | Tiger | tiger cub: big round head, orange with bold black stripes, white muzzle and chest, round ears with white insides, cheeky grin, big paws, striped tail curling up | body, head, tail, front left leg, front right leg, back left leg, back right leg | 3, 3.6, 5 |
 
 ## Installing a generated animal
