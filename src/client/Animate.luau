@@ -41,7 +41,117 @@ type CritterRig = {
 	Boss: Highlight?, -- hourly bosses: a glowing outline that turns red when it's about to blow
 	Smooth: CFrame?, -- (bosses) a smoothed copy of the ball's position, so the giant doesn't jitter
 	AttackMark: BillboardGui?, -- the red "!!" while a wild animal winds up an attack
+	Limbs: { Limb }, -- (generated animals) parts that move on their own: ears, tails, legs, wings, fins
 }
+
+-- A part of a generated animal (docs/ANIMAL_PROMPTS.md) that moves on its own, turning around its joint
+type Limb = {
+	Part: BasePart,
+	Rest: CFrame, -- relative to the model's pivot, at its spawn scale
+	Joint: Vector3, -- where it turns, relative to the pivot
+	Kind: string, -- "Ear", "Tail", "Leg", "Wing", "Fin", "Head", "Beak" (ears and beaks ride on the head)
+	Side: number, -- -1 left, 1 right, 0 middle
+	Front: boolean,
+}
+
+local LIMB_KINDS = { "Ear", "Tail", "Leg", "Foot", "Paw", "Wing", "Fin", "Head", "Beak", "Quills" }
+
+-- The moving parts of a generated animal (models made by Studio's mesh generator carry a "Generated" attribute)
+local function findLimbs(model: Model): { Limb }
+	local limbs: { Limb } = {}
+	if model:GetAttribute("Generated") == nil then
+		return limbs
+	end
+	local pivot = model:GetPivot()
+	local center = model:GetBoundingBox().Position
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			local kind: string? = nil
+			for _, k in LIMB_KINDS do
+				if string.find(p.Name, k, 1, true) then
+					kind = k
+				end
+			end
+			if kind == "Foot" or kind == "Paw" then
+				kind = "Leg"
+			elseif kind == "Quills" then
+				kind = nil
+			end
+			if kind then
+				local rest = pivot:ToObjectSpace(p.CFrame)
+				local half = p.Size / 2
+				-- The joint: legs turn at their top, ears at their base, the rest at the end nearest the body
+				local joint: Vector3
+				if kind == "Leg" then
+					joint = rest.Position + Vector3.new(0, half.Y, 0)
+				elseif kind == "Ear" then
+					joint = rest.Position - Vector3.new(0, half.Y, 0)
+				elseif kind == "Head" then
+					joint = rest.Position - Vector3.new(0, half.Y * 0.8, 0)
+				else
+					local toBody = pivot:PointToObjectSpace(center) - rest.Position
+					local reach = math.min(half.X, half.Y, half.Z) + 0.4 * math.max(half.X, half.Y, half.Z)
+					joint = rest.Position + (if toBody.Magnitude > 0.01 then toBody.Unit * reach else Vector3.zero)
+				end
+				local side = if string.find(p.Name, "Left", 1, true)
+					then -1
+					elseif string.find(p.Name, "Right", 1, true) then 1
+					else 0
+				table.insert(limbs, {
+					Part = p,
+					Rest = rest,
+					Joint = joint,
+					Kind = kind,
+					Side = side,
+					Front = string.find(p.Name, "Front", 1, true) ~= nil,
+				})
+			end
+		end
+	end
+	return limbs
+end
+
+-- Turns each limb around its joint for this frame (after the whole model has been placed)
+local function moveLimbs(model: Model, limbs: { Limb }, baseScale: number, running: boolean, phase: number, now: number)
+	if #limbs == 0 then
+		return
+	end
+	local pivot = model:GetPivot()
+	local s = model:GetScale() / baseScale
+	-- The head's nod, which the ears and beak ride along with
+	local headMove = CFrame.identity
+	for _, limb in limbs do
+		if limb.Kind == "Head" then
+			local joint = limb.Joint * s
+			headMove = CFrame.new(joint) * CFrame.Angles(math.sin(now * 1.7) * 0.06, 0, 0) * CFrame.new(-joint)
+		end
+	end
+	for _, limb in limbs do
+		local turn = CFrame.identity
+		local kind = limb.Kind
+		if kind == "Leg" then
+			-- paddling while it runs: front and back, left and right out of step
+			local offset = (if limb.Front then 0 else math.pi) + (if limb.Side < 0 then 0 else math.pi / 2)
+			turn = CFrame.Angles(if running then math.sin(phase * 2 + offset) * 0.7 else 0, 0, 0)
+		elseif kind == "Ear" then
+			turn = CFrame.Angles(0, 0, limb.Side * (0.08 + 0.1 * math.sin(now * 3 + limb.Side)))
+		elseif kind == "Tail" then
+			turn = CFrame.Angles(0, math.sin(now * (if running then 14 else 5)) * 0.4, 0)
+		elseif kind == "Wing" then
+			turn = CFrame.Angles(
+				0,
+				0,
+				limb.Side * math.sin(now * (if running then 16 else 3)) * (if running then 0.6 else 0.1)
+			)
+		elseif kind == "Fin" then
+			turn = CFrame.Angles(0, math.sin(now * 6 + limb.Side) * 0.3, 0)
+		end
+		local joint = limb.Joint * s
+		local rest = CFrame.new(limb.Rest.Position * s) * limb.Rest.Rotation
+		local onHead = if kind == "Head" or kind == "Ear" or kind == "Beak" then headMove else CFrame.identity
+		limb.Part.CFrame = pivot * onHead * CFrame.new(joint) * turn * CFrame.new(-joint) * rest
+	end
+end
 
 -- Hourly bosses: what swirls around each one
 local BOSS_AURA: { [string]: { Color: Color3, Particle: Color3 } } = {
@@ -175,6 +285,7 @@ local function addCritter(ball: Instance)
 		Dust = dust,
 		StillFor = 0,
 		Boss = bossHighlight,
+		Limbs = findLimbs(model),
 	}
 end
 
@@ -347,6 +458,7 @@ local function updateCritter(rig: CritterRig, dt: number, now: number)
 		base = smooth
 	end
 	rig.Model:PivotTo(base * rig.Offset * CFrame.new(0, lift, 0) * CFrame.Angles(pitch, yaw, roll))
+	moveLimbs(rig.Model, rig.Limbs, rig.BaseScale, running, rig.Phase, now)
 end
 
 ---------------------------------------------------------------------------------------------------

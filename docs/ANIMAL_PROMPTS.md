@@ -1,0 +1,42 @@
+# Animal prompts (Roblox Studio's AI mesh generator)
+
+How the animals were made (decided 2026-10-20, docs/ASSET_PLAN.md section 4): Roblox Studio's built-in mesh generator
+(the Assistant's "generate mesh"), free, one animal at a time, split into named parts so the game can animate them.
+To remake one, run the same prompt with the same part names and size, then install it like the others (below).
+
+Every prompt follows one template so the set matches:
+
+> A cute (chubby) chibi cartoon **<animal>**, stylized like a premium mobile game toy: **<its look>**, big glossy black
+> eyes with white highlights, soft rounded shapes, simple flat colors, no realistic fur.
+
+Settings: about 6,000 triangles (8,000 for big animals), segmentation "explicit" with the part names below.
+
+Lessons from tier 1:
+- Add "like a collectible toy figure" (and "sitting upright" or "standing") so the animal comes out posed, not lying flat.
+- Name the parts the game animates: ears, tail, legs/feet/paws, wings, fins, head and beak (see `Animate.luau`).
+- The generator doesn't always face the animal forward. If it shows its side or back, set its turn in the install
+  script (the Goldfish and the Parrot both needed 180). "(turn N)" in the table below is that number.
+
+| Tier | Animal | Look | Parts | Size (x, y, z) |
+|---|---|---|---|---|
+| 1 | Hamster | round orange body, cream belly, puffy cream cheeks, small round pink ears, tiny pink nose, little pink paws, short stubby legs | body, head, left ear, right ear, left front paw, right front paw, left foot, right foot | 3, 3, 3 |
+| 1 | Bunny | **sitting upright like a collectible toy figure**: round white body sitting on the ground, big round head on top, two long upright ears with pink insides, tiny pink nose, small smile, pink blush cheeks, small front paws held together on its chest, big back feet flat on the ground in front, fluffy cotton-ball tail | body, head, left ear, right ear, tail, left foot, right foot | 2.6, 3.6, 2.6 |
+| 1 | Hedgehog | soft rounded brown cartoon quills, cream face and belly, small round ears, black button nose, pink blush | body, head, quills, left ear, right ear, left foot, right foot | 2.6, 2.4, 2.8 |
+| 1 | Goldfish | **like a collectible toy figure**: round plump bright orange body, white belly, big flowing fan tail, small rounded fins, small happy open mouth, pink blush cheeks, no realistic scales | body, tail, top fin, left fin, right fin | 2.4, 2.4, 3.2 (turn 180) |
+| 1 | Parrot | **standing like a collectible toy figure**: round chubby bright green body, big round head, yellow curved beak, little red tuft on top, blue wings folded at its sides, short red and blue tail, pink blush cheeks, small orange feet, no realistic feathers | body, head, beak, left wing, right wing, tail, left foot, right foot | 2.6, 3.4, 2.6 (turn 180) |
+| 4 | Tiger | tiger cub: big round head, orange with bold black stripes, white muzzle and chest, round ears with white insides, cheeky grin, big paws, striped tail curling up | body, head, tail, front left leg, front right leg, back left leg, back right leg | 3, 3.6, 5 |
+
+## Installing a generated animal
+
+The generator drops the model into Workspace, named after its prompt. In Studio (or by the agent), the install step:
+1. moves the old model from `ReplicatedStorage > AnimalModels > <Id>` to `ServerStorage > OldAnimalModels` (backup)
+2. renames the parts to clean names (Body, Head, LeftEar...), anchors them, turns off collisions and queries
+3. turns it to face forward if it needs it (the "turn" number), then sets the Body as PrimaryPart with the pivot
+   flat at the bottom centre of all its parts
+4. renames the model to the animal's Id and moves it into `AnimalModels`
+
+The model gets a `Generated` attribute. That tells `Animate.luau` to move its parts: ears twitch, tails wag,
+legs and feet paddle while it runs, wings flap, fins sway, and the head (with its ears and beak) nods.
+
+The game then uses it everywhere (wild animals, the BOX screen, the Pen icons). `ModelFit.Paint` leaves textured parts
+alone, so the old colour files in `src/shared/ArtColors/` don't tint them.
