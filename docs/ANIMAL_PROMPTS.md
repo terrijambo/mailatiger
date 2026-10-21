@@ -19,7 +19,8 @@ Lessons from tier 1:
 - The generator doesn't always face the animal forward. If it shows its side or back, set its turn in the install
   script (the Goldfish and the Parrot both needed 180). "(turn N)" in the table below is that number.
 - Roblox's content check sometimes refuses a harmless prompt ("Moderation failed"). The first Pig prompt ("piglet",
-  "pink snout") was refused; rewording it ("farm pig", "round snout") went through.
+  "pink snout") was refused; rewording it ("farm pig", "round snout") went through. The first Gorilla ("baby
+  gorilla", "big strong arms with knuckles") was refused too; "jungle gorilla plush toy figure" went through.
 - The generator allows 8 parts at most, so four-legged animals with ears and a tail use one "back legs" part.
 
 | Tier | Animal | Look | Parts | Size (x, y, z) |
@@ -38,6 +39,9 @@ Lessons from tier 1:
 | 3 | Raccoon | **standing on four legs like a collectible toy figure**: round grey body with a light grey belly, big round grey head with a black eye mask and a white muzzle, small round ears with white tips, tiny black nose, pink blush cheeks, short stubby dark legs, big fluffy tail with black and grey rings | body, head, tail, left ear, right ear, front left leg, front right leg, back legs | 2.8, 3.2, 4 |
 | 3 | Penguin | **standing like a collectible toy figure**: round plump body, black back and head with a white belly and white face, small orange beak, pink blush cheeks, little black flippers at its sides, small orange feet, tiny tail, no realistic feathers | body, head, beak, left wing, right wing, tail, left foot, right foot | 2.6, 3.2, 2.4 |
 | 3 | Octopus | **like a collectible toy figure**: big round soft purple head, small happy smile, pink blush cheeks, a few lighter purple spots, eight short chunky curled tentacles spread around its base so it sits on them (no "no realistic ..." ending) | head (installed as Body), front left tentacles, front right tentacles, back left tentacles, back right tentacles | 3.4, 3, 3.4 |
+| 4 | Crocodile | baby crocodile **standing on four short legs like a collectible toy figure** (it came out standing up, which suits the set): round plump green body, light yellow-green belly, big round head with a short wide rounded snout and a friendly toothy grin with a few small blunt white teeth, bumpy eyes on top, pink blush cheeks, rounded bumps along its back, short stubby legs, thick tail, no realistic scales | body, head, tail, front left leg, front right leg, back left leg, back right leg | 3, 2.8, 5 (8,000 triangles) |
+| 4 | Gorilla | **jungle gorilla plush toy figure sitting upright**: round slate grey body, light grey tummy, big round head with a light grey face, small round ears, friendly smile, rosy cheeks, long arms with big round hands resting on the ground, short stubby legs (no "no realistic ..." ending) | body, head, left ear, right ear, left arm, right arm, left leg, right leg | 3.6, 3.6, 3 (8,000 triangles) |
+| 4 | Bear | bear cub **standing on four legs like a collectible toy figure**: round plump brown body, big round head with a light tan muzzle, small round ears, small black nose, pink blush cheeks, happy smile, short chunky legs with big round paws, no realistic fur | body, head, left ear, right ear, front left leg, front right leg, back left leg, back right leg | 3.2, 3.4, 4.2 (8,000 triangles) |
 | 4 | Tiger | tiger cub: big round head, orange with bold black stripes, white muzzle and chest, round ears with white insides, cheeky grin, big paws, striped tail curling up | body, head, tail, front left leg, front right leg, back left leg, back right leg | 3, 3.6, 5 |
 
 ## Installing a generated animal
