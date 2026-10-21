@@ -49,12 +49,12 @@ type Limb = {
 	Part: BasePart,
 	Rest: CFrame, -- relative to the model's pivot, at its spawn scale
 	Joint: Vector3, -- where it turns, relative to the pivot
-	Kind: string, -- "Ear", "Tail", "Leg", "Wing", "Fin", "Head", "Beak" (ears and beaks ride on the head)
+	Kind: string, -- "Ear", "Tail", "Leg", "Arm", "Wing", "Fin", "Tentacle", "Head", "Beak" (ears and beaks ride on the head)
 	Side: number, -- -1 left, 1 right, 0 middle
 	Front: boolean,
 }
 
-local LIMB_KINDS = { "Ear", "Tail", "Leg", "Foot", "Paw", "Wing", "Fin", "Head", "Beak", "Quills" }
+local LIMB_KINDS = { "Ear", "Tail", "Leg", "Foot", "Paw", "Arm", "Wing", "Fin", "Tentacle", "Head", "Beak", "Quills" }
 
 -- The moving parts of a generated animal (models made by Studio's mesh generator carry a "Generated" attribute)
 local function findLimbs(model: Model): { Limb }
@@ -80,9 +80,9 @@ local function findLimbs(model: Model): { Limb }
 			if kind then
 				local rest = pivot:ToObjectSpace(p.CFrame)
 				local half = p.Size / 2
-				-- The joint: legs turn at their top, ears at their base, the rest at the end nearest the body
+				-- The joint: legs and arms turn at their top, ears at their base, the rest at the end nearest the body
 				local joint: Vector3
-				if kind == "Leg" then
+				if kind == "Leg" or kind == "Arm" then
 					joint = rest.Position + Vector3.new(0, half.Y, 0)
 				elseif kind == "Ear" then
 					joint = rest.Position - Vector3.new(0, half.Y, 0)
@@ -133,6 +133,12 @@ local function moveLimbs(model: Model, limbs: { Limb }, baseScale: number, runni
 			-- paddling while it runs: front and back, left and right out of step
 			local offset = (if limb.Front then 0 else math.pi) + (if limb.Side < 0 then 0 else math.pi / 2)
 			turn = CFrame.Angles(if running then math.sin(phase * 2 + offset) * 0.7 else 0, 0, 0)
+		elseif kind == "Arm" then
+			-- swinging against the legs while it runs, a little sway while it stands
+			local swing = if running
+				then math.sin(phase * 2 + (if limb.Side < 0 then math.pi else 0)) * 0.6
+				else math.sin(now * 2 + limb.Side) * 0.06
+			turn = CFrame.Angles(swing, 0, 0)
 		elseif kind == "Ear" then
 			turn = CFrame.Angles(0, 0, limb.Side * (0.08 + 0.1 * math.sin(now * 3 + limb.Side)))
 		elseif kind == "Tail" then
@@ -145,6 +151,10 @@ local function moveLimbs(model: Model, limbs: { Limb }, baseScale: number, runni
 			)
 		elseif kind == "Fin" then
 			turn = CFrame.Angles(0, math.sin(now * 6 + limb.Side) * 0.3, 0)
+		elseif kind == "Tentacle" then
+			-- a slow wave going round the octopus (faster while it scuttles)
+			local t = now * (if running then 9 else 2.5) + limb.Side * 1.2 + (if limb.Front then 0 else 2.4)
+			turn = CFrame.Angles(math.sin(t) * 0.18, 0, math.cos(t) * 0.18)
 		end
 		local joint = limb.Joint * s
 		local rest = CFrame.new(limb.Rest.Position * s) * limb.Rest.Rotation
