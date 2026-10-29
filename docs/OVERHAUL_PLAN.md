@@ -187,6 +187,10 @@ Still to do in Phase 2:
 
 ## Phase 3 — World rebuild (agent builds, owner imports models; ~1–2 sessions per area)
 
+> **Changed 2026-10-29:** the world becomes 6 realms, one per animal tier, bought with coins one after
+> another (docs/REALMS_PLAN.md, waiting for the owner's answers). The town and island steps below are the
+> old layout; the quality bar and checks still apply to every realm.
+
 Rebuild in the order players see things. Each area is finished (detail, lighting, glitch check, phone check)
 before the next one starts.
 
