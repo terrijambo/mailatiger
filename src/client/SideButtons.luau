@@ -2,7 +2,7 @@
 -- The big square buttons on the left side of the screen. Kept to a minimum so the screen stays clean:
 --   GRUFF (teleport back to Gruff; it turns into PEN while you're at Gruff's, which zips you to your best
 --   zone), SHOP (Gruff's Shop; its PREMIUM button flips to the Robux Store), and MENU (it pops out
---   COLLECTION and SETTINGS; picking one, pressing MENU again, or opening any window folds it away).
+--   COLLECTION, REALMS and SETTINGS; picking one, pressing MENU again, or opening any window folds it away).
 --   Orders and challenges live in the TASKS panel on the right (OrdersBoard.luau); Invite is in Settings.
 -- Big screens: one column down the middle of the left edge. Phones (Ui.compact): a grid under the stats in
 -- the top-left, so the thumbstick (bottom-left) stays clear.
@@ -208,7 +208,10 @@ function SideButtons.Start()
 			Menus.Toggle("Inventory")
 		end
 	)
-	add(popup, { Label = "SETTINGS", Icon = "Button_Settings", Color = Ui.GREY, LayoutOrder = 2 }, nil, function()
+	add(popup, { Label = "REALMS", Icon = "Button_Travel", Color = Ui.PURPLE, LayoutOrder = 2 }, nil, function()
+		Menus.Toggle("Realms")
+	end)
+	add(popup, { Label = "SETTINGS", Icon = "Button_Settings", Color = Ui.GREY, LayoutOrder = 3 }, nil, function()
 		Menus.Toggle("Settings")
 	end)
 

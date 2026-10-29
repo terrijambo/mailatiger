@@ -905,12 +905,12 @@ function MapBuilder.Build(): Map
 		leaderboards[id] = face
 	end
 
-	-- Lock barriers: a shimmering wall across the island end of each locked zone's bridge, with the level it
-	-- opens at. Each player's client hides the ones they've unlocked (ZoneLocks.luau). The server does the
-	-- actual keeping-out (Travel.luau), so these don't block anything by themselves.
+	-- Lock barriers: a shimmering wall across the island end of each locked zone's bridge, with the realm it
+	-- belongs to (Config/Realms.luau). Each player's client hides the ones they've unlocked (ZoneLocks.luau). The
+	-- server does the actual keeping-out (Travel.luau), so these don't block anything by themselves.
 	for _, def in Config.Arenas.List do
 		local island = World.ById[def.Id]
-		local need = Config.Levels.ZoneLevels[def.Id] or 1
+		local need = Config.Realms.OfArena(def.Id)
 		if island and need > 1 then
 			local from, to = World.Bridge(island)
 			local direction = Vector3.new(to.X - from.X, 0, to.Z - from.Z).Unit
@@ -926,7 +926,7 @@ function MapBuilder.Build(): Map
 				CanQuery = false,
 			})
 			wall:SetAttribute("ArenaId", def.Id)
-			wall:SetAttribute("Level", need)
+			wall:SetAttribute("Realm", need)
 			CollectionService:AddTag(wall, "ZoneLock")
 			local signAt = at - direction * 0.6 + Vector3.new(0, 6, 0)
 			local sign = part(map, {
@@ -938,7 +938,7 @@ function MapBuilder.Build(): Map
 				CanQuery = false,
 			})
 			sign:SetAttribute("ArenaId", def.Id)
-			sign:SetAttribute("Level", need)
+			sign:SetAttribute("Realm", need)
 			CollectionService:AddTag(sign, "ZoneLock")
 			local gui = Instance.new("SurfaceGui")
 			gui.Face = Enum.NormalId.Back -- facing town
@@ -949,7 +949,7 @@ function MapBuilder.Build(): Map
 			label.BackgroundTransparency = 1
 			label.Font = Enum.Font.LuckiestGuy
 			label.TextColor3 = Color3.fromRGB(255, 220, 90)
-			label.Text = `🔒 LEVEL {need}`
+			label.Text = `🔒 {string.upper(Config.Realms.At(need).DisplayName)} REALM`
 			label.Parent = gui
 			local stroke = Instance.new("UIStroke")
 			stroke.Thickness = math.max(1.5, SignText.Fit(gui, label, sign) * 0.08)

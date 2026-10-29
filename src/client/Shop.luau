@@ -150,7 +150,7 @@ local function build(menuName: string, windowTitle: string, windowColor: Color3,
 				elseif level < machine.Level then
 					rowButton(frame, 1, `🔒 Level {machine.Level}`, Ui.GREY, nil)
 				else
-					local price = Config.Machines.Price(machine)
+					local price = Config.Machines.Price(machine, profile.Realm or 1)
 					rowButton(
 						frame,
 						1,
@@ -266,12 +266,7 @@ local function build(menuName: string, windowTitle: string, windowColor: Color3,
 			end
 		elseif currentTab == "Lures" then
 			-- Lures: for a few minutes, rarer animals you can take on keep turning up right next to you
-			local best = 1
-			for _, animal in Config.Animals.List do
-				if (Config.Wild.LevelOf[animal.Id] or 1) <= (profile.Level or 1) then
-					best = math.max(best, animal.BaseValue)
-				end
-			end
+			local best = Config.Machines.BestValueAt(profile.Level or 1, profile.Realm or 1)
 			local lure = Config.Wild.Lures.Lure
 			local cost = best * Config.Wild.LureCoinJobs
 			local frame = row(
@@ -316,11 +311,12 @@ local function build(menuName: string, windowTitle: string, windowColor: Color3,
 			end
 		elseif currentTab == "Rebirth" then
 			local rebirth = Config.Machines.Rebirth
-			local cost = Config.Machines.RebirthCost(profile.Rebirths)
+			local realm = profile.Realm or 1
+			local cost = Config.Machines.RebirthCost(profile.Rebirths, realm)
 			local level = profile.Level or 1
 			local needLevel = Config.Machines.RebirthLevel(profile.Rebirths)
 			local ready = level >= needLevel and profile.Coins >= cost
-			local points = Config.Machines.RebirthPoints(profile.Rebirths + 1)
+			local points = Config.Machines.RebirthPoints(profile.Rebirths + 1, realm)
 			local frame = row(
 				1,
 				`Rebirth #{profile.Rebirths + 1}   (Level {needLevel} chute + {Format.Short(cost)} coins)`,
@@ -354,7 +350,7 @@ local function build(menuName: string, windowTitle: string, windowColor: Color3,
 			row(
 				2,
 				"What resets",
-				"Your chute level (back to 1), coins, machines, animals, boxes and stamps. Zones lock again."
+				"Your chute level (back to 1), coins, machines, animals, boxes and stamps. You stay in your realm."
 			)
 			row(
 				3,

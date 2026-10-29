@@ -581,7 +581,7 @@ function MachineStations.Start()
 				action = `Opens at Level {machine.Level}`
 			else
 				showBoxes(station, 0)
-				local price = Machines.Price(machine)
+				local price = Machines.Price(machine, data.Realm or 1)
 				status = `BUY: {Format.Short(price)}  (x{string.format("%g", machine.XPMult)} XP)`
 				color = if data.Coins >= price then Color3.fromRGB(255, 220, 80) else Color3.fromRGB(255, 140, 120)
 				action = `Buy ({Format.Short(price)})`

@@ -182,12 +182,12 @@ function Effects.Start()
 			shakeCamera(2, 0.4)
 			fovPunch(22, 0.9)
 			Ragdoll.Launch(data.Velocity, data.Seconds)
-		elseif kind == "LevelUp" then
+		elseif kind == "LevelUp" or kind == "RealmMoved" then
 			local at = myPosition()
 			if at then
-				confetti(at + Vector3.new(0, 3, 0), 90)
+				confetti(at + Vector3.new(0, 3, 0), if kind == "RealmMoved" then 220 else 90)
 			end
-			fovPunch(10, 0.8)
+			fovPunch(if kind == "RealmMoved" then 18 else 10, 0.8)
 		elseif kind == "BossLanded" or kind == "BossPinned" then
 			-- The boss's parcel slams down / the boss is pinned flat: a dust burst and a big shake
 			local attachment = Instance.new("Attachment")

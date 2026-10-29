@@ -45,9 +45,10 @@ function Orders.Refresh(profile: Profile, force: boolean?): boolean
 	end
 
 	local choices = {}
-	-- Animals your level lets you take on (they roam wild in the zones)
+	-- Animals of your realm that your level lets you take on (they roam wild in the zones; Config/Realms.luau)
+	local power = Config.Realms.Power(profile.Realm, profile.Level)
 	for _, animal in Config.Animals.List do
-		if animal.Carriers == 1 and (Config.Wild.LevelOf[animal.Id] or 1) <= profile.Level then
+		if animal.Carriers == 1 and animal.Tier == profile.Realm and (Config.Wild.PowerOf[animal.Id] or 1) <= power then
 			table.insert(choices, animal)
 		end
 	end

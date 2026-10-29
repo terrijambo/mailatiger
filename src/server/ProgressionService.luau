@@ -2,8 +2,9 @@
 -- Levels, XP and Gruff's main quests (numbers in Config/Levels.luau and Config/Quests.luau).
 --   * XP comes from mailing (ProgressionService.OnParcelMailed), orders (OnOrderDone), quests, and the tutorial.
 --   * Leveling up pays a coin bonus and tells the client (a big LEVEL UP popup with what just unlocked).
---   * Zones open by level (ProgressionService.ZoneOpen). Your level is your chute level: it also sets the
---     chute's coins per minute and which machines you can buy (Config/Machines.luau). Rebirth resets it.
+--   * Zones (islands) open by realm (ProgressionService.ZoneOpen, Config/Realms.luau). Your level is your chute
+--     level in your realm: it lets you take on the realm's animals one by one, sets the chute's coins per
+--     minute and which machines you can buy (Config/Machines.luau). Rebirth and a realm move reset it.
 --   * Quests run one at a time. "Count" quests (mail X, complete X orders) count from when the quest starts.
 --     "State" quests (own the Bunny, reach level 4, buy Sneakers...) complete the moment they're true.
 
@@ -28,24 +29,28 @@ local function notify(player: Player, kind: string, data: { [string]: any })
 	Remotes.Notify:FireClient(player, kind, data)
 end
 
--- Is this zone (arena id) open for the player?
+-- Is this zone (arena id) open for the player? (Its realm has to be bought.)
 function ProgressionService.ZoneOpen(player: Player, arenaId: string): boolean
 	local profile = DataService.Get(player)
-	local need = Levels.ZoneLevels[arenaId] or 1
-	return profile ~= nil and profile.Level >= need
+	return profile ~= nil and Config.Realms.OfArena(arenaId) <= profile.Realm
 end
 
-function ProgressionService.ZoneLevel(arenaId: string): number
-	return Levels.ZoneLevels[arenaId] or 1
+-- The realm a zone (arena id) belongs to
+function ProgressionService.ZoneRealm(arenaId: string)
+	return Config.Realms.At(Config.Realms.OfArena(arenaId))
 end
 
--- What opens at exactly this level (for the LEVEL UP popup)
-local function unlocksAt(level: number): { string }
+-- What opens at exactly this level in this realm (for the LEVEL UP popup)
+local function unlocksAt(level: number, realm: number): { string }
 	local list = {}
-	for _, def in Config.Arenas.List do
-		if (Levels.ZoneLevels[def.Id] or 1) == level then
-			table.insert(list, `🔓 The {def.DisplayName} zone`)
+	for _, animal in Config.Animals.List do
+		if animal.Tier == realm and level > 1 and (Config.Wild.LevelOf[animal.Id] or 1) == level then
+			table.insert(list, `🐾 You can take on the {animal.DisplayName} now`)
 		end
+	end
+	local here = Config.Realms.At(realm)
+	if realm < Config.Realms.Count and level == here.NeedLevel then
+		table.insert(list, `🌍 The level you need for the next realm (MENU > REALMS)`)
 	end
 	for _, troll in Config.Trolls.List do
 		if troll.Level == level then
@@ -99,15 +104,10 @@ function ProgressionService.AddXP(player: Player, amount: number, reason: string
 			Analytics.DayBand(player)
 		)
 		Analytics.Progress(player, "ChuteLevel", profile.Level)
-		for zoneId, zoneLevel in Levels.ZoneLevels do
-			if zoneLevel == profile.Level and zoneLevel > 1 then
-				Analytics.Milestone(player, `Unlock_{zoneId}`)
-			end
-		end
 		notify(player, "LevelUp", {
 			Level = profile.Level,
 			Coins = coins,
-			Unlocks = unlocksAt(profile.Level),
+			Unlocks = unlocksAt(profile.Level, profile.Realm),
 		})
 	end
 	if profile.Level >= Levels.MaxLevel then
@@ -134,6 +134,8 @@ local function questDone(profile: Profile, quest: Quest): boolean
 		return profile.Machines[quest.Machine or ""] == true
 	elseif quest.Type == "Troll" then
 		return profile.Trolls[quest.Troll or ""] == true
+	elseif quest.Type == "Realm" then
+		return profile.Realm >= (quest.Realm or 1)
 	end
 	-- Count quests
 	return profile.QuestProgress >= (quest.Count or 1)
@@ -209,18 +211,20 @@ function ProgressionService.OnParcelMailed(
 		return
 	end
 	local variant = if variantId then Config.Variants.ById[variantId] else nil
+	local weight = Levels.Weight(animalId, profile.Realm)
 	local xp = Levels.MailXPPerTier
-		* animal.Tier
+		* weight
 		* (Levels.StarXPMult[stars] or 1)
 		* (if variant then variant.XPMult else 1)
 		* Config.Machines.XPMult(machines or {}) -- its machine stamps (Config/Machines.luau)
 	local first = (profile.Species[animalId] or 0) == 0
 	profile.Species[animalId] = (profile.Species[animalId] or 0) + 1
 	if first then
-		xp += Levels.NewSpeciesXP * animal.Tier
-		notify(player, "NewSpecies", { Animal = animal.DisplayName, XP = Levels.NewSpeciesXP * animal.Tier })
+		local bonus = math.floor(Levels.NewSpeciesXP * weight)
+		xp += bonus
+		notify(player, "NewSpecies", { Animal = animal.DisplayName, XP = bonus })
 	end
-	ProgressionService.AddXP(player, xp, "Mail")
+	ProgressionService.AddXP(player, math.floor(xp), "Mail")
 	questCount(player, profile, function(quest)
 		return quest.Type == "Mail"
 			and (quest.Animal == nil or quest.Animal == animalId)
@@ -236,23 +240,31 @@ function ProgressionService.OnOrderDone(player: Player, animalId: string)
 		return
 	end
 	profile.OrdersDone += 1
-	ProgressionService.AddXP(player, Levels.OrderXP * (if animal then animal.Tier else 1), "Order")
+	local weight = if animal then Levels.Weight(animalId, profile.Realm) else 1
+	ProgressionService.AddXP(player, math.floor(Levels.OrderXP * weight), "Order")
 	questCount(player, profile, function(quest)
 		return quest.Type == "Orders"
 	end)
 end
 
--- Can this player take this animal (its zone has to be open)? Returns a reason if not.
+-- Can this player take this animal (its realm bought, and your level high enough)? Returns a reason if not.
 function ProgressionService.CanTakeAnimal(player: Player, animalId: string): (boolean, string?)
 	local animal = Config.Animals.ById[animalId]
 	if not animal then
 		return false, nil
 	end
-	-- Every animal has a level (Config/Wild.luau): you need to be at least that level to take it on
-	local need = Config.Wild.LevelOf[animalId] or 1
 	local profile = DataService.Get(player)
-	if not profile or profile.Level < need then
-		return false, `That {animal.DisplayName} is Level {need}. Keep mailing to level up!`
+	if not profile then
+		return false, nil
+	end
+	if animal.Tier > profile.Realm then
+		local realm = Config.Realms.At(animal.Tier)
+		return false, `The {animal.DisplayName} lives in the {realm.DisplayName} realm. Buy it at MENU > REALMS first!`
+	end
+	-- Every animal has a level in its realm and a power (Config/Wild.luau): yours has to be at least as high
+	if Config.Realms.Power(profile.Realm, profile.Level) < (Config.Wild.PowerOf[animalId] or 1) then
+		return false,
+			`That {animal.DisplayName} is Level {Config.Wild.LevelOf[animalId] or 1}. Keep mailing to level up!`
 	end
 	return true, nil
 end

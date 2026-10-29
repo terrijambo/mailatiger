@@ -1,6 +1,7 @@
 --!strict
 -- Gruff's main quests: a chain of story orders, one at a time, shown in the quest tracker. They push you on
--- to new animals ("Unlock the Bunny", "Mail a Chicken"...) and new zones. Finish one and the next starts.
+-- to new animals ("Unlock the Bunny", "Mail a Chicken"...) and new realms. Finish one and the next starts.
+-- (Saves remember the quest by its position in this list: change texts freely, but add new ones at the end.)
 --
 -- Types:
 --   Mail    mail Count parcels of Animal (any animal if Animal is nil), with at least MinStars stars
@@ -10,6 +11,7 @@
 --   Tool    get Tool up to Level (Supply Shop -> Tools)
 --   Machine buy the Post Office Machine (Supply Shop -> Machines)
 --   Troll   own the troll item Troll (Supply Shop -> Trolls)
+--   Realm   reach the realm with index Realm (MENU > REALMS; Config/Realms.luau)
 
 export type Quest = {
 	Text: string,
@@ -22,6 +24,7 @@ export type Quest = {
 	Chute: string?,
 	Machine: string?,
 	Troll: string?,
+	Realm: number?,
 	XP: number,
 	Jobs: number, -- coin reward: this many jobs' worth of your best animal
 }
@@ -40,17 +43,17 @@ local quests: { Quest } = {
 		Jobs = 5,
 	},
 	{ Text = "Complete 2 of Gruff's orders", Type = "Orders", Count = 2, XP = 60, Jobs = 5 },
-	{ Text = "Reach Level 2 (Goldfish stop running from you)", Type = "Level", Level = 2, XP = 40, Jobs = 3 },
+	{ Text = "Reach Level 3 (Goldfish stop running from you)", Type = "Level", Level = 3, XP = 40, Jobs = 3 },
 	{ Text = "Mail a Goldfish", Type = "Mail", Animal = "Goldfish", Count = 1, XP = 60, Jobs = 5 },
 	{ Text = "Buy the Stamp Machine (Shop > Machines)", Type = "Machine", Machine = "Stamp", XP = 40, Jobs = 3 },
-	{ Text = "Reach Level 4 to open the Barn", Type = "Level", Level = 4, XP = 50, Jobs = 5 },
-	{ Text = "Mail a Chicken from the Barn", Type = "Mail", Animal = "Chicken", Count = 1, XP = 60, Jobs = 3 },
+	{ Text = "Move to the Sunny Farm realm (MENU > REALMS)", Type = "Realm", Realm = 2, XP = 50, Jobs = 5 },
+	{ Text = "Mail a Chicken from the farm", Type = "Mail", Animal = "Chicken", Count = 1, XP = 60, Jobs = 3 },
 	{ Text = "Mail 2 Chickens", Type = "Mail", Animal = "Chicken", Count = 2, XP = 100, Jobs = 5 },
 	{ Text = "Mail a Pig with 4+ stars", Type = "Mail", Animal = "Pig", Count = 1, MinStars = 4, XP = 150, Jobs = 6 },
 	{ Text = "Buy the Postage Scale", Type = "Machine", Machine = "Scale", XP = 120, Jobs = 4 },
 	{ Text = "Buy a Banana Peel (troll item)", Type = "Troll", Troll = "BananaPeel", XP = 100, Jobs = 3 },
-	{ Text = "Reach Level 8 to open the Jungle", Type = "Level", Level = 8, XP = 150, Jobs = 6 },
-	{ Text = "Mail a Monkey from the Jungle", Type = "Mail", Animal = "Monkey", Count = 1, XP = 250, Jobs = 6 },
+	{ Text = "Move to the Wild Cove realm", Type = "Realm", Realm = 3, XP = 150, Jobs = 6 },
+	{ Text = "Mail a Monkey from the Wild Cove", Type = "Mail", Animal = "Monkey", Count = 1, XP = 250, Jobs = 6 },
 	{ Text = "Complete 5 of Gruff's orders", Type = "Orders", Count = 5, XP = 250, Jobs = 6 },
 	{
 		Text = "Mail 3 Skunks without getting sprayed... good luck",
@@ -60,7 +63,7 @@ local quests: { Quest } = {
 		XP = 300,
 		Jobs = 6,
 	},
-	{ Text = "Reach Level 12 to open the Ice Rink", Type = "Level", Level = 12, XP = 300, Jobs = 8 },
+	{ Text = "Move to the Temple Jungle realm", Type = "Realm", Realm = 4, XP = 300, Jobs = 8 },
 	{ Text = "Mail a Penguin", Type = "Mail", Animal = "Penguin", Count = 1, XP = 400, Jobs = 6 },
 	{ Text = "Buy the Sorting Belt", Type = "Machine", Machine = "Sorter", XP = 400, Jobs = 6 },
 	{ Text = "MAIL A TIGER", Type = "Mail", Animal = "Tiger", Count = 1, XP = 800, Jobs = 10 },
@@ -73,7 +76,7 @@ local quests: { Quest } = {
 		XP = 1200,
 		Jobs = 10,
 	},
-	{ Text = "Reach Level 18 to open the Rooftop", Type = "Level", Level = 18, XP = 1000, Jobs = 10 },
+	{ Text = "Move all the way to Wonder Peaks, the last realm", Type = "Realm", Realm = 6, XP = 1000, Jobs = 10 },
 	{ Text = "Mail a Dragon", Type = "Mail", Animal = "Dragon", Count = 1, XP = 1500, Jobs = 10 },
 	{ Text = "Mail an Alien (it teleports!)", Type = "Mail", Animal = "Alien", Count = 1, XP = 2000, Jobs = 10 },
 	{

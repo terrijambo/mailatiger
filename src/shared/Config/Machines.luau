@@ -139,26 +139,30 @@ local Machines = {
 	},
 }
 
--- The base pay of the best animal a chute level lets you take on (Config/Wild.luau gives every animal a level)
-function Machines.BestValueAt(level: number): number
+-- The base pay of the best animal a chute level in a realm lets you take on (Config/Wild.luau gives every
+-- animal a level and a power; Config/Realms.luau)
+function Machines.BestValueAt(level: number, realm: number?): number
 	local Animals = require(script.Parent.Animals) :: any
 	local Wild = require(script.Parent.Wild) :: any
+	local Realms = require(script.Parent.Realms) :: any
+	local power = Realms.Power(realm or 1, level)
 	local best = 1
 	for _, animal in Animals.List do
-		if (Wild.LevelOf[animal.Id] or 1) <= level then
+		if (Wild.PowerOf[animal.Id] or 1) <= power then
 			best = math.max(best, animal.BaseValue)
 		end
 	end
 	return best
 end
 
--- Coins per minute at a chute level, before rebirths and other boosts
-function Machines.ChuteRate(level: number): number
-	return Machines.BestValueAt(level) * Machines.ChuteMinutes * (1 + Machines.ChuteLevelBonus * (level - 1))
+-- Coins per minute at a chute level in a realm, before rebirths and other boosts
+function Machines.ChuteRate(level: number, realm: number?): number
+	return Machines.BestValueAt(level, realm) * Machines.ChuteMinutes * (1 + Machines.ChuteLevelBonus * (level - 1))
 end
 
-function Machines.Price(machine: Machine): number
-	local raw = Machines.ChuteRate(machine.Level) * machine.PriceMinutes
+-- A machine's price in a realm (every realm has the same machines; prices follow that realm's income)
+function Machines.Price(machine: Machine, realm: number?): number
+	local raw = Machines.ChuteRate(machine.Level, realm) * machine.PriceMinutes
 	-- round to 2 significant figures, so prices look tidy (1,200 not 1,187)
 	local digits = math.max(0, math.floor(math.log10(math.max(raw, 1))) - 1)
 	local unit = 10 ^ digits
@@ -194,18 +198,23 @@ function Machines.RebirthLevel(rebirths: number): number
 	return levels[math.min(rebirths + 1, #levels)]
 end
 
-function Machines.RebirthCost(rebirths: number): number
+-- (`rebirths` counts the rebirths done in this realm: moving to a new realm starts them over)
+function Machines.RebirthCost(rebirths: number, realm: number?): number
 	local rebirth = Machines.Rebirth
 	local level = Machines.RebirthLevel(rebirths)
-	local raw = Machines.ChuteRate(level) * rebirth.CostMinutes * rebirth.CostGrowth ^ rebirths
+	local raw = Machines.ChuteRate(level, realm) * rebirth.CostMinutes * rebirth.CostGrowth ^ rebirths
 	local digits = math.max(0, math.floor(math.log10(math.max(raw, 1))) - 1)
 	local unit = 10 ^ digits
 	return math.round(raw / unit) * unit
 end
 
--- Rebirth Points for the rebirth that takes you to `rebirths` rebirths in total
-function Machines.RebirthPoints(rebirths: number): number
-	return math.round(Machines.Rebirth.PointsBase * Machines.Rebirth.PointsGrowth ^ (rebirths - 1))
+-- Rebirth Points for the rebirth that takes you to `rebirths` rebirths in this realm (x2 for every realm
+-- you've reached past the first: Config/Realms.luau)
+function Machines.RebirthPoints(rebirths: number, realm: number?): number
+	local Realms = require(script.Parent.Realms) :: any
+	return math.round(
+		Machines.Rebirth.PointsBase * Machines.Rebirth.PointsGrowth ^ (rebirths - 1) * Realms.PointsMultFor(realm or 1)
+	)
 end
 
 return Machines

@@ -62,11 +62,12 @@ function EggService.Hatch(player: Player, stand: BasePart)
 		return
 	end
 	if not ProgressionService.ZoneOpen(player, zoneId) then
-		say(player, "This island isn't open for you yet.")
+		say(player, "This island's realm isn't open for you yet (MENU > REALMS).")
 		Analytics.Blocked(player, "EggLocked", zoneId)
 		return
 	end
-	local animalId = Eggs.Roll(zoneId, profile.Level, math.random())
+	local power = Config.Realms.Power(profile.Realm, profile.Level)
+	local animalId = Eggs.Roll(zoneId, power, math.random())
 	if not animalId then
 		say(player, "Everything in this egg is too strong for you right now. Level up first!")
 		Analytics.Blocked(player, "EggTooStrong", zoneId)
@@ -92,7 +93,7 @@ function EggService.Hatch(player: Player, stand: BasePart)
 	-- The slot-machine roller on the player's screen (client/EggRoller.luau) spins through this egg's odds
 	-- and lands on the animal already rolled here; it hatches as the reel stops
 	local odds = {}
-	for _, odd in Eggs.Odds(zoneId, profile.Level) do
+	for _, odd in Eggs.Odds(zoneId, power) do
 		if odd.Chance > 0 then
 			table.insert(odds, { AnimalId = odd.AnimalId, Chance = odd.Chance })
 		end

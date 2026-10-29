@@ -50,7 +50,8 @@ an hourly co-op boss, and opt-in Chaos Mode PvP.
 | Parcels and mailing | `MailService`, `Economy` | `ChuteVisual` | `Mail` |
 | Machines, chute level, rebirth | `MachineService`, `ProgressionService` | `MachineStations` | `Machines`, `Levels`, `Tools` |
 | Eggs | `EggService` | (prompts on the stands) | `Eggs` |
-| Travel / zone locks (no Travel menu: GRUFF/PEN button only) | `Travel` | `SideButtons`, `ZoneLocks` | `Arenas`, `Levels.ZoneLevels`, `World` |
+| Realms (buy the next realm, move in, GO; docs/REALMS_PLAN.md) | `RealmService` | `Realms` (MENU > REALMS) | `Realms`, `Wild.PowerOf` |
+| Travel / zone locks (no Travel menu: GRUFF/PEN button only) | `Travel` | `SideButtons`, `ZoneLocks` | `Arenas`, `Realms`, `World` |
 | Gruff's Shop, Rebirth Market (Rebirth Beach), rebirth | `ShopService` | `Shop` | `Machines.Rebirth`, `Tools`, `Upgrades` |
 | Quests, orders, challenges (the TASKS panel) | `Orders`, `ChallengeService`, `TutorialService` | `OrdersBoard`, `QuestText`, `Tutorial` | `Quests`, `Challenges` |
 | Events and the hourly boss | `EventService`, `BossService`, `BossArena` | `EventBanner`, `BossLook` | `Events` |

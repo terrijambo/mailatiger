@@ -206,7 +206,76 @@ for _, arena in Config.Arenas.List do
 	end
 	check(math.abs(total - 1) < 0.001, `{arena.Id} egg odds add up to {total}`)
 	print(`    {arena.Id} egg ({Config.Eggs.Price(arena.Id)}): {table.concat(line, ", ")}`)
-	check(Config.Eggs.Roll(arena.Id, 99, 0.5) ~= nil, `{arena.Id} egg can roll`)
+	local power = Config.Realms.Power(Config.Realms.OfArena(arena.Id), 99)
+	check(Config.Eggs.Roll(arena.Id, power, 0.5) ~= nil, `{arena.Id} egg can roll`)
+	check(Config.Eggs.Roll(arena.Id, Config.Realms.Power(1, 1), 0.5) == nil or arena.Id == "Backyard", `{arena.Id} egg is locked for a new player`)
+end
+
+section("Realms")
+do
+	local Realms = Config.Realms
+	local Wild = Config.Wild
+	check(Realms.Count == 6, "six realms, one per tier")
+	for _, realm in Realms.List do
+		local animals = 0
+		for _, animal in Config.Animals.List do
+			if animal.Tier == realm.Index then
+				animals += 1
+				check(Wild.LevelOf[animal.Id] ~= nil and Wild.PowerOf[animal.Id] ~= nil, `{animal.Id} has a level and power`)
+				check(
+					(Wild.LevelOf[animal.Id] or 99) <= Wild.LevelSpread,
+					`{animal.Id}'s level is inside its realm's spread`
+				)
+			end
+		end
+		check(animals >= 3, `the {realm.Id} realm has at least 3 animals`)
+		local arena = Config.Arenas.ById[realm.Arena]
+		check(arena ~= nil and table.find(arena.Tiers, realm.Index) ~= nil, `{realm.Id}'s island holds its tier`)
+		if realm.Index < Realms.Count then
+			check(realm.NeedLevel >= 1 and realm.NeedLevel <= Config.Levels.MaxLevel, `{realm.Id} asks for a real level`)
+			check(
+				realm.NeedLevel >= Wild.LevelSpread - 2,
+				`{realm.Id} asks for a level near its last animal's (so you've met them all)`
+			)
+			local price = Realms.Price(realm.Index) or 0
+			check(price > 0, `the realm after {realm.Id} has a price`)
+			if realm.Index > 1 then
+				check(price > (Realms.Price(realm.Index - 1) or 0), `the realm after {realm.Id} costs more than the one before`)
+			end
+			print(
+				`    {realm.Id} -> next: Level {realm.NeedLevel}, {realm.NeedRebirths} rebirth(s), {price} coins (chute {math.floor(
+					Config.Machines.ChuteRate(realm.NeedLevel, realm.Index)
+				)}/min there)`
+			)
+		end
+	end
+	-- Power: anything from an older realm is weaker than a new arrival; anything from a newer one far stronger
+	for _, animal in Config.Animals.List do
+		for realm = 1, Realms.Count do
+			local power = Realms.Power(realm, 1)
+			if animal.Tier < realm then
+				check(Wild.PowerOf[animal.Id] <= power, `{animal.Id} is easy for a player in realm {realm}`)
+			elseif animal.Tier > realm then
+				check(
+					Wild.PowerOf[animal.Id] > Realms.Power(realm, Config.Levels.MaxLevel) + Wild.MaxLevelGap,
+					`{animal.Id} is out of reach for a player in realm {realm}`
+				)
+			end
+		end
+	end
+	check(#Realms.Missing(1, 1, 0) == 2, "a new player is missing both the level and the rebirths")
+	check(#Realms.Missing(1, 99, 99) == 0, "a maxed player can buy the next realm")
+	check(Realms.Price(Realms.Count) == nil, "nothing to buy after the last realm")
+	check(Config.Machines.RebirthPoints(1, 3) == Config.Machines.RebirthPoints(1, 1) * 4, "realm 3 pays x4 Rebirth Points")
+	for _, quest in Config.Quests do
+		if quest.Type == "Realm" then
+			check(quest.Realm ~= nil and quest.Realm >= 2 and quest.Realm <= Realms.Count, `"{quest.Text}" names a real realm`)
+		elseif quest.Type == "Level" then
+			check((quest.Level or 1) <= Realms.List[1].NeedLevel, `"{quest.Text}" asks for a level reachable in the first realm`)
+		end
+	end
+	check(Config.Levels.Weight("Parrot", 1) > Config.Levels.Weight("Hamster", 1), "harder animals give more XP")
+	check(Config.Levels.Weight("Hamster", 2) < Config.Levels.Weight("Hamster", 1), "older realms' animals give less XP")
 end
 
 section("Robux store")

@@ -1,9 +1,13 @@
-# Realms: one map per animal tier (plan for the owner to approve)
+# Realms: one map per animal tier (approved 2026-10-29)
 
 Decided 2026-10-29: the game becomes **6 realms**, one per animal tier, each its own map. You start in the
 first realm; when you've grown enough there, you **buy the next realm with coins** and move in. Moving
 realms is a big reset, separate from rebirthing (which stays the smaller reset inside a realm). This plan
-replaces Phase 3's "plaza + 7 islands" layout (docs/OVERHAUL_PLAN.md). Nothing here is built yet.
+replaces Phase 3's "plaza + 7 islands" layout (docs/OVERHAUL_PLAN.md). The owner approved it as written
+(rebirths reset on a move, old realms are visit-only, these 6 themes, no KayKit purchase for now).
+
+**Status (2026-10-29): the realm systems are in and playable on placeholder maps** (section 6). The realm
+maps themselves are next.
 
 ---
 
@@ -39,7 +43,7 @@ Each of today's arena twists (hay, mud, ice, edges) moves into a realm, so none 
 | | **Rebirth** (unchanged, inside a realm) | **Realm move** (new) |
 |---|---|---|
 | How often | Every 20–60 minutes | A few times in the whole game (5 moves in total) |
-| Needs | A chute level + coins (as today) | Chute level 25 in this realm, 2 rebirths in this realm, and coins (about 60 minutes of chute income) |
+| Needs | A chute level + coins (as today) | A chute level and rebirths in this realm (realm 1: Level 6 + 1 rebirth; realms 2–3: Level 10 + 2; realms 4–5: Level 12 + 2), and coins (about 20 minutes of chute income at that level) |
 | Resets | Coins, machines, chute level | Coins, machines, chute level **and your rebirths** (so rebirths are cheap again in the new realm) |
 | Keeps | Everything else | Rebirth Points, Rebirth Upgrades, tools, your collection (every animal you've mailed), badges, codes, game passes |
 | Gives | x1.5 chute income per rebirth, Rebirth Points | The new realm's animals (the best animal in each tier pays 6–8x the best in the one before), a new world, and **x2 Rebirth Points forever** for each realm you've reached |
@@ -108,3 +112,32 @@ The game has been live since 2026-10-06. Nobody should lose progress on the swit
 4. **KayKit Complete ($150, optional):** adds the village, windmill, snow and holiday pieces. It would make
    the Farm and Wonder Peaks faster and richer to build. Without it, those pieces get built in Blender
    instead, which is slower but free.
+
+---
+
+## 6. What's built (2026-10-29)
+
+The realm systems, on placeholder maps: each realm's animals roam today's islands (Backyard → Backyard,
+Sunny Farm → Barn, Wild Cove → Jungle, Temple Jungle and Giant Savanna → Ice Rink, Wonder Peaks → Rooftop),
+and the town plaza is everyone's hub. The Realm Gate is a window for now (**MENU > REALMS**); the gate arch
+comes with the realm maps.
+
+- `Config/Realms.luau`: the 6 realms, what each asks for, prices, power, x2 Rebirth Points per realm.
+- **Levels count inside your realm.** Each realm's animals are spread over levels 1–8, with the first two at
+  level 1 (Backyard: Hamster 1, Bunny 1, Goldfish 3, Hedgehog 4, Parrot 6). To compare across realms, every
+  animal and player has a **power** = realm base (0, 100, 200...) + level, so an older realm's animals are
+  always takeable and a locked realm's always VINE BOOM you (`Config/Wild.luau`, `Wild.PowerOf`).
+- **XP:** an animal's XP grows with its rank in its realm (x1, x1.5, x2...), so every realm levels at the same
+  pace (the old curve assumed the tier went up with your level); older realms' animals give half per realm
+  behind (`Levels.Weight`).
+- **Economy:** chute income, machine prices, rebirth costs and egg prices follow your realm
+  (`Machines.ChuteRate(level, realm)` and friends).
+- `RealmService`: buying the next realm (checks, reset, x2 points, moving-day burst) and GO to any realm
+  you own. `client/Realms.luau`: the window. Zone barriers and island arches show the realm, not a level.
+- **Old saves** move in by their level (`DataService`), keep everything, and get a moving-day gift once.
+  Gruff's quests that said "reach Level 4/8/12/18" now say "move to the next realm" (same positions in the
+  list, so nobody's quest progress shifts).
+- Pacing estimate at ~45 seconds per parcel: realm 1 → 2 in about 45 minutes, later realms 2.5–4.5 hours.
+  Tests print each realm's price and income (`lune run tests/run.luau`, section Realms).
+- Not tested on a real purchase yet: Studio playtests use the owner's live save, so only the refused path
+  (one rebirth short) and GO were tried. The buy itself should be checked on a test save (tools/smoke).

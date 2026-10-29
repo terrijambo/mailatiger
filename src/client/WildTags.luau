@@ -1,7 +1,7 @@
 --!strict
--- Name tags over wild animals ("Tiger  Lv 15"): normal when it's your level or below, orange with ⚠ when it's
--- above you but within reach (a harder BOX), red with a 🔒 when it's too far above (grabbing it VINE BOOMs you
--- out of the zone).
+-- Name tags over wild animals ("Tiger  Lv 7"): normal when it's your level or below, orange with ⚠ when it's
+-- above you but within reach (a harder BOX), red with a 🔒 when it's too far above or from a realm you haven't
+-- bought (grabbing it VINE BOOMs you out of the zone). Compared by power (Config/Realms.luau).
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -15,8 +15,8 @@ local WildTags = {}
 local TOO_STRONG = Color3.fromRGB(255, 85, 85)
 local HARDER = Color3.fromRGB(255, 165, 60)
 
-local function refresh(ball: Instance, myLevel: number)
-	local level = ball:GetAttribute("Level")
+local function refresh(ball: Instance, myPower: number)
+	local level = ball:GetAttribute("Power")
 	if ball:GetAttribute("Wild") ~= true or typeof(level) ~= "number" then
 		return
 	end
@@ -30,8 +30,8 @@ local function refresh(ball: Instance, myLevel: number)
 		label:SetAttribute("BaseText", label.Text)
 		label:SetAttribute("BaseColor", label.TextColor3)
 	end
-	local tooStrong = level > myLevel + Config.Wild.MaxLevelGap
-	local harder = not tooStrong and level > myLevel
+	local tooStrong = level > myPower + Config.Wild.MaxLevelGap
+	local harder = not tooStrong and level > myPower
 	local saved = label:GetAttribute("BaseText")
 	local baseText = if typeof(saved) == "string" then saved else label.Text
 	local baseColor = label:GetAttribute("BaseColor")
@@ -46,9 +46,10 @@ end
 function WildTags.Start()
 	task.spawn(function()
 		while true do
-			local myLevel = Profile.Get().Level or 1
+			local data = Profile.Get()
+			local myPower = Config.Realms.Power(data.Realm or 1, data.Level or 1)
 			for _, ball in CollectionService:GetTagged("Critter") do
-				refresh(ball, myLevel)
+				refresh(ball, myPower)
 			end
 			task.wait(0.5)
 		end

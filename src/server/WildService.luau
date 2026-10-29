@@ -23,6 +23,7 @@ local BoxingService = require(script.Parent.BoxingService)
 local CatchAI = require(script.Parent.CatchAI)
 local DataService = require(script.Parent.DataService)
 local DiveService = require(script.Parent.DiveService)
+local Economy = require(script.Parent.Economy)
 local MailService = require(script.Parent.MailService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local MonetizationService = require(script.Parent.MonetizationService)
@@ -122,8 +123,9 @@ local function pickNormal(arenaId: string): string?
 	return Wild.Pick(arenaId, math.random())
 end
 
--- A lured spawn: the rarest animals the player can take on, from this zone or (sometimes) zones above
-local function pickLured(arenaId: string, lure: Lure, level: number): string?
+-- A lured spawn: the rarest animals the player can take on (by power: Config/Realms.luau), from this zone or
+-- (sometimes) zones above
+local function pickLured(arenaId: string, lure: Lure, power: number): string?
 	local candidates: { string } = {}
 	local zones = { arenaId }
 	if math.random() < lure.VisitorChance then
@@ -137,7 +139,7 @@ local function pickLured(arenaId: string, lure: Lure, level: number): string?
 	for _, zone in zones do
 		local list: { string } = Wild.ZoneAnimals[zone] or {}
 		for _, id in list do
-			if (Wild.LevelOf[id] or 1) <= level then
+			if (Wild.PowerOf[id] or 1) <= power then
 				table.insert(candidates, id)
 			end
 		end
@@ -146,7 +148,7 @@ local function pickLured(arenaId: string, lure: Lure, level: number): string?
 		return pickNormal(arenaId)
 	end
 	table.sort(candidates, function(a, b)
-		return (Wild.LevelOf[a] or 1) < (Wild.LevelOf[b] or 1)
+		return (Wild.PowerOf[a] or 1) < (Wild.PowerOf[b] or 1)
 	end)
 	-- Weighted toward the top of the list (the rarest you can take)
 	local total = 0
@@ -213,7 +215,12 @@ local function boom(player: Player, entry: Entry, level: number, playerLevel: nu
 		Seconds = Wild.Boom.Seconds,
 	})
 	Remotes.Notify:FireClient(player, "Breakout", { Animal = name })
-	say(player, `That {name} is Level {level}. You're Level {playerLevel}. RETURN TO SENDER!`)
+	local profile = DataService.Get(player)
+	if animal and profile and animal.Tier > profile.Realm then
+		say(player, `That {name} is from the {Config.Realms.At(animal.Tier).DisplayName} realm. RETURN TO SENDER!`)
+	else
+		say(player, `That {name} is Level {level}. You're Level {playerLevel}. RETURN TO SENDER!`)
+	end
 	Analytics.Custom(player, "WildBoom", level - playerLevel, entry.AnimalId, Analytics.LevelBand(playerLevel))
 	Analytics.Blocked(player, "TooStrong", entry.AnimalId)
 	task.delay(Wild.Boom.Seconds, function()
@@ -251,13 +258,15 @@ local function onGrab(entry: Entry, player: Player)
 		Analytics.Blocked(player, "GrabBagFull", tostring(MailService.Count(player)))
 		return
 	end
-	local level = Wild.LevelOf[entry.AnimalId] or 1
-	if level > profile.Level + Wild.MaxLevelGap then
-		boom(player, entry, level, profile.Level)
+	-- Compared by power (Config/Realms.luau): an animal from a realm you haven't bought is always too strong
+	local power = Wild.PowerOf[entry.AnimalId] or 1
+	local mine = Config.Realms.Power(profile.Realm, profile.Level)
+	if power > mine + Wild.MaxLevelGap then
+		boom(player, entry, Wild.LevelOf[entry.AnimalId] or 1, profile.Level)
 		return
 	end
 	-- Above your level (but within reach): a harder BOX, the hardest at the full gap
-	local difficulty = math.clamp((level - profile.Level) / Wild.MaxLevelGap, 0, 1)
+	local difficulty = math.clamp((power - mine) / Wild.MaxLevelGap, 0, 1)
 	local at = entry.Ball.Position
 	-- Held while the job starts; only removed once it has (so a failed start doesn't make the animal vanish)
 	entry.Taken = true
@@ -290,11 +299,7 @@ local function spawn(
 	end
 	local animalId = if forced
 		then forced
-		elseif lure and luredFor then pickLured(
-			arenaId,
-			lure,
-			(DataService.Get(luredFor) or { Level = 1 } :: any).Level
-		)
+		elseif lure and luredFor then pickLured(arenaId, lure, Economy.Power(luredFor))
 		else pickNormal(arenaId)
 	local animal = animalId and Config.Animals.ById[animalId]
 	if not animalId or not animal then
@@ -319,6 +324,7 @@ local function spawn(
 	ball:SetAttribute("Variant", variantId)
 	ball:SetAttribute("Wild", true)
 	ball:SetAttribute("Level", level)
+	ball:SetAttribute("Power", Wild.PowerOf[animalId] or level)
 	if luredFor then
 		ball:SetAttribute("LuredFor", luredFor.UserId)
 	end

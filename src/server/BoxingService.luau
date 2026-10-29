@@ -487,10 +487,7 @@ local function startBox(s: Session)
 			Role = s.Roles[member] or "Both",
 			Variant = s.Variant,
 			Difficulty = s.Difficulty,
-			Gap = math.max(
-				0,
-				(Config.Wild.LevelOf[s.AnimalId] or 1) - (DataService.Get(s.Player) or { Level = 1 } :: any).Level
-			),
+			Gap = math.max(0, (Config.Wild.PowerOf[s.AnimalId] or 1) - Economy.Power(s.Player)),
 		})
 	end
 	syncBox(s)

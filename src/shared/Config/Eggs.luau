@@ -23,23 +23,23 @@ local function tidy(raw: number): number
 end
 
 function Eggs.Price(zoneId: string): number
-	local Levels = require(script.Parent.Levels) :: any
 	local Machines = require(script.Parent.Machines) :: any
-	return tidy(Machines.ChuteRate(Levels.ZoneLevels[zoneId] or 1) * Eggs.PriceMinutes)
+	local Realms = require(script.Parent.Realms) :: any
+	return tidy(Machines.ChuteRate(1, Realms.OfArena(zoneId)) * Eggs.PriceMinutes)
 end
 
 export type Odd = { AnimalId: string, Chance: number, Locked: boolean }
 
--- The odds for a zone's egg. With `level`, animals too strong for that level are locked (chance 0) and the
--- rest share their chances.
-function Eggs.Odds(zoneId: string, level: number?): { Odd }
+-- The odds for a zone's egg. With `power` (Config/Realms.luau), animals too strong for you are locked (chance 0)
+-- and the rest share their chances.
+function Eggs.Odds(zoneId: string, power: number?): { Odd }
 	local Wild = require(script.Parent.Wild) :: any
 	local Rarity = require(script.Parent.Rarity) :: any
 	local list = Wild.ZoneAnimals[zoneId] or {}
 	local odds: { Odd } = {}
 	local total = 0
 	for _, animalId in list do
-		local locked = level ~= nil and (Wild.LevelOf[animalId] or 1) > level + Wild.MaxLevelGap
+		local locked = power ~= nil and (Wild.PowerOf[animalId] or 1) > power + Wild.MaxLevelGap
 		local weight = if locked then 0 else Rarity.ById[Wild.RarityOf[animalId] or "Common"].Weight
 		total += weight
 		table.insert(odds, { AnimalId = animalId, Chance = weight, Locked = locked })
@@ -51,10 +51,10 @@ function Eggs.Odds(zoneId: string, level: number?): { Odd }
 end
 
 -- Rolls an animal from a zone's egg (roll: 0..1). nil if every animal is too strong for you.
-function Eggs.Roll(zoneId: string, level: number, roll: number): string?
+function Eggs.Roll(zoneId: string, power: number, roll: number): string?
 	local acc = 0
 	local last: string? = nil
-	for _, odd in Eggs.Odds(zoneId, level) do
+	for _, odd in Eggs.Odds(zoneId, power) do
 		if odd.Chance > 0 then
 			acc += odd.Chance
 			last = odd.AnimalId

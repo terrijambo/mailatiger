@@ -12,6 +12,7 @@
 --   Troll          client -> server   use a troll item from the hotbar (server checks ownership and cooldown)
 --   Dive           client -> server   the player dived (Q / Y / DIVE button): dodge window + dive-grab (DiveService)
 --   Track          client -> server   analytics from the player's screen: menus, tutorial steps, device (Analytics)
+--   Realm          client -> server   "Buy" the next realm, or "Go" to one you've bought (RealmService checks)
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -38,6 +39,7 @@ local redeemCode = remote("RedeemCode")
 local troll = remote("Troll")
 local dive = remote("Dive")
 local track = remote("Track")
+local realm = remote("Realm")
 
 folder.Parent = ReplicatedStorage
 
@@ -80,4 +82,5 @@ return {
 	Troll = troll,
 	Dive = dive,
 	Track = track,
+	Realm = realm,
 }

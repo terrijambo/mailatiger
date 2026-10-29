@@ -67,7 +67,7 @@ export type Profile = {
 	Tools: { [string]: number }, -- tool id -> level
 	Stamps: { [string]: number }, -- stamp id -> how many you have
 	SelectedStamp: string?, -- used on your next job
-	Rebirths: number,
+	Rebirths: number, -- rebirths done in your current realm (moving to a new realm starts them over)
 	Mailed: number, -- total animals mailed
 	Orders: { Order },
 	OrdersRefreshAt: number, -- os.time() when new orders come in
@@ -121,6 +121,10 @@ export type Profile = {
 	TapeStyle: string, -- chosen tape color (Config/Styles.luau); "" = default (Gold for VIPs, else Classic)
 	TrailOn: boolean, -- the Style Pack run trail is switched on
 	NewsSeen: string, -- the Config/News.luau Id of the last "New this week" card shown
+	-- Realms (added 2026-10-29, Config/Realms.luau)
+	Realm: number, -- your home realm (the highest you've bought); older ones you can visit
+	TotalRebirths: number, -- every rebirth ever, in any realm (stats and badges)
+	RealmGiftDue: boolean, -- moved into realms from an older save: Gruff's moving-day gift is waiting
 }
 
 local DataService = {}
@@ -213,7 +217,27 @@ local function newProfile(): Profile
 		TapeStyle = "",
 		TrailOn = true,
 		NewsSeen = "",
+		Realm = 1,
+		TotalRebirths = 0,
+		RealmGiftDue = false,
 	}
+end
+
+-- Saves from before realms: your home realm is the highest one your level had opened in the old layout (the
+-- Ice Rink held tiers 4 and 5, so it counts as Temple Jungle), and you keep your level, coins, machines and
+-- rebirths as they are
+local function realmFromOldLevel(level: number): number
+	local old = Config.Levels.OldZoneLevels
+	if level >= old.Rooftop then
+		return 6
+	elseif level >= old.IceRink then
+		return 4
+	elseif level >= old.Jungle then
+		return 3
+	elseif level >= old.Barn then
+		return 2
+	end
+	return 1
 end
 
 -- Animals that were replaced by another: anything in an old save that names the old one now names the new one
@@ -250,7 +274,7 @@ local function reconcile(saved: any): Profile
 				local animal = Config.Animals.ById[animalId]
 				local arena = animal and Config.Arenas.ByTier[animal.Tier]
 				if arena then
-					level = math.max(level, Config.Levels.ZoneLevels[arena.Id] or 1)
+					level = math.max(level, Config.Levels.OldZoneLevels[arena.Id] or 1)
 				end
 			end
 			profile.Level = level
@@ -267,6 +291,11 @@ local function reconcile(saved: any): Profile
 			profile.RebirthPoints = (profile.RebirthPoints or 0) * 10 + (profile.Diamonds or 0)
 			profile.Diamonds = 0
 			profile.EconomyVersion = 2
+		end
+		if saved.Realm == nil then
+			profile.Realm = realmFromOldLevel(profile.Level)
+			profile.TotalRebirths = profile.Rebirths
+			profile.RealmGiftDue = (profile.Mailed or 0) > 0
 		end
 		-- Saves from before the tutorial existed: anyone who has mailed something already knows how to play
 		if saved.TutorialDone == nil and type(saved.Mailed) == "number" and saved.Mailed > 0 then

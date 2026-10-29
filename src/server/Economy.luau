@@ -26,13 +26,18 @@ function Economy.Sync(player: Player)
 	if leaderstats then
 		local coins = leaderstats:FindFirstChild("Coins") :: IntValue?
 		local rebirths = leaderstats:FindFirstChild("Rebirths") :: IntValue?
+		local realm = leaderstats:FindFirstChild("Realm") :: IntValue?
 		if coins then
 			coins.Value = profile.Coins
 		end
 		if rebirths then
-			rebirths.Value = profile.Rebirths
+			rebirths.Value = profile.TotalRebirths -- (all-time: a realm move starts the realm's count over)
+		end
+		if realm then
+			realm.Value = profile.Realm
 		end
 	end
+	player:SetAttribute("Realm", profile.Realm)
 	-- Your running speed (with Sneakers). The client's Movement module uses it, in town too.
 	player:SetAttribute("WalkSpeed", Economy.WalkSpeed(player))
 	-- Coins per minute from your chute (the HUD shows it)
@@ -61,6 +66,9 @@ local function setupPlayer(player: Player)
 	local rebirths = Instance.new("IntValue")
 	rebirths.Name = "Rebirths"
 	rebirths.Parent = leaderstats
+	local realm = Instance.new("IntValue")
+	realm.Name = "Realm"
+	realm.Parent = leaderstats
 	leaderstats.Parent = player
 
 	-- Studio testing only: free coins when nothing is being saved (see Config.Dev.StudioTestCoins)
@@ -117,21 +125,27 @@ function Economy.ToolBonus(player: Player, toolId: string): number
 	return Economy.ToolLevel(player, toolId) * Config.Tools.ById[toolId].PerLevel
 end
 
--- Base pay of the best animal your level lets you take on (wild animals: Config/Wild.luau). Rewards scale
--- with it so they stay worth having all game.
+-- Base pay of the best animal your level in your realm lets you take on (wild animals: Config/Wild.luau).
+-- Rewards scale with it so they stay worth having all game.
 function Economy.BestBaseValue(player: Player): number
 	local profile = DataService.Get(player)
-	local best = 1
-	for _, animal in Config.Animals.List do
-		if profile and (Config.Wild.LevelOf[animal.Id] or 1) <= profile.Level then
-			best = math.max(best, animal.BaseValue)
-		end
+	if not profile then
+		return 1
 	end
-	return best
+	return Config.Machines.BestValueAt(profile.Level, profile.Realm)
 end
 
-function Economy.RebirthCost(rebirths: number): number
-	return Config.Machines.RebirthCost(rebirths)
+-- Your power (Config/Realms.luau): compare it with an animal's Wild.PowerOf
+function Economy.Power(player: Player): number
+	local profile = DataService.Get(player)
+	if not profile then
+		return 1
+	end
+	return Config.Realms.Power(profile.Realm, profile.Level)
+end
+
+function Economy.RebirthCost(rebirths: number, realm: number): number
+	return Config.Machines.RebirthCost(rebirths, realm)
 end
 
 -- Coins per minute your chute pays: your chute level, x1.5 per rebirth, and the usual boosts
@@ -141,7 +155,9 @@ function Economy.ChuteRate(player: Player): number
 		return 0
 	end
 	local machines = Config.Machines
-	return machines.ChuteRate(profile.Level) * machines.Rebirth.ChuteMult ^ profile.Rebirths * Economy.BoostMult(player)
+	return machines.ChuteRate(profile.Level, profile.Realm)
+		* machines.Rebirth.ChuteMult ^ profile.Rebirths
+		* Economy.BoostMult(player)
 end
 
 -- Rebirth Upgrades (Config/Upgrades.luau): your level in one, and its total bonus

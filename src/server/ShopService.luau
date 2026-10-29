@@ -57,9 +57,8 @@ local function promo(player: Player, profile: DataService.Profile, id: string)
 		for _, animal in Config.Animals.List do
 			profile.Owned[animal.Id] = true
 		end
-		for _, level in Config.Levels.ZoneLevels do
-			profile.Level = math.max(profile.Level, level)
-		end
+		profile.Realm = Config.Realms.Count
+		profile.Level = math.max(profile.Level, Config.Wild.LevelSpread)
 		profile.Coins += 1000000
 		Economy.Sync(player)
 		Remotes.Notify:FireClient(
@@ -347,7 +346,7 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			Analytics.Blocked(player, "RebirthLevel", `R{profile.Rebirths + 1}`)
 			return
 		end
-		local cost = Economy.RebirthCost(profile.Rebirths)
+		local cost = Economy.RebirthCost(profile.Rebirths, profile.Realm)
 		if profile.Coins < cost then
 			reply(player, `Rebirth costs {Format.Short(cost)} coins.`)
 			Analytics.Blocked(player, "RebirthCoins", `R{profile.Rebirths + 1}`)
@@ -385,7 +384,8 @@ local function onShopAction(player: Player, action: unknown, id: unknown)
 			end
 		end
 		profile.Rebirths += 1
-		local points = Config.Machines.RebirthPoints(profile.Rebirths)
+		profile.TotalRebirths += 1
+		local points = Config.Machines.RebirthPoints(profile.Rebirths, profile.Realm)
 		profile.RebirthPoints += points
 		Analytics.EarnPoints(player, points, profile.RebirthPoints, "Rebirth")
 		Orders.Refresh(profile, true)

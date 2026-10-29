@@ -20,7 +20,9 @@ export type Data = {
 	Tools: { [string]: number },
 	Stamps: { [string]: number },
 	SelectedStamp: string?,
-	Rebirths: number,
+	Rebirths: number, -- in your current realm
+	TotalRebirths: number?,
+	Realm: number?, -- your home realm (Config/Realms.luau); nil = 1
 	Mailed: number,
 	Orders: { { AnimalId: string, Condition: string, Reward: number, Done: boolean, Claimed: boolean? } },
 	OrdersRefreshAt: number,
@@ -66,6 +68,8 @@ local EMPTY: Data = {
 	Stamps = {},
 	SelectedStamp = nil,
 	Rebirths = 0,
+	TotalRebirths = 0,
+	Realm = 1,
 	Mailed = 0,
 	Orders = {},
 	OrdersRefreshAt = 0,

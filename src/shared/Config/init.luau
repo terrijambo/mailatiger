@@ -35,6 +35,7 @@ return {
 	World = require(script.World),
 	Wild = require(script.Wild),
 	Machines = require(script.Machines),
+	Realms = require(script.Realms),
 	Rarity = require(script.Rarity),
 	Eggs = require(script.Eggs),
 	Dive = require(script.Dive),

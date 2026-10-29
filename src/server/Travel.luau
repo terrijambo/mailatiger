@@ -62,9 +62,10 @@ end
 local function lockedMessage(player: Player, arenaId: string)
 	Analytics.Blocked(player, "ZoneLocked", arenaId)
 	local def = Config.Arenas.ById[arenaId]
+	local realm = ProgressionService.ZoneRealm(arenaId)
 	Remotes.Notify:FireClient(player, "Message", {
 		Speaker = "Postmaster Gruff",
-		Text = `🔒 The {def.DisplayName} opens at Level {ProgressionService.ZoneLevel(arenaId)}. Mail more animals to level up!`,
+		Text = `🔒 The {def.DisplayName} is part of the {realm.DisplayName} realm. Buy it at MENU > REALMS!`,
 	})
 end
 
@@ -80,15 +81,20 @@ function Travel.ToZone(player: Player, arenaId: string)
 	Travel.ToArena(player, arenaId)
 end
 
--- Your best zone: the highest one you've unlocked
+-- Your best zone: where your home realm's animals roam (Config/Realms.luau)
 function Travel.BestZone(player: Player): string
-	local best = Config.Arenas.List[1].Id
-	for _, def in Config.Arenas.List do
-		if ProgressionService.ZoneOpen(player, def.Id) then
-			best = def.Id
-		end
+	local realm = player:GetAttribute("Realm")
+	return Config.Realms.At(if typeof(realm) == "number" then realm else 1).Arena
+end
+
+-- MENU > REALMS: to a realm you've bought (its island, until each realm has its own map). Not while boxing.
+function Travel.ToRealm(player: Player, index: number): boolean
+	local home = player:GetAttribute("Realm")
+	if player:GetAttribute("Stage") == "Box" or typeof(home) ~= "number" or index < 1 or index > home then
+		return false
 	end
-	return best
+	Travel.ToArena(player, Config.Realms.At(index).Arena)
+	return true
 end
 
 -- The PEN button: at Gruff's -> your best zone; anywhere else -> back to Gruff
@@ -119,7 +125,7 @@ local function padTo(arenaId: string): (Player) -> ()
 end
 
 -- Walking into a zone you haven't unlocked yet sends you back to town (unless you're on a job there, e.g.
--- helping a crew). The glowing barrier at each zone's entrance shows the level it opens at.
+-- helping a crew). The glowing barrier at each zone's entrance shows the realm it belongs to.
 local function watchZones()
 	local elapsed = 0
 	RunService.Heartbeat:Connect(function(dt)

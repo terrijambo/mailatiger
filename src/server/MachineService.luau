@@ -37,7 +37,7 @@ function MachineService.Buy(player: Player, machineId: string): boolean
 		Analytics.Blocked(player, "MachineLevel", machineId)
 		return false
 	end
-	local price = Machines.Price(machine)
+	local price = Machines.Price(machine, profile.Realm)
 	if not Economy.TrySpend(player, price, `Machine_{machineId}`) then
 		say(player, `The {machine.DisplayName} costs {Format.Short(price)} coins.`)
 		Analytics.Blocked(player, "MachineCoins", machineId)

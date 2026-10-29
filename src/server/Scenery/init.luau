@@ -152,8 +152,9 @@ function Scenery.Build(parent: Instance, layout: Layout)
 		elseif spec.Id == "Beach" then
 			title, subtitle, color = "♻️ REBIRTH BEACH", "MARKET", Color3.fromRGB(150, 90, 230)
 		elseif def and zone then
-			local level = Config.Levels.ZoneLevels[spec.Id] or 1
-			title, subtitle, color = `{zone.Icon} {string.upper(def.DisplayName)}`, `LEVEL {level}`, def.Color
+			local realm = Config.Realms.At(Config.Realms.OfArena(spec.Id))
+			title, subtitle, color =
+				`{zone.Icon} {string.upper(def.DisplayName)}`, string.upper(realm.DisplayName), def.Color
 		end
 		if title then
 			if spec.BridgeFrom == nil then
