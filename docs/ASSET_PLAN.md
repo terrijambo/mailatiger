@@ -150,6 +150,25 @@ generator with the same prompt style (see the pilot prompts in this file's histo
 first. The owner judges them in Play. Only then do the other 23 and Gruff. The pilot costs a few ForgeGUI
 credits; the agent asks before spending any.
 
+### 4b. Getting a Blender model into the game without the owner (tested 2026-10-29 with MA_Mailbox)
+
+Studio's scripting connection can't read files from disk, so the agent drives the importer on screen with
+computer control (access granted for Roblox Studio only). Every step but the import itself goes through code:
+
+1. Build and export: `python tools/blender/bmcp.py run <absolute path to art/blender_scripts/hero_*.py>`;
+   check the preview in `art/previews/hero/`.
+2. Import: Home → **Import** → type the FBX's full path into File name → Enter → **Import** in Import Preview.
+   (The red "!" marks next to each part are the missing-texture warning: the game puts the atlas on.)
+3. Set it up: the hero half of `tools/import/split_pack.luau` (MA_ parts into one Model in
+   `ReplicatedStorage.MapModels`, biggest part as PrimaryPart, flat pivot at the bottom centre).
+4. Code: add the name to `src/shared/ArtAtlas/Hero.json` and `Config/ModelSizes.luau`, and place it in the map.
+5. Check in Play, stop, close the Import Queue panel the importer opened, then **File → Save to Roblox**
+   (never Publish). While there are unsaved changes the editor tab reads "Mail Animals @ <date time>"; the
+   plain name comes back once it's saved.
+
+For a night run: Studio open on the main monitor, uncovered; the PC set not to sleep or lock. Anything
+unexpected on screen (a popup, a dialog that looks different) and the agent stops and leaves a note.
+
 ---
 
 ## 5. Order of work

@@ -16,6 +16,7 @@ local sizes: { [string]: Size } = {
 	-- Hero models (art/blender_scripts/hero_*.py)
 	MA_Fountain = { Height = 14.5 },
 	MA_PostOffice = { Height = 26 },
+	MA_Mailbox = { Height = 5.4 },
 
 	-- The older Blender models (kept until each has a hero replacement)
 	PostOffice = { Height = 21 },

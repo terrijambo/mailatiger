@@ -694,6 +694,12 @@ function MapBuilder.Build(): Map
 	spawn.Color = COLORS.PostBlue
 	spawn.Parent = map
 	dress(map, "SpawnPad", spot(24, 0, 0, Vector3.xAxis), 7, { spawn })
+	-- A street mailbox beside the pad, facing it (art/blender_scripts/hero_mailbox.py), once it's imported
+	local mailboxAt = Vector3.new(27, 0, 8)
+	ModelFit.Spawn("MapModels", "MA_Mailbox", CFrame.lookAt(mailboxAt, Vector3.new(24, 0, 0)), 5.4, map, {
+		ByHeight = true,
+		Solid = true,
+	})
 
 	-- Town, from your sketch: you start by the fountain in the middle; Postmaster Gruff, his counter, the chute,
 	-- his orders board and the Post Office are to the EAST (facing west, toward you); the Post Office
