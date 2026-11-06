@@ -150,7 +150,21 @@ generator with the same prompt style (see the pilot prompts in this file's histo
 first. The owner judges them in Play. Only then do the other 23 and Gruff. The pilot costs a few ForgeGUI
 credits; the agent asks before spending any.
 
-### 4b. Getting a Blender model into the game without the owner (tested 2026-10-29 with MA_Mailbox)
+### 4b. Getting a Blender model into the game without the owner
+
+**The way to do it now (2026-11-06, the Backyard set): Open Cloud, no screen at all.**
+1. Build and export (step 1 below). Several models can go in one file:
+   `MA_PICK=MA_A,MA_B MA_OUT=MA_Set blender --background --factory-startup --python tools/blender/combine_heroes.py`.
+2. Upload with the Studio MCP's `open_cloud_invoke`: POST `/assets/v1/assets` with the FBX as `fileContent` and
+   `{"request":{"assetType":"Model","displayName":...,"creationContext":{"creator":{"userId":"2946343748"}}}}`.
+   Poll GET `/assets/v1/operations/<id>` until `done`; the response has the asset id (and its moderation).
+   (`E:\Mail a Tiger` is an approved upload folder in Studio's Assistant > MCP Permissions.)
+3. `insert_asset` it into ServerStorage, delete its PackageLink, then do step 3 below on its MeshParts.
+4. The owner saves (File > Save to Roblox): the agent can't press it without the screen.
+
+**The older way: the Import dialog by computer control** (tested 2026-10-29 with MA_Mailbox). It stops working
+whenever Windows' text-input window (TextInputHost: the emoji panel and touch keyboard) is up: computer use
+must black it out, and it covers the whole screen. A restart clears it.
 
 Studio's scripting connection can't read files from disk, so the agent drives the importer on screen with
 computer control (access granted for Roblox Studio only). Every step but the import itself goes through code:

@@ -2,7 +2,9 @@
 -- Each zone's island, dressed around its play area (MapBuilder builds the play area itself: floor, fence,
 -- gate, the obstacles the animals steer around). Every theme keeps clear of the play area and of the path
 -- from the bridge to the gate.
---   Backyard  cottages, a vegetable garden, a pond with lily pads, a swing set, gnomes and flowers
+--   Backyard  the treehouse, garden houses with picket-fenced yards, vegetable beds, a lily pond, a swing set,
+--             gnomes and flowers (hero models from art/blender_scripts/hero_backyard.py; plain parts until
+--             they're imported)
 --   Barn      a silo, a windmill, wheat fields, a pumpkin patch, a chicken coop, a tractor, a scarecrow
 --   Jungle    giant trees with vines, temple ruins, broken columns, a stone idol, a waterfall into a pool
 --   Ice Rink  snowy pines, glowing ice crystals, an igloo, a frozen pond, snowfall
@@ -13,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local Kit = require(script.Parent.Kit)
 local Islands = require(script.Parent.Islands)
 
@@ -91,9 +94,155 @@ local function scatter(ctx: Ctx, count: number, pad: number, make: (Vector3) -> 
 end
 
 ---------------------------------------------------------------------------------------------------
+-- Hero models (art/blender_scripts/hero_*.py), sized by Config/ModelSizes
+
+-- A hero model standing at `at` and facing `facing`. It claims `claim` studs around it so no other scenery lands
+-- on it, and with `solidRadius` the roaming animals steer round it. `collide`: players bump into it.
+local function hero(
+	ctx: Ctx,
+	name: string,
+	at: Vector3,
+	facing: Vector3,
+	claim: number,
+	solidRadius: number?,
+	collide: boolean?
+): Model?
+	local look = Vector3.new(facing.X, 0, facing.Z)
+	local model = ModelFit.Spawn("MapModels", name, CFrame.lookAt(at, at + look), 4, ctx.Folder, { Solid = collide })
+	if model then
+		table.insert(ctx.Taken, { Center = at, Radius = claim })
+		if solidRadius then
+			solid(ctx, at, solidRadius)
+		end
+	end
+	return model
+end
+
+-- A front yard: picket fence segments (9 studs each) along the front of a house and down its sides, with a gap
+-- for the path to its door
+local function yard(ctx: Ctx, house: Vector3, facing: Vector3, depth: number)
+	local across = Vector3.new(0, 1, 0):Cross(facing)
+	for _, side in { -1, 1 } do
+		hero(ctx, "MA_PicketFence", house + facing * depth + across * side * 6.5, facing, 0)
+		hero(ctx, "MA_PicketFence", house + facing * (depth - 4.5) + across * side * 11, across, 0)
+	end
+	table.insert(ctx.Taken, { Center = house + facing * (depth / 2), Radius = depth / 2 + 6 })
+end
+
+-- A free spot on the ring round the island's middle: `angle` degrees from straight back (away from town;
+-- positive turns toward ctx.R), `distance` studs out. If that spot is taken, it tries nearby angles and a little
+-- further in. nil if nothing fits.
+local function around(ctx: Ctx, angle: number, distance: number, pad: number): Vector3?
+	local middle = Vector3.new(ctx.Island.Center.X, 0, ctx.Island.Center.Z)
+	for _, step in { 0, 8, -8, 16, -16, 24, -24 } do
+		for _, inward in { 0, 6, 12, -4 } do
+			local a = math.rad(angle + step)
+			local direction = -ctx.F * math.cos(a) + ctx.R * math.sin(a)
+			local p = middle + direction * (distance - inward)
+			if ctx.Free(p, pad) then
+				return p
+			end
+		end
+	end
+	return nil
+end
+
+-- The Backyard in hero models (once they're imported): the treehouse straight behind the lawn (seen from the
+-- bridge), garden houses round the edge with fenced front yards, the swing set, vegetable beds and the lily pond
+local function backyardHeroes(ctx: Ctx)
+	local tree = around(ctx, 0, 52, 9)
+	if tree then
+		hero(ctx, "MA_Treehouse", tree, (ctx.Center - tree).Unit, 18, 5, true)
+	end
+	local houses = {
+		{ "MA_GardenHouseA", -42 },
+		{ "MA_GardenHouseB", 42 },
+		{ "MA_GardenHouseB", -96 },
+		{ "MA_GardenHouseA", 96 },
+	}
+	for _, h in houses do
+		local p = around(ctx, h[2] :: number, 56, 10)
+		if p then
+			local face = (ctx.Center - p).Unit
+			hero(ctx, h[1] :: string, p, face, 9, 7, true)
+			yard(ctx, p, face, 9)
+		end
+	end
+	local swing = around(ctx, -68, 48, 6)
+	if swing then
+		hero(ctx, "MA_SwingSet", swing, (ctx.Center - swing).Unit, 7, 4, true)
+	end
+	local beds = around(ctx, 130, 50, 7)
+	if beds then
+		local face = (ctx.Center - beds).Unit
+		local across = Vector3.new(0, 1, 0):Cross(face)
+		for k = -1, 1 do
+			hero(ctx, "MA_VeggieBed", beds + across * k * 4.4, across, 0, nil, true)
+		end
+		table.insert(ctx.Taken, { Center = beds, Radius = 8 })
+		solid(ctx, beds, 5)
+	end
+	for _, angle in { -130, -152, -108, 155 } do -- (the bridge to Rebirth Beach leaves from one side)
+		local pond = around(ctx, angle, 46, 8)
+		if pond then
+			hero(ctx, "MA_LilyPond", pond, (ctx.Center - pond).Unit, 7, 5)
+			break
+		end
+	end
+	local swingAt = around(ctx, 68, 48, 6) -- a second flower bed across from the swings
+	if swingAt then
+		hero(ctx, "MA_Flowerbed", swingAt, (ctx.Center - swingAt).Unit, 4, 3)
+	end
+end
+
+---------------------------------------------------------------------------------------------------
 -- Backyard
 
+local backyardParts: (Ctx) -> ()
+
 local function backyard(ctx: Ctx)
+	local f, random = ctx.Folder, ctx.Random
+	if Kit.Has("MA_GardenHouseA") then
+		backyardHeroes(ctx)
+	else
+		backyardParts(ctx)
+	end
+	-- Trees, bushes, flowers, gnomes
+	local flowerColors = {
+		Color3.fromRGB(255, 120, 150),
+		Color3.fromRGB(255, 220, 90),
+		Color3.fromRGB(170, 130, 255),
+		Color3.fromRGB(255, 255, 255),
+	}
+	scatter(ctx, 22, 5, function(p)
+		Kit.tree(f, p, random:NextNumber(13, 20))
+	end)
+	scatter(ctx, 18, 2, function(p)
+		Kit.flowers(f, p, flowerColors[random:NextInteger(1, #flowerColors)], random)
+	end)
+	scatter(ctx, 10, 3, function(p)
+		Kit.bush(f, p, random:NextNumber(2.4, 3.6))
+	end)
+	scatter(ctx, 5, 2, function(p)
+		if hero(ctx, "MA_Gnome", p, (ctx.Center - p).Unit, 0) then
+			return
+		end
+		-- A garden gnome
+		box(f, "GnomeBody", p + Vector3.new(0, 0.7, 0), Vector3.new(0.9, 1.4, 0.9), Color3.fromRGB(70, 110, 220))
+		Kit.ball(f, "GnomeHead", p + Vector3.new(0, 1.7, 0), 0.8, Color3.fromRGB(255, 210, 180))
+		Kit.ball(f, "GnomeBeard", p + Vector3.new(0, 1.45, 0.25), 0.6, Color3.new(1, 1, 1))
+		part(f, {
+			ClassName = "WedgePart",
+			Name = "GnomeHat",
+			Size = Vector3.new(0.8, 1.2, 0.8),
+			CFrame = CFrame.new(p + Vector3.new(0, 2.5, 0)),
+			Color = Color3.fromRGB(220, 50, 50),
+		})
+	end)
+end
+
+-- The Backyard in plain parts (before its hero models are imported)
+backyardParts = function(ctx: Ctx)
 	local f, r, random = ctx.Folder, ctx.R, ctx.Random
 	-- Cottages behind and beside the yard, facing it
 	local houses: { { any } } = {
@@ -187,35 +336,6 @@ local function backyard(ctx: Ctx)
 			})
 		end
 	end
-	-- Trees, bushes, flowers, gnomes
-	local flowerColors = {
-		Color3.fromRGB(255, 120, 150),
-		Color3.fromRGB(255, 220, 90),
-		Color3.fromRGB(170, 130, 255),
-		Color3.fromRGB(255, 255, 255),
-	}
-	scatter(ctx, 22, 5, function(p)
-		Kit.tree(f, p, random:NextNumber(13, 20))
-	end)
-	scatter(ctx, 18, 2, function(p)
-		Kit.flowers(f, p, flowerColors[random:NextInteger(1, #flowerColors)], random)
-	end)
-	scatter(ctx, 10, 3, function(p)
-		Kit.bush(f, p, random:NextNumber(2.4, 3.6))
-	end)
-	scatter(ctx, 4, 2, function(p)
-		-- A garden gnome
-		box(f, "GnomeBody", p + Vector3.new(0, 0.7, 0), Vector3.new(0.9, 1.4, 0.9), Color3.fromRGB(70, 110, 220))
-		Kit.ball(f, "GnomeHead", p + Vector3.new(0, 1.7, 0), 0.8, Color3.fromRGB(255, 210, 180))
-		Kit.ball(f, "GnomeBeard", p + Vector3.new(0, 1.45, 0.25), 0.6, Color3.new(1, 1, 1))
-		part(f, {
-			ClassName = "WedgePart",
-			Name = "GnomeHat",
-			Size = Vector3.new(0.8, 1.2, 0.8),
-			CFrame = CFrame.new(p + Vector3.new(0, 2.5, 0)),
-			Color = Color3.fromRGB(220, 50, 50),
-		})
-	end)
 end
 
 ---------------------------------------------------------------------------------------------------

@@ -15,6 +15,16 @@
 		"MA_MachineExpress",
 		"MA_MachineDrone",
 		"MA_MachineRocket",
-		"MA_Mailbox"
+		"MA_Mailbox",
+		"MA_Treehouse",
+		"MA_GardenHouseA",
+		"MA_GardenHouseB",
+		"MA_PicketFence",
+		"MA_Doghouse",
+		"MA_VeggieBed",
+		"MA_LilyPond",
+		"MA_SwingSet",
+		"MA_Gnome",
+		"MA_Flowerbed"
 	]
 }

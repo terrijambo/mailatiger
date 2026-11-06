@@ -17,6 +17,17 @@ local sizes: { [string]: Size } = {
 	MA_Fountain = { Height = 14.5 },
 	MA_PostOffice = { Height = 26 },
 	MA_Mailbox = { Height = 5.4 },
+	-- The Backyard realm (art/blender_scripts/hero_backyard.py)
+	MA_Treehouse = { Height = 30 }, -- the landmark: well over the trees round it
+	MA_GardenHouseA = { Height = 12 },
+	MA_GardenHouseB = { Height = 12 },
+	MA_PicketFence = { Width = 9 }, -- (3 tall: a hand rail for the player)
+	MA_Doghouse = { Height = 4.7 },
+	MA_VeggieBed = { Width = 8 },
+	MA_LilyPond = { Width = 11 },
+	MA_SwingSet = { Width = 12 },
+	MA_Gnome = { Height = 2.6 },
+	MA_Flowerbed = { Width = 6 },
 
 	-- The older Blender models (kept until each has a hero replacement)
 	PostOffice = { Height = 21 },

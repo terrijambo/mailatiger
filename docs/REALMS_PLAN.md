@@ -141,3 +141,14 @@ comes with the realm maps.
   Tests print each realm's price and income (`lune run tests/run.luau`, section Realms).
 - Not tested on a real purchase yet: Studio playtests use the owner's live save, so only the refused path
   (one rebirth short) and GO were tried. The buy itself should be checked on a test save (tools/smoke).
+
+### The Backyard map, first pass (2026-11-06)
+
+On today's Backyard island (the realm's grounds until realms get their own places): ten hero models from
+`art/blender_scripts/hero_backyard.py`, the **treehouse** landmark (30 tall, straight behind the lawn as you
+come off the bridge), four garden houses with picket-fenced front yards, a swing set, three vegetable beds, a
+lily pond and a flower bed by the path, gnomes, and the doghouse and flower bed on the lawn. Scenery places
+them by angle round the island (`Zones.luau`, `around`) and falls back to the plain-part Backyard when the
+models aren't imported. Picture: `docs/overhaul/backyard-realm-1.jpg`. Still to do for the Backyard: its own
+hub (Gruff's branch, chute and machines) once realms move to their own maps, the glitch and budget checks
+(`tools/layout/run.sh`, needs Studio closed), and daytime photos.
