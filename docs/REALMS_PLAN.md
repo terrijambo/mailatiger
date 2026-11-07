@@ -159,3 +159,77 @@ the bridge. Glitch check (its detectors run inside a playtest, Backyard only): n
 flickering that anyone can see, no invisible walls. Budget: 857 visible parts of 2,500, 8 lights of 30,
 **143 mesh parts of 150** (nearly full: new Backyard models from here should replace something, or be
 merged into fewer parts). Daytime picture: `docs/overhaul/backyard-realm-1-day.jpg`.
+
+---
+
+## 7. Separate realm maps (decided 2026-11-06: each realm its own map with its own hub; plan for approval)
+
+The owner chose the original idea over a shared town: every realm is its own world with its own Post Office,
+so moving realms feels like arriving somewhere new.
+
+### One place or six?
+
+| | **One place, realms far apart** (recommended) | Six places, one per realm |
+|---|---|---|
+| Friends | Everyone shares one server; you can visit a friend's realm if you own it | Split by realm: a friend in another realm is on another server |
+| Moving realms | A short fade, like travel today | A Roblox teleport with a loading screen |
+| Performance | Needs **StreamingEnabled** so each player only loads the realm they're in | Each server only holds one realm |
+| Bosses, events, leaderboards | Shared by the whole server, as now | Split per place |
+| Publishing | One place, as now | Six places to publish for every update |
+| Work | Fix 6 client scripts for streaming | Teleports, six Studio files, six publishes |
+
+One place wins on friends, simplicity and publishing. Its one risk is streaming, which gets tackled first.
+
+### What each realm map has
+- **The hub:** a plaza with Gruff's branch Post Office, his counter (the shop), the chute, the 7 machines,
+  the orders board, the egg stand, a **Rebirth Market stall** (Rebirth Beach goes away), the **Realm Gate**
+  arch to the next realm, a spawn, and the leaderboards.
+- **The grounds:** 2–3 habitats round the hub where the realm's animals roam (one big island per realm,
+  no bridges between realms).
+- **The landmark**, seen from the hub (realm 1's is the treehouse).
+- Its own sky, light and water (ZoneLook already changes these by area).
+- Shared by everyone: the **boss arena**, a place of its own, with a portal in every hub when a fight starts.
+
+### What happens to today's map
+- **Realm 1 = today's town plaza plus the Backyard island.** The Post Office, machines and fountain stay;
+  only the island bridges to the other zones go.
+- The Barn, Jungle, Ice Rink, Rooftop and Rebirth Beach islands are retired once each new realm map is
+  built. Their good pieces move over (the Barn's silo, windmill and pumpkins go to Sunny Farm; the
+  Jungle's temple ruins to Temple Jungle; the ice and the edges to Wonder Peaks).
+- Each new hub reuses the hero Post Office, machines, chute and counter with the realm's own dressing round
+  them (paving, plants, lamps, colors). A themed Post Office per realm (a barn branch, a jungle hut, an ice
+  lodge) can come later as an upgrade.
+
+### The systems work (before any new map)
+1. **Hubs in the code:** `MapBuilder.Map` gets a hub per realm (its Gruff, chute, counter, board, machines,
+   market stall, spawn, gate). Mail, shop, machines, orders, rebirth, travel and the tutorial work at
+   whichever hub you're standing in. Machine progress is already per player, so any hub's Stamp Machine
+   is your Stamp Machine. Today's town becomes realm 1's hub, with nothing visible changing.
+2. **Arriving:** you join in your home realm's hub; MENU > REALMS and the Realm Gate fade you to another
+   hub; the GRUFF button goes to your current realm's Gruff.
+3. **Animals:** each realm's grounds get their own arenas (`Config/Arenas.luau`), so tiers 4 and 5 stop
+   sharing the Ice Rink.
+4. **StreamingEnabled on:** fix the 6 client scripts that expect the whole map to be there (Gruff's
+   animation, the chute, the machines, the tutorial arrow, the side buttons, one effect), and keep each
+   hub's key pieces loaded near you.
+5. **Checks per realm:** the glitch detectors and the budget run per realm (2,500 visible parts, 150 mesh
+   parts, 30 lights each).
+
+### Order and size
+| Step | What | Size |
+|---|---|---|
+| 1 | Hubs in the code, today's town as realm 1's hub (no visible change) | 1–2 sessions |
+| 2 | StreamingEnabled and the client fixes | 1 session |
+| 3 | **Sunny Farm**: the first new realm map (hub + grounds + windmill landmark), far from town | 2–3 sessions |
+| 4 | Wild Cove, Temple Jungle, Giant Savanna, Wonder Peaks | 2–3 sessions each |
+| 5 | Retire the old islands, add the boss portals, sweep | 1–2 sessions |
+
+About **15–20 sessions** in all, against about 8–10 for the shared-hub version. Steps 3–4 can mostly run
+overnight.
+
+### Questions for the owner
+1. **One place with streaming** (recommended) or six places?
+2. **Realm 1 = today's town + the Backyard island?** (Recommended: it's already built and the first thing
+   new players see.)
+3. **Each hub's Post Office:** the same hero building with realm dressing for now (recommended), or a
+   themed building per realm from the start (about one Blender build extra per realm)?
