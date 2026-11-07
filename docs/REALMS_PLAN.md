@@ -152,3 +152,10 @@ them by angle round the island (`Zones.luau`, `around`) and falls back to the pl
 models aren't imported. Picture: `docs/overhaul/backyard-realm-1.jpg`. Still to do for the Backyard: its own
 hub (Gruff's branch, chute and machines) once realms move to their own maps, the glitch and budget checks
 (`tools/layout/run.sh`, needs Studio closed), and daytime photos.
+
+Polish pass (2026-11-06): stepping stones curve across the lawn from the landing to the treehouse ladder,
+every garden house has a red mailbox at its gate, the lawn bushes are KayKit, and the doghouse door faces
+the bridge. Glitch check (its detectors run inside a playtest, Backyard only): nothing floating, sunk or
+flickering that anyone can see, no invisible walls. Budget: 857 visible parts of 2,500, 8 lights of 30,
+**143 mesh parts of 150** (nearly full: new Backyard models from here should replace something, or be
+merged into fewer parts). Daytime picture: `docs/overhaul/backyard-realm-1-day.jpg`.

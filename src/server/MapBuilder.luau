@@ -21,6 +21,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local SignText = require(ReplicatedStorage.Shared.SignText)
 local Scenery = require(script.Parent.Scenery)
+local Kit = require(script.Parent.Scenery.Kit)
 
 local World = Config.World
 
@@ -394,6 +395,10 @@ local function buildBackyard(parent: Instance): Arena
 	local folder = parent:FindFirstChild("Backyard") :: Folder
 	for _, at in { { -15, -5, 2.5 }, { 12, 8, 2 }, { 18, -10, 2.5 }, { -24, 14, 2 } } do
 		local position = addObstacle(arena, fr, at[1], at[2], at[3])
+		if Kit.Has("Forest_Bush1D") then
+			Kit.bush(folder, position, at[3] * 1.6) -- (the KayKit bushes the rest of the island has)
+			continue
+		end
 		local bush = part(folder, {
 			Name = "Bush",
 			Shape = Enum.PartType.Ball,
@@ -406,7 +411,8 @@ local function buildBackyard(parent: Instance): Arena
 	end
 	-- Extra scenery (only if imported)
 	local doghouse = addObstacle(arena, fr, -26, 16, 3)
-	if not dress(folder, "Doghouse", spot(doghouse.X, 0, doghouse.Z, fr.R), 5.5, nil, { Solid = true }) then
+	-- (its door toward the bridge, so you see it as you arrive)
+	if not dress(folder, "Doghouse", spot(doghouse.X, 0, doghouse.Z, fr.F), 5.5, nil, { Solid = true }) then
 		table.remove(arena.Obstacles) -- nothing there to steer around
 	end
 	dress(folder, "Flowerbed", lspot(fr, 0, -20, 0), 12)

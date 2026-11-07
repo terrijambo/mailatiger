@@ -119,27 +119,54 @@ local function hero(
 end
 
 -- A front yard: picket fence segments (9 studs each) along the front of a house and down its sides, with a gap
--- for the path to its door
+-- for the path to its door, and the house's red mailbox by the gate
 local function yard(ctx: Ctx, house: Vector3, facing: Vector3, depth: number)
 	local across = Vector3.new(0, 1, 0):Cross(facing)
 	for _, side in { -1, 1 } do
 		hero(ctx, "MA_PicketFence", house + facing * depth + across * side * 6.5, facing, 0)
 		hero(ctx, "MA_PicketFence", house + facing * (depth - 4.5) + across * side * 11, across, 0)
 	end
+	hero(ctx, "MA_Mailbox", house + facing * (depth + 1.6) + across * 3.2, facing, 0)
 	table.insert(ctx.Taken, { Center = house + facing * (depth / 2), Radius = depth / 2 + 6 })
+end
+
+-- Stepping stones across the lawn, from the landing to `to`, bowing out sideways by `bend` studs (round
+-- whatever's in the middle of the lawn)
+local function steppingStones(ctx: Ctx, to: Vector3, bend: number)
+	local from = ctx.Center + ctx.F * (ctx.HW - 4)
+	local control = ctx.Center + ctx.R * bend
+	local length = (to - from).Magnitude
+	local count = math.floor(length / 3.1)
+	for i = 0, count do
+		local t = i / count
+		local p = from:Lerp(control, t):Lerp(control:Lerp(to, t), t)
+		local tangent = (control - from):Lerp(to - control, t)
+		local side = Vector3.new(0, 1, 0):Cross(Vector3.new(tangent.X, 0, tangent.Z).Unit)
+		local at = p + side * (if i % 2 == 0 then 0.6 else -0.6)
+		local shade = ctx.Random:NextNumber(0, 0.12)
+		Kit.disc(
+			ctx.Folder,
+			"SteppingStone",
+			at,
+			0.2,
+			0.18,
+			ctx.Random:NextNumber(1.05, 1.4),
+			Color3.fromRGB(196, 190, 176):Lerp(Color3.fromRGB(150, 146, 136), shade)
+		)
+	end
 end
 
 -- A free spot on the ring round the island's middle: `angle` degrees from straight back (away from town;
 -- positive turns toward ctx.R), `distance` studs out. If that spot is taken, it tries nearby angles and a little
 -- further in. nil if nothing fits.
-local function around(ctx: Ctx, angle: number, distance: number, pad: number): Vector3?
+local function around(ctx: Ctx, angle: number, distance: number, pad: number, ok: ((Vector3) -> boolean)?): Vector3?
 	local middle = Vector3.new(ctx.Island.Center.X, 0, ctx.Island.Center.Z)
 	for _, step in { 0, 8, -8, 16, -16, 24, -24 } do
 		for _, inward in { 0, 6, 12, -4 } do
 			local a = math.rad(angle + step)
 			local direction = -ctx.F * math.cos(a) + ctx.R * math.sin(a)
 			local p = middle + direction * (distance - inward)
-			if ctx.Free(p, pad) then
+			if ctx.Free(p, pad) and (ok == nil or ok(p)) then
 				return p
 			end
 		end
@@ -152,7 +179,10 @@ end
 local function backyardHeroes(ctx: Ctx)
 	local tree = around(ctx, 0, 52, 9)
 	if tree then
-		hero(ctx, "MA_Treehouse", tree, (ctx.Center - tree).Unit, 18, 5, true)
+		local face = (ctx.Center - tree).Unit
+		hero(ctx, "MA_Treehouse", tree, face, 18, 5, true)
+		-- (round the flower bed in the middle of the lawn, to the foot of the ladder)
+		steppingStones(ctx, tree + face * 8, 16)
 	end
 	local houses = {
 		{ "MA_GardenHouseA", -42 },
@@ -182,12 +212,25 @@ local function backyardHeroes(ctx: Ctx)
 		table.insert(ctx.Taken, { Center = beds, Radius = 8 })
 		solid(ctx, beds, 5)
 	end
-	for _, angle in { -130, -152, -108, 155 } do -- (the bridge to Rebirth Beach leaves from one side)
-		local pond = around(ctx, angle, 46, 8)
+	-- (the bridge to Rebirth Beach leaves from one side, the road in from the front: the pond takes what's left)
+	local pond: Vector3? = nil
+	local function clearOfRoad(p: Vector3): boolean
+		return segmentDistance(p, ctx.BridgeEnd, ctx.Gate) > World.BridgeWidth / 2 + 12
+	end
+	local spots = { { -130, 46 }, { -152, 46 }, { -108, 48 }, { 155, 44 } }
+	for angle = -165, 180, 15 do -- (then anywhere round the ring)
+		for _, distance in { 44, 50, 38 } do
+			table.insert(spots, { angle, distance })
+		end
+	end
+	for _, spot in spots do
+		pond = around(ctx, spot[1], spot[2], 6, clearOfRoad)
 		if pond then
-			hero(ctx, "MA_LilyPond", pond, (ctx.Center - pond).Unit, 7, 5)
 			break
 		end
+	end
+	if pond then
+		hero(ctx, "MA_LilyPond", pond, (ctx.Center - pond).Unit, 7, 5)
 	end
 	local swingAt = around(ctx, 68, 48, 6) -- a second flower bed across from the swings
 	if swingAt then
