@@ -40,6 +40,14 @@
 					"$path": { "optional": "vendor/ZeroPanel/StarterPlayerScripts.rbxm" }
 				}
 			}
+		},
+		"Workspace": {
+			"$className": "Workspace",
+			"$ignoreUnknownInstances": true,
+			"$properties": {
+				"StreamingEnabled": true,
+				"StreamOutBehavior": "Opportunistic"
+			}
 		}
 	}
 }

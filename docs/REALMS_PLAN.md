@@ -240,6 +240,15 @@ HubGruffModel, HubGruffHat, HubCounter, HubChute, HubOrdersBoard, HubMachines, e
 any number of them, including ones that turn up late (ready for streaming). Checked in Play: nothing looks or
 plays differently; Gruff animates, your chute model and all 7 machines show, PEN/GRUFF travel works.
 
+**Step 2 done (2026-11-06): StreamingEnabled.** On, with StreamOutBehavior Opportunistic (far areas unload
+whenever you're away, not only when memory runs low), set in `default.project.json` and in the place. The
+server loads the area round you before every teleport (`Travel.StreamAround`, also the boss arena). Gruff's
+model and the boss crowd's fans arrive whole (ModelStreamingMode Atomic). The client copes with pieces coming
+and going: machines drop their drawn model when their station leaves and find a prompt that arrives after its
+station, Gruff finds a cap that arrives after him, the boss crowd drops fans that left. Tested in Play: a
+6,000-stud trip unloaded the town (10,260 loaded instances down to 974, no machine models left behind); the
+GRUFF button brought everything back working (Gruff, your chute, all 7 machines, no duplicates).
+
 ### Questions for the owner (answered above)
 1. **One place with streaming** (recommended) or six places?
 2. **Realm 1 = today's town + the Backyard island?** (Recommended: it's already built and the first thing

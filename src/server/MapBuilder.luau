@@ -634,6 +634,7 @@ local function buildGruff(map: Instance, floor: CFrame): (BasePart, BasePart, Mo
 	local model = ModelFit.Spawn("AnimalModels", "Gruff", floor, 6.5, map, { ByHeight = true })
 	if model then
 		model.Name = "GruffModel"
+		model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- (arrives whole, so he animates from his real pose)
 		gruff.Transparency = 1
 		gruff.CanCollide = false
 		local box, size = model:GetBoundingBox()

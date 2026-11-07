@@ -83,6 +83,7 @@ local function fan(parent: Instance, at: CFrame, index: number)
 		(part :: BasePart).CanCollide = false
 	end
 	model.PrimaryPart = body
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- (arrives whole: client/BossLook needs its parts)
 	model:SetAttribute("Seed", index)
 	model.Parent = parent
 	CollectionService:AddTag(model, "BossCrowd")

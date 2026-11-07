@@ -32,6 +32,7 @@ local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 local LeaderboardService = require(script.Parent.LeaderboardService)
 local MapBuilder = require(script.Parent.MapBuilder)
 local Remotes = require(script.Parent.Remotes)
+local Travel = require(script.Parent.Travel)
 
 local Boss = Config.Events.Boss
 -- The arena's way in (toward town and the bridge): the stands are on the other three sides
@@ -224,6 +225,7 @@ end
 local function teleport(player: Player, at: Vector3)
 	local character = player.Character
 	if character then
+		Travel.StreamAround(player, at) -- (the arena's far from town: load it first)
 		character:PivotTo(CFrame.new(at + Vector3.new(0, 4, 0)))
 	end
 end

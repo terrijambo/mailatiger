@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Analytics = require(script.Parent.Analytics)
@@ -17,10 +18,21 @@ local Travel = {}
 local map: MapBuilder.Map
 local lastTeleport: { [Player]: number } = {}
 
+-- (With streaming on, the ground where you're going may not be loaded on your device yet: ask for it first,
+-- waiting up to a couple of seconds, so you don't land in empty space)
+function Travel.StreamAround(player: Player, position: Vector3)
+	if Workspace.StreamingEnabled then
+		pcall(function()
+			player:RequestStreamAroundAsync(position, 2)
+		end)
+	end
+end
+
 local function teleport(player: Player, cframe: CFrame)
 	local character = player.Character
 	if character then
 		lastTeleport[player] = os.clock()
+		Travel.StreamAround(player, cframe.Position)
 		character:PivotTo(cframe)
 	end
 end

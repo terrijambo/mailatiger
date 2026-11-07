@@ -508,6 +508,29 @@ function MachineStations.Start()
 		local list = byId[machine.Id] or {}
 		byId[machine.Id] = list
 		table.insert(list, station)
+		-- With streaming, a far-off hub's stations leave your device (and come back as new parts): drop this
+		-- one and the machine drawn over it
+		part.AncestryChanged:Connect(function()
+			if part:IsDescendantOf(Workspace) then
+				return
+			end
+			local look = station.Look
+			if look then
+				look.Model:Destroy()
+			end
+			for _, box in station.Boxes do
+				box:Destroy()
+			end
+			local at = table.find(stations, station)
+			if at then
+				table.remove(stations, at)
+			end
+			local same = byId[machine.Id]
+			local index = same and table.find(same, station)
+			if same and index then
+				table.remove(same, index)
+			end
+		end)
 		if refresh then
 			refresh()
 		end
@@ -582,7 +605,9 @@ function MachineStations.Start()
 				station.Look = build(machine, station.Part, has)
 				station.Owned = has
 			end
-			local prompt = station.Prompt
+			-- (with streaming a station can arrive before its prompt: look again until it's there)
+			local prompt = station.Prompt or station.Part:FindFirstChild("UsePrompt") :: ProximityPrompt?
+			station.Prompt = prompt
 			local batch = processing[machine.Id]
 			local status, color, action
 			station.Working = false

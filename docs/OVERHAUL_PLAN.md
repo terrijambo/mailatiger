@@ -128,7 +128,8 @@ imports end to end.
   41 models; pictures to pick from in `art/export/kaykit/*_sheet.png`). Pack textures: `Config/Atlases.luau`.
 - Lighting: bloom + sun rays (`Config/Look.luau`), and each island's own color grade (`Zones`,
   `client/ZoneLook.luau`).
-- StreamingEnabled: **left off on purpose.** The map is ~8k parts, and several client scripts look up plaza
+- StreamingEnabled: **on since 2026-11-06** (docs/REALMS_PLAN.md section 7, step 2). Before that it was
+  **left off on purpose.** The map is ~8k parts, and several client scripts look up plaza
   objects by name (Gruff, the chute, the machines, tutorial targets), which streaming could unload. Revisit
   after Phase 3 if client memory is over budget; those models then need `ModelStreamingMode = Persistent`.
 

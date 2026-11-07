@@ -67,8 +67,11 @@ function BossLook.Start()
 		if close then
 			local jump = if mood == "Cheer" then 1.6 elseif mood == "Hype" then 0.7 elseif mood == "Boo" then 0 else 0.15
 			local speed = if mood == "Cheer" then 9 elseif mood == "Hype" then 6 else 2
-			for _, fan in fans do
-				if fan.Model.Parent then
+			for index = #fans, 1, -1 do
+				local fan = fans[index]
+				if not fan.Model.Parent then
+					table.remove(fans, index) -- (streamed out: it comes back as a new fan)
+				else
 					local t = now * speed + fan.Seed * 1.7
 					local lift = math.abs(math.sin(t)) * jump
 					local sway = if mood == "Boo" then -0.25 else math.sin(t * 0.5) * 0.08 * jump

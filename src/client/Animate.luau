@@ -560,7 +560,16 @@ local function updateGruff(rig: GruffRig, now: number)
 	local current = model:GetPivot()
 	local pose = current:Lerp(target, 0.1)
 	model:PivotTo(pose)
-	-- His cap rides along (unless a tiger just knocked it flying)
+	-- His cap rides along (unless a tiger just knocked it flying). With streaming it can turn up after him.
+	if not (rig.Hat and rig.Hat.Parent) then
+		local realm = model:GetAttribute("Realm")
+		local found = Hubs.OfRealm("HubGruffHat", if typeof(realm) == "number" then realm else 1)
+		rig.Hat, rig.HatOffset = nil, nil
+		if found and found:IsA("BasePart") and found.Anchored then
+			rig.Hat = found
+			rig.HatOffset = home:ToObjectSpace(found.CFrame)
+		end
+	end
 	local cap, capOffset = rig.Hat, rig.HatOffset
 	if cap and capOffset and cap.Anchored then
 		cap.CFrame = pose * capOffset
