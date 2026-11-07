@@ -383,12 +383,14 @@ function EventService.Start(builtMap: MapBuilder.Map)
 	BossService.Init(builtMap)
 	MailService.OnMailed = EventService.OnMailed
 
-	-- Delivering the Mystery Parcel at the chute
-	map.ChutePrompt.Triggered:Connect(function(player: Player)
-		if mysteryCarrier == player then
-			endMystery(player)
-		end
-	end)
+	-- Delivering the Mystery Parcel at a chute (any hub's)
+	for _, hub in map.Hubs do
+		hub.ChutePrompt.Triggered:Connect(function(player: Player)
+			if mysteryCarrier == player then
+				endMystery(player)
+			end
+		end)
+	end
 	Players.PlayerRemoving:Connect(function(player)
 		if mysteryCarrier == player then
 			dropMystery()

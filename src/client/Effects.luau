@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Hubs = require(script.Parent.Hubs)
 local Ragdoll = require(script.Parent.Ragdoll)
 
 local player = Players.LocalPlayer
@@ -392,8 +393,8 @@ function Effects.Start()
 			end
 			fovPunch(-6, 0.35)
 		elseif kind == "MailReceipt" then
-			local map = Workspace:FindFirstChild("GrayboxMap")
-			local chute = map and map:FindFirstChild("MailChute") :: BasePart?
+			local found = Hubs.NearMe("HubChute") -- (the chute you just mailed at)
+			local chute = if found and found:IsA("BasePart") then found else nil
 			local at = if chute then chute.Position + Vector3.new(0, chute.Size.Y / 2 + 1, 0) else myPosition()
 			if at then
 				confetti(at, 40 + 10 * (data.Count or 1))

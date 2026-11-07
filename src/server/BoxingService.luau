@@ -561,8 +561,8 @@ local function endSession(s: Session)
 	end
 end
 
-local function knockOffGruffsHat()
-	local hat = map.GruffHat
+local function knockOffGruffsHat(position: Vector3)
+	local hat = MapBuilder.NearestHub(map, position).GruffHat
 	if not hat.Anchored then
 		return -- already flying
 	end
@@ -578,7 +578,7 @@ end
 
 -- "RETURN TO SENDER": a tiger (or Gruff!) launching you is the big clip moment.
 local function breakout(s: Session, position: Vector3)
-	knockOffGruffsHat()
+	knockOffGruffsHat(position)
 	for _, player in Players:GetPlayers() do
 		local root = getCharacterParts(player)
 		if root and (root.Position - position).Magnitude <= 80 then

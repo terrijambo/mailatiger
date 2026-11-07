@@ -14,6 +14,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Hubs = require(script.Parent.Hubs)
 local Profile = require(script.Parent.Profile)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Track = require(script.Parent.Track)
@@ -172,7 +173,7 @@ function Tutorial.Start()
 		return
 	end
 
-	local map = Workspace:WaitForChild("GrayboxMap")
+	Workspace:WaitForChild("GrayboxMap") -- (the map is built before the walkthrough starts)
 	local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Tutorial") :: RemoteEvent
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 	local gui, text, skip = buildPanel()
@@ -241,8 +242,9 @@ function Tutorial.Start()
 		end
 	end
 
-	local function partNamed(name: string): BasePart?
-		local found = map:FindFirstChild(name)
+	-- A piece of the Backyard's hub (the walkthrough always happens there: realm 1)
+	local function hubPart(tag: string): BasePart?
+		local found = Hubs.OfRealm(tag, 1)
 		return if found and found:IsA("BasePart") then found else nil
 	end
 
@@ -255,9 +257,9 @@ function Tutorial.Start()
 		elseif step == "Wild" then
 			return nearestWild(90)
 		elseif step == "Mail" then
-			return partNamed("MailChute")
+			return hubPart("HubChute")
 		elseif step == "Shop" then
-			return partNamed("Counter") -- (you shop by talking to Gruff)
+			return hubPart("HubCounter") -- (you shop by talking to Gruff)
 		end
 		return nil
 	end

@@ -17,6 +17,7 @@ local TweenService = game:GetService("TweenService")
 
 local Menus = require(script.Parent.Menus)
 local OrdersBoard = require(script.Parent.OrdersBoard)
+local Hubs = require(script.Parent.Hubs)
 local Profile = require(script.Parent.Profile)
 local Ui = require(script.Parent.Ui)
 
@@ -161,8 +162,7 @@ function SideButtons.Start()
 			end
 		end
 		RunService.Heartbeat:Connect(function()
-			local map = workspace:FindFirstChild("GrayboxMap")
-			local gruff = map and map:FindFirstChild("Gruff")
+			local gruff = Hubs.NearMe("HubGruff") -- (whichever realm's hub you're at)
 			local character = player.Character
 			local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 			if gruff and gruff:IsA("BasePart") and root then

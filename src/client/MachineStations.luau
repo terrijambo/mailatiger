@@ -7,6 +7,7 @@
 -- Its prompt says what holding E will do for you: buy it, drop your parcels in, or collect them, and the sign
 -- over it counts down while it works. Machines and their numbers: Config/Machines.luau.
 
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -15,6 +16,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local Hubs = require(script.Parent.Hubs)
 local Profile = require(script.Parent.Profile)
 
 local Machines = Config.Machines
@@ -464,12 +466,6 @@ local function pop(at: Vector3, text: string, color: Color3)
 end
 
 function MachineStations.Start()
-	local map = Workspace:WaitForChild("GrayboxMap")
-	local room = map:WaitForChild("Machines", 30)
-	if not room then
-		return
-	end
-	task.wait(1) -- (let the stations replicate)
 	local notify = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Notify") :: RemoteEvent
 
 	type Station = {
@@ -483,25 +479,65 @@ function MachineStations.Start()
 		Working: boolean,
 		Boxes: { BasePart }, -- your parcels sitting on its belt
 	}
+	-- Every hub's machines (client/Hubs.luau): your machines are yours at all of them
 	local stations: { Station } = {}
-	local byId: { [string]: Station } = {}
-	for _, part in room:GetChildren() do
+	local byId: { [string]: { Station } } = {}
+	local refresh: () -> ()
+	local function addStation(part: Instance)
 		local id = part:GetAttribute("MachineId")
 		local machine = if typeof(id) == "string" then Machines.ById[id] else nil
-		if part:IsA("BasePart") and machine then
-			local _, status = sign(part, machine)
-			local station: Station = {
-				Machine = machine,
-				Part = part,
-				Prompt = part:FindFirstChild("UsePrompt") :: ProximityPrompt?,
-				Status = status,
-				Busy = 0,
-				Working = false,
-				Boxes = {},
-			}
-			table.insert(stations, station)
-			byId[machine.Id] = station
+		if not (part:IsA("BasePart") and machine) then
+			return
 		end
+		for _, other in stations do
+			if other.Part == part then
+				return
+			end
+		end
+		local _, status = sign(part, machine)
+		local station: Station = {
+			Machine = machine,
+			Part = part,
+			Prompt = part:FindFirstChild("UsePrompt") :: ProximityPrompt?,
+			Status = status,
+			Busy = 0,
+			Working = false,
+			Boxes = {},
+		}
+		table.insert(stations, station)
+		local list = byId[machine.Id] or {}
+		byId[machine.Id] = list
+		table.insert(list, station)
+		if refresh then
+			refresh()
+		end
+	end
+	Hubs.Each("HubMachines", function(room: Instance)
+		task.wait(1) -- (let the stations replicate)
+		for _, part in room:GetChildren() do
+			addStation(part)
+		end
+		room.ChildAdded:Connect(addStation)
+	end)
+
+	-- The station of this machine nearest you (where its READY! pops up)
+	local function nearestStation(id: string): Station?
+		local list = byId[id]
+		if not list then
+			return nil
+		end
+		local character = Players.LocalPlayer.Character
+		local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local best, bestDistance = list[1], math.huge
+		if root then
+			for _, station in list do
+				local distance = (station.Part.Position - root.Position).Magnitude
+				if distance < bestDistance then
+					best, bestDistance = station, distance
+				end
+			end
+		end
+		return best
 	end
 
 	-- Little parcels on a machine's belt while it has yours
@@ -530,7 +566,7 @@ function MachineStations.Start()
 	end
 
 	-- Words, signs and looks for every machine (from your saved progress, and the clock while one works)
-	local function refresh()
+	refresh = function()
 		local data = Profile.Get()
 		local owned = data.Machines or {}
 		local processing = data.Processing or {}
@@ -603,7 +639,7 @@ function MachineStations.Start()
 	end)
 
 	notify.OnClientEvent:Connect(function(kind: string, data: any)
-		local station = if type(data) == "table" and data.Id then byId[data.Id] else nil
+		local station = if type(data) == "table" and type(data.Id) == "string" then nearestStation(data.Id) else nil
 		if not station then
 			return
 		end

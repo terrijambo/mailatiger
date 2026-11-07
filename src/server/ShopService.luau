@@ -403,20 +403,22 @@ end
 function ShopService.Start(builtMap: MapBuilder.Map)
 	map = builtMap
 
-	map.ShopPrompt.Triggered:Connect(function(player: Player)
-		Remotes.Notify:FireClient(player, "OpenShop", {})
-	end)
 	map.MarketPrompt.Triggered:Connect(function(player: Player)
 		Remotes.Notify:FireClient(player, "OpenMarket", {})
 	end)
-
-	map.OrdersPrompt.Triggered:Connect(function(player: Player)
-		local profile = DataService.Get(player)
-		if profile and Orders.Refresh(profile) then
-			Economy.Sync(player)
-		end
-		Remotes.Notify:FireClient(player, "OpenOrders", {})
-	end)
+	-- Every hub's Gruff and orders board
+	for _, hub in map.Hubs do
+		hub.ShopPrompt.Triggered:Connect(function(player: Player)
+			Remotes.Notify:FireClient(player, "OpenShop", {})
+		end)
+		hub.OrdersPrompt.Triggered:Connect(function(player: Player)
+			local profile = DataService.Get(player)
+			if profile and Orders.Refresh(profile) then
+				Economy.Sync(player)
+			end
+			Remotes.Notify:FireClient(player, "OpenOrders", {})
+		end)
+	end
 
 	Remotes.Listen(Remotes.ShopAction, 8, onShopAction)
 

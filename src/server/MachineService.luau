@@ -162,13 +162,16 @@ function MachineService.Use(player: Player, machineId: string)
 end
 
 function MachineService.Start(map: MapBuilder.Map)
-	-- Hold E at a machine to buy it, drop parcels in, or collect them (the client words the prompt for you)
-	for machineId, station in map.Machines do
-		local use = station:FindFirstChild("UsePrompt") :: ProximityPrompt?
-		if use then
-			use.Triggered:Connect(function(player: Player)
-				MachineService.Use(player, machineId)
-			end)
+	-- Hold E at a machine to buy it, drop parcels in, or collect them (the client words the prompt for you).
+	-- Every hub has the full set, and your machines are yours at all of them (they're saved per player).
+	for _, hub in map.Hubs do
+		for machineId, station in hub.Machines do
+			local use = station:FindFirstChild("UsePrompt") :: ProximityPrompt?
+			if use then
+				use.Triggered:Connect(function(player: Player)
+					MachineService.Use(player, machineId)
+				end)
+			end
 		end
 	end
 	-- Tell players when a machine has finished their parcels

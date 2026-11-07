@@ -7,7 +7,7 @@
 --              it and makes it hop while running, and breathe, bob and twitch while standing still.
 --   JobBoxes   the box in the arena while you pet and tape: it wiggles harder the angrier the animal gets,
 --              and the animal squishes happily when its anger drops (someone petted it).
---   Gruff      bobs and turns to look at the nearest player.
+--   Gruff      every hub's Gruff bobs and turns to look at the nearest player.
 --   Spinners   anything with a "Spin" attribute (shop display tools, the letter over the orders board).
 
 local CollectionService = game:GetService("CollectionService")
@@ -17,6 +17,7 @@ local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+local Hubs = require(script.Parent.Hubs)
 
 local Animate = {}
 
@@ -539,16 +540,12 @@ end
 ---------------------------------------------------------------------------------------------------
 -- Gruff and spinners
 
-local gruffModel: Model? = nil
-local gruffHome: CFrame? = nil
-local hat: BasePart? = nil
-local hatOffset: CFrame? = nil
+-- Every hub has its own Gruff (client/Hubs.luau): each one's model, resting pose and cap
+type GruffRig = { Model: Model, Home: CFrame, Hat: BasePart?, HatOffset: CFrame? }
+local gruffs: { [Model]: GruffRig } = {}
 
-local function updateGruff(now: number)
-	local model, home = gruffModel, gruffHome
-	if not (model and home and model.Parent) then
-		return
-	end
+local function updateGruff(rig: GruffRig, now: number)
+	local model, home = rig.Model, rig.Home
 	-- Look at the nearest player within 30 studs (turning at most 60 degrees either way)
 	local character = player.Character
 	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -564,26 +561,24 @@ local function updateGruff(now: number)
 	local pose = current:Lerp(target, 0.1)
 	model:PivotTo(pose)
 	-- His cap rides along (unless a tiger just knocked it flying)
-	local cap, capOffset = hat, hatOffset
+	local cap, capOffset = rig.Hat, rig.HatOffset
 	if cap and capOffset and cap.Anchored then
 		cap.CFrame = pose * capOffset
 	end
 end
 
-local function findGruff()
-	task.spawn(function()
-		local map = Workspace:WaitForChild("GrayboxMap")
-		local model = map:WaitForChild("GruffModel", 10)
-		local cap = map:WaitForChild("GruffHat", 10)
-		if model and model:IsA("Model") then
-			gruffModel = model
-			gruffHome = model:GetPivot()
-			if cap and cap:IsA("BasePart") then
-				hat = cap
-				hatOffset = model:GetPivot():ToObjectSpace(cap.CFrame)
-			end
-		end
-	end)
+local function addGruff(instance: Instance)
+	if not instance:IsA("Model") or gruffs[instance] then
+		return
+	end
+	local rig: GruffRig = { Model = instance, Home = instance:GetPivot() }
+	local realm = instance:GetAttribute("Realm")
+	local cap = Hubs.OfRealm("HubGruffHat", if typeof(realm) == "number" then realm else 1)
+	if cap and cap:IsA("BasePart") then
+		rig.Hat = cap
+		rig.HatOffset = rig.Home:ToObjectSpace(cap.CFrame)
+	end
+	gruffs[instance] = rig
 end
 
 local function addSpinner(instance: Instance)
@@ -609,7 +604,7 @@ function Animate.Start()
 		boxes[model :: Model] = nil
 	end)
 
-	findGruff()
+	Hubs.Each("HubGruffModel", addGruff)
 	for _, instance in Workspace:GetDescendants() do
 		addSpinner(instance)
 	end
@@ -627,7 +622,13 @@ function Animate.Start()
 		for _, rig in boxes do
 			updateBox(rig, now)
 		end
-		updateGruff(now)
+		for model, rig in gruffs do
+			if model.Parent then
+				updateGruff(rig, now)
+			else
+				gruffs[model] = nil
+			end
+		end
 		for model, home in spinners do
 			if model.Parent then
 				model:PivotTo(home * CFrame.new(0, math.sin(now * 2) * 0.15, 0) * CFrame.Angles(0, now * 1.5, 0))

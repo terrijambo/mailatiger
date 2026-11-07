@@ -32,18 +32,36 @@ function Travel.ToArena(player: Player, arenaId: string)
 	end
 end
 
-function Travel.ToTown(player: Player)
-	teleport(player, map.TownSpawn)
+-- The realm you're in right now (the one you last travelled to; your home realm when you join). Its hub is
+-- where "back to town" and the GRUFF button take you (MapBuilder.HubFor).
+function Travel.CurrentRealm(player: Player): number
+	local here = player:GetAttribute("AtRealm")
+	if typeof(here) == "number" then
+		return here
+	end
+	local home = player:GetAttribute("Realm")
+	return if typeof(home) == "number" then home else 1
 end
 
--- The GRUFF button: straight to Postmaster Gruff's counter (and the mail chute next to him). Not while
--- you're boxing an animal (you can't leave the BOX screen), and not more than once every few seconds.
+function Travel.HubOf(player: Player): MapBuilder.Hub
+	return MapBuilder.HubFor(map, Travel.CurrentRealm(player))
+end
+
+-- Back to the hub of the realm you're in
+function Travel.ToTown(player: Player)
+	teleport(player, Travel.HubOf(player).Spawn)
+end
+
+-- The GRUFF button: straight to Postmaster Gruff's counter (and the mail chute next to him) at your realm's
+-- hub. Not while you're boxing an animal (you can't leave the BOX screen), and not more than once every few
+-- seconds.
 function Travel.ToGruff(player: Player): boolean
 	if player:GetAttribute("Stage") == "Box" or os.clock() - (lastTeleport[player] or 0) < 3 then
 		return false
 	end
-	local gruff = map.Gruff.Position
-	local toPlaza = Vector3.new(-gruff.X, 0, -gruff.Z).Unit -- (he faces the middle of the plaza)
+	local hub = Travel.HubOf(player)
+	local gruff = hub.Gruff.Position
+	local toPlaza = Vector3.new(hub.Center.X - gruff.X, 0, hub.Center.Z - gruff.Z).Unit -- (he faces the plaza)
 	local stand = gruff + toPlaza * 14 + Vector3.new(0, 2, 0) -- in front of his counter, facing him
 	teleport(player, CFrame.lookAt(stand, Vector3.new(gruff.X, stand.Y, gruff.Z)))
 	return true
@@ -93,6 +111,7 @@ function Travel.ToRealm(player: Player, index: number): boolean
 	if player:GetAttribute("Stage") == "Box" or typeof(home) ~= "number" or index < 1 or index > home then
 		return false
 	end
+	player:SetAttribute("AtRealm", index)
 	Travel.ToArena(player, Config.Realms.At(index).Arena)
 	return true
 end
@@ -104,7 +123,7 @@ function Travel.Quick(player: Player)
 	if not root or player:GetAttribute("Stage") == "Box" then
 		return
 	end
-	local nearGruff = (root.Position - map.Gruff.Position).Magnitude < 45
+	local nearGruff = (root.Position - MapBuilder.NearestHub(map, root.Position).Gruff.Position).Magnitude < 45
 	if nearGruff then
 		Travel.ToZone(player, Travel.BestZone(player))
 	else

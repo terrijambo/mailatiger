@@ -48,12 +48,16 @@ export type Arena = {
 	Edges: boolean, -- true = no fence, you can fall off (Rooftop)
 }
 
-export type Map = {
-	Arenas: { [string]: Arena },
-	TownSpawn: CFrame,
-	TravelPads: { [string]: BasePart }, -- (none any more: MENU > TRAVEL)
-	LiftPads: { [string]: BasePart }, -- pads out in the world that take you into an arena (the Rooftop elevator)
-	ReturnPads: { BasePart }, -- (none any more)
+-- A realm's hub (docs/REALMS_PLAN.md section 7): Gruff's branch Post Office with his counter, the chute, the
+-- orders board and the machines. Every realm gets its own; until one is built, the realm uses the hub of the
+-- nearest realm below it (MapBuilder.HubFor). Today's town plaza is realm 1's hub.
+-- The client finds these pieces by CollectionService tag, each with a Realm attribute (client/Hubs.luau):
+--   HubGruff, HubGruffModel, HubGruffHat, HubCounter, HubChute, HubOrdersBoard, HubMachines (the stations' folder)
+export type Hub = {
+	Realm: number,
+	Center: Vector3, -- the middle of its plaza, at ground level
+	Radius: number, -- how far out it reaches
+	Spawn: CFrame, -- where you arrive
 	Chute: BasePart,
 	ChutePrompt: ProximityPrompt,
 	Gruff: BasePart, -- invisible when his Blender model is showing; holds his name tag
@@ -62,13 +66,21 @@ export type Map = {
 	ShopCounter: BasePart, -- Gruff's counter
 	OrdersPrompt: ProximityPrompt,
 	OrdersBoard: BasePart,
+	-- The Post Office machines, in a ring round the plaza: machine id -> its station (an invisible box over
+	-- the spot; each client draws the machine, client/MachineStations.luau)
+	Machines: { [string]: BasePart },
+}
+
+export type Map = {
+	Arenas: { [string]: Arena },
+	Hubs: { [number]: Hub }, -- by realm index (not every realm has one yet)
+	TravelPads: { [string]: BasePart }, -- (none any more: MENU > TRAVEL)
+	LiftPads: { [string]: BasePart }, -- pads out in the world that take you into an arena (the Rooftop elevator)
+	ReturnPads: { BasePart }, -- (none any more)
 	-- The Rebirth Market on Rebirth Beach: rebirth, tools, upgrades, trolls and lures (they only sell there)
 	MarketPrompt: ProximityPrompt,
 	MarketCounter: BasePart,
 	Leaderboards: { [string]: BasePart }, -- board id -> the part whose +X (Right) face shows the board
-	-- The Post Office machines, in a ring round the plaza: machine id -> its station (an invisible box over
-	-- the spot; each client draws the machine, client/Machines.luau)
-	Machines: { [string]: BasePart },
 }
 
 -- Bright, flat colors (the look of popular simulators: smooth plastic, no gritty textures)
@@ -609,7 +621,7 @@ end
 
 -- Gruff: the Blender walrus if imported (AnimalModels > Gruff), else a grey ball. His cap is always a real
 -- part (so a tiger breakout can knock it flying); the GruffHat model rides on it if you've imported that.
-local function buildGruff(map: Instance, floor: CFrame): (BasePart, BasePart)
+local function buildGruff(map: Instance, floor: CFrame): (BasePart, BasePart, Model?)
 	local gruff = part(map, {
 		Name = "Gruff",
 		Shape = Enum.PartType.Ball,
@@ -652,7 +664,50 @@ local function buildGruff(map: Instance, floor: CFrame): (BasePart, BasePart)
 			end
 		end
 	end
-	return gruff, hat
+	return gruff, hat, model
+end
+
+-- Tags a hub's pieces for the client (client/Hubs.luau), each with the hub's realm
+local function tagHub(hub: Hub, model: Model?, machineFolder: Instance)
+	local pieces: { { any } } = {
+		{ hub.Gruff, "HubGruff" },
+		{ hub.GruffHat, "HubGruffHat" },
+		{ hub.ShopCounter, "HubCounter" },
+		{ hub.Chute, "HubChute" },
+		{ hub.OrdersBoard, "HubOrdersBoard" },
+		{ machineFolder, "HubMachines" },
+	}
+	if model then
+		table.insert(pieces, { model, "HubGruffModel" })
+	end
+	for _, entry in pieces do
+		local instance = entry[1] :: Instance
+		instance:SetAttribute("Realm", hub.Realm)
+		CollectionService:AddTag(instance, entry[2] :: string)
+	end
+end
+
+-- The hub for a realm: its own, or (until it's built) the nearest realm below it that has one
+function MapBuilder.HubFor(map: Map, realm: number): Hub
+	for index = math.floor(realm), 1, -1 do
+		local hub = map.Hubs[index]
+		if hub then
+			return hub
+		end
+	end
+	return map.Hubs[1]
+end
+
+-- The hub nearest a spot (the one you're at, when you're at one)
+function MapBuilder.NearestHub(map: Map, position: Vector3): Hub
+	local best, bestDistance = map.Hubs[1], math.huge
+	for _, hub in map.Hubs do
+		local distance = Vector3.new(position.X - hub.Center.X, 0, position.Z - hub.Center.Z).Magnitude
+		if distance < bestDistance then
+			best, bestDistance = hub, distance
+		end
+	end
+	return best
 end
 
 -- Emoji on each zone's entrance arch
@@ -721,7 +776,7 @@ function MapBuilder.Build(): Map
 	end
 	-- (the plaza's own paving colour: it reads as the square running up to the Post Office, not a grey slab)
 	block(map, "PostOfficeFloor", Vector3.new(40, 0, -15), Vector3.new(55, 0.3, 15), Color3.fromRGB(208, 184, 148))
-	local gruff, gruffHat = buildGruff(map, spot(51, 0.3, 0, west))
+	local gruff, gruffHat, gruffModel = buildGruff(map, spot(51, 0.3, 0, west))
 	local postCounter = facingBox(map, "Counter", Vector3.new(46.5, 0.3, 0), west, Vector3.new(10, 3.5, 2), COLORS.Wood)
 	dress(map, "PostCounter", spot(46.5, 0.3, 0, west), 10.5, { postCounter })
 	-- Talk to Gruff to shop (machines, boxes, stamps)
@@ -998,14 +1053,13 @@ function MapBuilder.Build(): Map
 		},
 	})
 
+	-- Today's town plaza is realm 1's hub (the Backyard's)
 	local townSpot = Vector3.new(24, 3, 0)
-	return {
-		Leaderboards = leaderboards,
-		Arenas = arenas,
-		TownSpawn = CFrame.lookAt(townSpot, townSpot + Vector3.xAxis), -- (facing Gruff)
-		TravelPads = {},
-		LiftPads = liftPads,
-		ReturnPads = {},
+	local town: Hub = {
+		Realm = 1,
+		Center = Vector3.zero,
+		Radius = World.Town.Radius,
+		Spawn = CFrame.lookAt(townSpot, townSpot + Vector3.xAxis), -- (facing Gruff)
 		Chute = chute,
 		ChutePrompt = chutePrompt,
 		Gruff = gruff,
@@ -1014,9 +1068,18 @@ function MapBuilder.Build(): Map
 		ShopCounter = postCounter,
 		OrdersPrompt = ordersPrompt,
 		OrdersBoard = board,
+		Machines = stations,
+	}
+	tagHub(town, gruffModel, machineFolder)
+	return {
+		Leaderboards = leaderboards,
+		Arenas = arenas,
+		Hubs = { [1] = town },
+		TravelPads = {},
+		LiftPads = liftPads,
+		ReturnPads = {},
 		MarketPrompt = marketPrompt,
 		MarketCounter = marketCounter,
-		Machines = stations,
 	}
 end
 

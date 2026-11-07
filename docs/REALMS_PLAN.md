@@ -227,7 +227,20 @@ One place wins on friends, simplicity and publishing. Its one risk is streaming,
 About **15–20 sessions** in all, against about 8–10 for the shared-hub version. Steps 3–4 can mostly run
 overnight.
 
-### Questions for the owner
+**Approved 2026-11-06** with the recommended answers: one place with streaming, realm 1 = today's town + the
+Backyard, the same hero Post Office with realm dressing for now.
+
+**Step 1 done (2026-11-06): hubs in the code.** `MapBuilder.Map.Hubs` holds a hub per realm (`MapBuilder.Hub`:
+its Gruff, cap, counter, chute, orders board, machines, spawn, centre); today's town is hub 1, and
+`MapBuilder.HubFor(map, realm)` falls back to the nearest realm below with a hub, `NearestHub(map, position)`
+finds the one you're at. Mail, the Mystery Parcel, machines, the shop, orders and Gruff's hat work at every
+hub; Travel knows the realm you're in (`AtRealm`, set by GO / a realm move) and sends "back to town" and the
+GRUFF button to that realm's hub. On the client, hub pieces are found by tag (`client/Hubs.luau`: HubGruff,
+HubGruffModel, HubGruffHat, HubCounter, HubChute, HubOrdersBoard, HubMachines, each with a Realm attribute),
+any number of them, including ones that turn up late (ready for streaming). Checked in Play: nothing looks or
+plays differently; Gruff animates, your chute model and all 7 machines show, PEN/GRUFF travel works.
+
+### Questions for the owner (answered above)
 1. **One place with streaming** (recommended) or six places?
 2. **Realm 1 = today's town + the Backyard island?** (Recommended: it's already built and the first thing
    new players see.)

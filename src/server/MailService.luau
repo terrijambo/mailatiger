@@ -168,7 +168,8 @@ local function flyParcels(player: Player, count: number)
 		return
 	end
 	local from = root.CFrame * CFrame.new(0, 0, -1.4)
-	local to = map.Chute.CFrame * CFrame.new(0, map.Chute.Size.Y / 2 + 0.5, 0)
+	local chute = MapBuilder.NearestHub(map, root.Position).Chute -- (the hub you're at)
+	local to = chute.CFrame * CFrame.new(0, chute.Size.Y / 2 + 0.5, 0)
 	for i = 1, math.min(count, 5) do
 		task.delay((i - 1) * 0.12, function()
 			local parcel = makeParcel(from)
@@ -345,9 +346,11 @@ end
 function MailService.Start(builtMap: MapBuilder.Map)
 	map = builtMap
 
-	map.ChutePrompt.Triggered:Connect(function(player: Player)
-		MailService.MailAll(player, true)
-	end)
+	for _, hub in map.Hubs do
+		hub.ChutePrompt.Triggered:Connect(function(player: Player)
+			MailService.MailAll(player, true)
+		end)
+	end
 	Remotes.Listen(Remotes.MailAnywhere, 2, function(player: Player)
 		MailService.MailAll(player, false)
 	end)
